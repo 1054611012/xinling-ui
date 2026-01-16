@@ -1,0 +1,509 @@
+/* ==================== 消息项 ==================== */
+.message-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+
+  &.user {
+    align-self: flex-end;
+    max-width: 80%;
+
+    .message-content {
+      .message-text {
+        background: rgba(0, 122, 255, 0.1);
+        color: #1a1a1a;
+        border-radius: 16px 16px 4px 16px;
+        box-shadow: none;
+        padding: 12px 16px;
+      }
+    }
+  }
+
+  &.assistant {
+    align-self: flex-start;
+    width: 100%; // 使用全宽
+    max-width: 100%;
+
+    .message-content {
+      .message-text {
+        background: transparent; // AI回复普通文本无背景
+        color: #1a1a1a;
+        border-radius: 16px 16px 16px 4px;
+        box-shadow: none;
+        padding: 12px 16px;
+      }
+    }
+  }
+
+  // 深色模式 - 参考浅色模式设计
+  .dark-theme & {
+    &.user {
+      .message-content .message-text {
+        background: rgba(100, 181, 246, 0.12);
+        color: #e0e0e0;
+        border-radius: 16px 16px 4px 16px;
+        padding: 12px 16px;
+      }
+    }
+
+    &.assistant {
+      width: 100%; // 使用全宽
+      max-width: 100%;
+
+      .message-content .message-text {
+        background: transparent; // AI回复普通文本无背景
+        color: #e8e8e8; // 提高文字亮度
+        border-radius: 16px 16px 16px 4px;
+        padding: 12px 16px;
+      }
+    }
+  }
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  position: relative;
+
+  .message-text {
+    padding: 12px 16px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+
+    &.streaming-text {
+      animation: fadeIn 0.2s ease;
+    }
+
+    // 行内代码样式 - 浅色模式
+    .inline-code {
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      background: rgba(175, 184, 193, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #0969da;
+      font-weight: 500; // 增强代码文字粗细
+    }
+
+    // 深色模式行内代码
+    .dark-theme & {
+      .inline-code {
+        background: rgba(100, 181, 246, 0.18);
+        color: #7cc5ff; // 提高亮度
+        font-weight: 500;
+      }
+    }
+
+    // 代码块容器 - 浅色模式（浅灰色背景）
+    .code-block-wrapper {
+      margin: 20px 0; // 增加上下边距，让代码块之间有明显间隔
+      border-radius: 8px; // 统一圆角
+      background: #f5f5f5 !important;
+      border: 1px solid #e5e5ea; // 添加边框增强视觉效果
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); // 增强阴影，让代码块更突出
+
+      // 语言标签 - 左上角
+      .code-language-tag {
+        position: absolute;
+        top: 0px;
+        left: 12px;
+        font-size: 12px;
+        color: #666666;
+        font-weight: 500;
+        z-index: 10;
+        background: transparent;
+      }
+
+      // 复制按钮 - 右上角
+      .code-copy-btn {
+        position: absolute;
+        top: 0px;
+        right: 6px;
+        background: transparent;
+        border: none;
+        color: #666666;
+        padding: 4px;
+        border-radius: 4px;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        min-width: 26px;
+        height: 26px;
+        z-index: 10;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.05);
+          color: #333333;
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+
+        i {
+          font-size: 13px;
+        }
+      }
+
+      pre {
+        margin: 0;
+        padding: 12px;
+        padding-top: 0px;
+        background: transparent !important;
+        border-radius: 0;
+        overflow-x: auto;
+
+        code {
+          font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+          font-size: 13px;
+          line-height: 1.4;
+          color: #1a1a1a !important; // 加深代码文字颜色
+          background: transparent !important;
+          padding: 0 !important;
+          border-radius: 0 !important;
+
+          * {
+            background: transparent !important;
+          }
+        }
+      }
+    }
+
+    // 深色模式代码块
+    .dark-theme & {
+      .code-block-wrapper {
+        margin: 20px 0; // 与浅色模式保持一致
+        background: #1e1e1e !important;
+        border-radius: 8px; // 统一圆角，与浅色模式保持一致
+        border: 1px solid rgba(255, 255, 255, 0.1); // 添加边框
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); // 增强阴影
+
+        .code-language-tag {
+          color: #999999;
+          background: transparent;
+        }
+
+        .code-copy-btn {
+          color: #999999;
+          background: transparent;
+          border: none;
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d4d4d4;
+          }
+        }
+
+        pre {
+          code {
+            color: #d4d4d4 !important;
+          }
+        }
+      }
+    }
+
+    // 粗体和斜体
+    strong {
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    em {
+      font-style: italic;
+      color: #666666;
+    }
+
+    // 深色模式文本样式
+    .dark-theme & {
+      strong {
+        color: #f0f0f0; // 提高加粗文字亮度
+        font-weight: 600;
+      }
+
+      em {
+        color: #a8a8a8; // 提高斜体文字亮度
+      }
+    }
+
+    // Markdown 标题样式
+    h1, h2, h3 {
+      margin: 16px 0 8px 0;
+      line-height: 1.4;
+      color: #1a1a1a;
+      font-weight: 600;
+
+      strong {
+        font-weight: 700;
+        color: #1a1a1a;
+      }
+    }
+
+    h1 {
+      font-size: 20px;
+    }
+
+    h2 {
+      font-size: 18px;
+    }
+
+    h3 {
+      font-size: 16px;
+    }
+
+    // 深色模式标题
+    .dark-theme & {
+      h1, h2, h3 {
+        color: #f0f0f0; // 提高标题亮度
+        font-weight: 600;
+
+        strong {
+          color: #f0f0f0;
+          font-weight: 700;
+        }
+      }
+    }
+
+    // Markdown 表格样式 - 浅色模式（优化布局和滚动）
+    .markdown-table-wrapper {
+      margin: 16px 0;
+      overflow-x: auto; // 水平滚动
+      overflow-y: visible; // 垂直方向不裁剪
+      max-width: 100%; // 限制最大宽度
+      border-radius: 8px;
+      background: #ffffff !important; // 强制背景色，不被父元素影响
+      border: 2px solid #d1d1d6 !important; // 增强边框
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important; // 增强阴影
+      position: relative; // 确保独立层级
+      z-index: 1; // 提升层级，不被背景遮挡
+
+      // 完整的滚动条样式定义
+      &::-webkit-scrollbar {
+        height: 8px; // 水平滚动条高度
+        width: 8px; // 垂直滚动条宽度（以防需要）
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f5f5f5; // 滚动条轨道背景
+        border-radius: 4px;
+        margin: 0 8px; // 轨道边距
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #d1d1d6; // 滚动条滑块颜色
+        border-radius: 4px;
+
+        &:hover {
+          background: #c7c7cc; // 悬停时颜色加深
+        }
+      }
+
+      &::-webkit-scrollbar-corner {
+        background: transparent; // 滚动条交叉角落
+      }
+    }
+
+    .markdown-table {
+      width: 100%; // 表格占满容器宽度
+      min-width: 100%; // 保证内容不被截断
+      border-collapse: collapse; // 合并边框
+      font-size: 14px;
+      line-height: 1.6;
+      background: #ffffff !important; // 强制背景色
+      table-layout: auto; // 自动列宽分配
+      border: 1px solid #d1d1d6 !important; // 表格外边框
+
+      thead {
+        background: #f0f0f5 !important; // 表头背景色
+
+        tr {
+          border-bottom: 2px solid #d1d1d6 !important; // 表头分隔线
+        }
+
+        th {
+          padding: 12px 16px;
+          text-align: left;
+          font-weight: 600;
+          color: #1a1a1a !important;
+          white-space: nowrap; // 表头不换行
+          border-right: 1px solid #d1d1d6 !important; // 列边框
+          border-bottom: 2px solid #d1d1d6 !important; // 底部边框
+          background: #f0f0f5 !important; // 确保表头背景色
+          min-width: 100px; // 最小列宽
+
+          &:last-child {
+            border-right: none;
+          }
+        }
+      }
+
+      tbody {
+        background: #ffffff !important; // 确保表体背景色
+
+        tr {
+          border-bottom: 1px solid #e5e5ea !important;
+          transition: background-color 0.2s ease;
+          background: #ffffff !important; // 默认背景
+
+          &:hover {
+            background: #f5f5f5 !important; // hover效果
+          }
+
+          &:last-child {
+            border-bottom: none;
+          }
+        }
+
+        td {
+          padding: 12px 16px;
+          color: #2b2b2b !important;
+          border-right: 1px solid #e5e5ea !important;
+          border-bottom: 1px solid #e5e5ea !important; // 底部边框
+          white-space: normal; // 单元格内容允许换行
+          word-wrap: break-word; // 长单词换行
+          min-width: 100px; // 最小列宽
+          max-width: 400px; // 最大列宽（防止过宽）
+
+          &:last-child {
+            border-right: none;
+          }
+        }
+      }
+    }
+
+    // 深色模式表格
+    .dark-theme & {
+      .markdown-table-wrapper {
+        background: #1e1e1e !important; // 强制背景色
+        border: 2px solid rgba(255, 255, 255, 0.15) !important; // 增强边框
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important; // 添加阴影
+        position: relative;
+        z-index: 1;
+
+        &::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.05); // 深色模式轨道背景
+        }
+
+        &::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1); // 深色模式滑块
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.15);
+          }
+        }
+      }
+
+      .markdown-table {
+        background: #1e1e1e !important; // 强制背景色
+        border: 1px solid rgba(255, 255, 255, 0.15) !important; // 表格外边框
+
+        thead {
+          background: #252525 !important;
+
+          tr {
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+          }
+
+          th {
+            color: #e8e8e8 !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+            background: #252525 !important;
+          }
+        }
+
+        tbody {
+          background: #1e1e1e !important;
+
+          tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            background: #1e1e1e !important;
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.03) !important;
+            }
+          }
+
+          td {
+            color: #d4d4d4 !important;
+            border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          }
+        }
+      }
+    }
+  }
+
+  .message-time {
+    font-size: 12px;
+    color: #8e8e93;
+    padding: 0 4px;
+  }
+
+  // 深色模式时间
+  .dark-theme & {
+    .message-time {
+      color: #666666;
+    }
+  }
+
+  // 消息操作按钮
+  .message-actions {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+
+    .copy-all-btn {
+      background: transparent;
+      border: none;
+      color: #8e8e93;
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      min-width: 28px;
+      height: 28px;
+
+      &:hover {
+        background: rgba(0, 122, 255, 0.05);
+        color: #007aff;
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      i {
+        font-size: 14px;
+      }
+    }
+  }
+
+  // 深色模式消息操作
+  .dark-theme & {
+    .message-actions {
+      .copy-all-btn {
+        color: #666666;
+
+        &:hover {
+          background: rgba(100, 181, 246, 0.08);
+          color: #64b5f6;
+        }
+      }
+    }
+  }
+}
