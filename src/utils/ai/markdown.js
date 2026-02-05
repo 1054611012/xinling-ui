@@ -183,10 +183,17 @@ function preprocessContent(content) {
       highlightedCode = escapeHtml(processedCode)
     }
 
-    // 生成带复制按钮的代码块（语言标签和复制按钮都在代码前面）
+    // 生成带复制按钮和执行SQL按钮的代码块
     const escapedCodeForAttr = originalCode.replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    // 如果是SQL代码，添加执行按钮（在复制按钮旁边）
+    let buttonsHtml = ``  // 先不添加任何按钮
+    if (language.toLowerCase() === 'sql') {
+      buttonsHtml += `<button class="sql-execute-btn" data-sql="${escapedCodeForAttr}" title="执行SQL"><i class="el-icon-video-play"></i></button>`
+    }
+    buttonsHtml += `<button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button>`
     // 保存原始代码，以便后续重新高亮
-    const codeBlock = `<div class="code-block-wrapper"><div class="code-language-tag">${language}</div><button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button><pre><code class="hljs language-${language}" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
+    
+    const codeBlock = `<div class="code-block-wrapper"><div class="code-language-tag">${language}</div><div class="code-buttons">${buttonsHtml}</div><pre><code class="hljs language-${language}" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
 
     // 将代码块内容预先处理，替换其中的换行符为特殊标记，避免后续全局替换
     const processedCodeBlock = codeBlock.replace(/\n/g, '__CODE_BLOCK_NEWLINE__')
@@ -222,8 +229,19 @@ function preprocessContent(content) {
     }
 
     const escapedCodeForAttr = originalCode.replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    // 检测是否是SQL代码，如果是则添加执行按钮
+    let isSqlCode = false;
+    if (originalCode.toUpperCase().includes('SELECT') && (originalCode.toUpperCase().includes('FROM') || originalCode.toUpperCase().includes('WHERE'))) {
+      isSqlCode = true;
+    }
+    // 生成带复制按钮和可能的执行SQL按钮的代码块
+    let buttonsHtml = ``  // 先不添加任何按钮
+    if (isSqlCode) {
+      buttonsHtml += `<button class="sql-execute-btn" data-sql="${escapedCodeForAttr}" title="执行SQL"><i class="el-icon-video-play"></i></button>`
+    }
+    buttonsHtml += `<button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button>`
     // 保存原始代码，以便后续重新高亮
-    const codeBlock = `<div class="code-block-wrapper"><div class="code-language-tag">code</div><button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button><pre><code class="hljs" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
+    const codeBlock = `<div class="code-block-wrapper"><div class="code-language-tag">code</div><div class="code-buttons">${buttonsHtml}</div><pre><code class="hljs" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
 
     // 将代码块内容预先处理，替换其中的换行符为特殊标记，避免后续全局替换
     const processedCodeBlock = codeBlock.replace(/\n/g, '__CODE_BLOCK_NEWLINE__')
@@ -253,8 +271,14 @@ function preprocessContent(content) {
     }
 
     const escapedCodeForAttr = code.replace(/"/g, '&quot;').replace(/'/g, '&#039;')
+    // 如果是SQL代码，添加执行按钮（在复制按钮旁边）
+    let buttonsHtml = ``  // 先不添加任何按钮
+    if (language.toLowerCase() === 'sql') {
+      buttonsHtml += `<button class="sql-execute-btn" data-sql="${escapedCodeForAttr}" title="执行SQL"><i class="el-icon-video-play"></i></button>`
+    }
+    buttonsHtml += `<button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button>`
     // 保存原始代码，以便后续重新高亮
-    const codeBlock = `<div class="code-block-wrapper streaming-code"><div class="code-language-tag">${language}</div><button class="code-copy-btn" data-code="${escapedCodeForAttr}" title="复制代码"><i class="el-icon-document-copy"></i></button><pre><code class="hljs language-${language}" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
+    const codeBlock = `<div class="code-block-wrapper streaming-code"><div class="code-language-tag">${language}</div><div class="code-buttons">${buttonsHtml}</div><pre><code class="hljs language-${language}" data-original-code="${escapedCodeForAttr}" data-highlighted="true">${highlightedCode}</code></pre></div>`
 
     // 将代码块内容预先处理，替换其中的换行符为特殊标记，避免后续全局替换
     const processedCodeBlock = codeBlock.replace(/\n/g, '__CODE_BLOCK_NEWLINE__')
@@ -495,11 +519,35 @@ function formatMessage(content, formatMessageCache = new Map(), cacheSizeLimit =
   // 处理粗体
   formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
 
-  // 1. 先匹配所有 "- 内容" 行，替换为<li>标签
-  formatted = formatted.replace(/^-\s+(.*?)$/gm, '<li>$1</li>')
-
-  // 2. 将连续的<li>标签包裹成<ul>（避免零散<li>）
-  formatted = formatted.replace(/(<li>.*?<\/li>)(\n<li>.*?<\/li>)+/gs, '<ul>$&</ul>')
+  // 1. 处理多级列表（支持嵌套）
+  // 首先，替换不同级别的列表项
+  // 匹配可能包含前导空格的列表项，用于确定级别
+  formatted = formatted.replace(/^(\s*)-\s+(.*?)$/gm, function(match, spaces, content) {
+    const level = Math.floor(spaces.length / 2); // 每2个空格为一个缩进级别
+    return `${'<ul>'.repeat(level)}<li>${content}</li>${'</ul>'.repeat(level)}
+  `})
+  
+  // 2. 合并相邻的相同层级的ul标签，处理连续的列表项
+  // 首先处理连续的<li>标签，将它们放入同一个<ul>中
+  formatted = formatted.replace(/(<ul><li>.*?<\/li><\/ul>\n?)+/g, function(match) {
+    // 移除相邻的ul/li包装，然后整体用一个ul包装
+    const items = match.match(/<ul><li>(.*?)<\/li><\/ul>/g);
+    if (items) {
+      const innerHTML = items.map(item => item.replace(/<ul><li>/, '').replace(/<\/li><\/ul>/, '')).join('\n');
+      return `<ul><li>${innerHTML.replace(/<\/ul>\n<ul><li>/g, '</li><li>')}</li></ul>`;
+    }
+    return match;
+  });
+  
+  // 更精确的列表处理：合并相邻的ul标签
+  formatted = formatted.replace(/<\/ul>\n<ul>/g, '');
+  formatted = formatted.replace(/<\/li><\/ul>\n<ul><li>/g, '</li><li>');
+  
+  // 处理嵌套列表的正确结构
+  while (formatted.includes('</ul>\n<ul>') || formatted.includes('</li></ul>\n<ul><li>')) {
+    formatted = formatted.replace(/<\/ul>\n<ul>/g, '');
+    formatted = formatted.replace(/<\/li><\/ul>\n<ul><li>/g, '</li><li>');
+  }
 
   // 处理斜体
   formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -517,22 +565,36 @@ function formatMessage(content, formatMessageCache = new Map(), cacheSizeLimit =
   // 代码块中的换行符已使用特殊标记(__CODE_BLOCK_NEWLINE__)，在这里还原
   formatted = formatted.replace(/__CODE_BLOCK_NEWLINE__/g, '\n')
 
-  // 将剩余的普通换行符替换为<br>标签，但排除表格内的换行
-  // 首先保存表格内容，临时替换，处理完换行后再还原
-  const tablePlaceholders = []
-  formatted = formatted.replace(/<div class="markdown-table-wrapper">[\s\S]*?<\/table><\/div>/g, (match) => {
-    const placeholder = `__TABLE_RENDERED_${tablePlaceholders.length}__`
-    tablePlaceholders.push(match)
-    return placeholder
-  })
+  // 将剩余的普通换行符替换为<br>标签，但排除各种HTML标签内的换行
+  // 首先保存各种HTML标签内容，临时替换，处理完换行后再还原
+  const htmlTagPlaceholders = [];
+  // 保护标题、列表、段落等标签内容
+  formatted = formatted.replace(/<(h[1-6]|ul|ol|li|p|div|pre|code|table|thead|tbody|tr|th|td)[^>]*>[\s\S]*?<\/\1>/g, (match) => {
+    const placeholder = `__HTML_TAG_${htmlTagPlaceholders.length}__`;
+    htmlTagPlaceholders.push(match);
+    return placeholder;
+  });
 
-  // 将剩余的普通换行符替换为<br>标签（不在表格中的）
-  formatted = formatted.replace(/\n/g, '<br>')
+  // 将剩余的普通换行符替换为<br>标签（不在HTML标签中的）
+  formatted = formatted.replace(/\n/g, '<br>');
 
-  // 还原表格内容
-  formatted = tablePlaceholders.reduce((result, table, index) => {
-    return result.replace(`__TABLE_RENDERED_${index}__`, table)
-  }, formatted)
+  // 还原HTML标签内容
+  formatted = htmlTagPlaceholders.reduce((result, tag, index) => {
+    return result.replace(`__HTML_TAG_${index}__`, tag);
+  }, formatted);
+
+  // 处理可能产生的连续<br>标签，保留适当的间距
+  formatted = formatted.replace(/(<br>\s*){3,}/g, '<br><br>'); // 将3个或更多的连续<br>减少为2个<br>，保留一定间距
+  
+  // 清理<br>标签前后的多余空白
+  formatted = formatted.replace(/\s*<br>\s*/g, '<br>'); // 去除<br>标签前后的空白字符
+  
+  // 处理HTML标签与<br>标签之间的关系，移除冗余的<br>标签
+  formatted = formatted.replace(/(<\/div>|<\/p>|<\/li>|<\/h[1-6]>|<\/th>|<\/td>|<\/tr>)\s*<br>/g, '$1'); // 移除特定闭合标签后的<br>
+  // 对于标题前的<br>标签，保留一个以确保标题与上方内容之间有适当间距
+  formatted = formatted.replace(/<br>\s*(<ul|<ol|<li|<div|<p|<table|<tr|<th|<td)/g, '$1'); // 移除特定HTML标签前的<br>
+  // 特别处理标题前的<br>，保留一个间距
+  formatted = formatted.replace(/(<br>\s*)+<h([1-6])/g, '<br><h$2'); // 确保标题前最多只有一个<br>
       
   // 存储到缓存
   setCache(formatMessageCache, cacheKey, formatted, cacheSizeLimit);

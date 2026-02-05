@@ -9,7 +9,7 @@
 
       <div class="session-section">
         <div class="section-title">会话历史</div>
-        <div class="session-list">
+        <div class="session-list" @wheel.prevent="handleScroll">
           <!-- 历史会话列表 -->
           <div
             v-for="session in sessions"
@@ -95,6 +95,8 @@ export default {
   gap: 24px;
   transition: all 0.3s ease;
   overflow: hidden;
+  height: 100%;
+  max-height: 100vh;
 }
 
 .sidebar.sidebar-collapsed {
@@ -114,6 +116,9 @@ export default {
 .sidebar-content {
   width: 260px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .section-title {
@@ -128,15 +133,32 @@ export default {
 .session-list {
   flex: 1;
   overflow-y: auto;
+  /* 防止滚动穿透 */
+  -webkit-overflow-scrolling: touch;
+  min-height: 0; /* 确保flex子元素可以收缩 */
 }
 
+/* 可选显示细滚动条 */
 .session-list::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+}
+
+.session-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.session-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.session-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .session-list {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
 }
 
 .new-chat-btn {
@@ -251,6 +273,7 @@ export default {
   background: #1a1a1a;
   border-right: 1px solid rgba(255, 255, 255, 0.05);
   padding: 20px 16px;
+  max-height: 100vh;
 }
 
 .dark-theme .section-title {
@@ -273,6 +296,18 @@ export default {
 }
 
 /* 深色模式会话项样式 */
+.dark-theme .session-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.dark-theme .session-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.dark-theme .session-list {
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
 .dark-theme .new-chat-btn {
   background: rgba(255, 255, 255, 0.03);
   color: #e8e8e8;

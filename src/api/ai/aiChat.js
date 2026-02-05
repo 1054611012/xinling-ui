@@ -45,6 +45,17 @@ export function smartChatSync(data) {
 }
 
 /**
+ * 执行SQL查询
+ */
+export function executeSql(data) {
+  return request({
+    url: '/ai/executeSql',
+    method: 'post',
+    data
+  })
+}
+
+/**
  * 获取会话列表
  */
 export function listSessions() {
@@ -63,3 +74,4 @@ export function getSessionHistory(sessionId) {
     method: 'get'
   })
 } 
+

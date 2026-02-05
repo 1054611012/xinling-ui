@@ -79,6 +79,13 @@
               <!-- 流式响应显示 -->
               <div v-if="isStreaming" class="message-item assistant">
                 <div class="message-content">
+                  <!-- 显示AI正在输入提示（仅当没有流式内容时） -->
+                  <div v-if="showTypingIndicator && !streamingContent && !streamingThinking" class="typing-indicator">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                  </div>
+                  
                   <!-- 思考过程 -->
                   <div v-if="streamingThinking" class="thinking-section">
                     <div class="thinking-header">
@@ -134,7 +141,7 @@
 
 <script>
 import request from '@/utils/request'
-import { listModels, smartChat, listSessions, createSession, deleteSession, updateSession, getSession, clearSessionHistory, getSessionMessages, getSessionHistory, sendMessage as apiSendMessage } from '@/api/ai/aiChat'
+import { listModels, smartChat, listSessions, createSession, deleteSession, updateSession, getSession, clearSessionHistory, getSessionMessages, getSessionHistory, sendMessage as apiSendMessage, executeSql } from '@/api/ai/aiChat'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css' // 代码高亮样式
 import {
@@ -715,7 +722,8 @@ export default {
 
       // 添加AI消息占位
       this.isStreaming = true
-      this.showTypingIndicator = false
+      // 保持showTypingIndicator为true，直到开始接收流式数据
+      // 但在开始流式响应时，我们仍保持typing indicator显示，直到真正收到数据
       this.streamingContent = ''
       this.streamingThinking = ''
       this.thinkingStartTime = Date.now()
@@ -803,6 +811,10 @@ export default {
                 // 处理 ChatResponse 格式的响应 (你的后端返回格式)
                 // ChatResponse.of(content, sessionId) 应该包含 content 和 sessionId
                 if (data.content) {
+                  // 当开始接收内容时，停止显示typing指示器
+                  if (this.showTypingIndicator) {
+                    this.showTypingIndicator = false
+                  }
                   this.streamingContent += data.content
                   // 实时更新显示，确保代码高亮能正确应用
                   this.$nextTick(() => {
@@ -820,6 +832,10 @@ export default {
                 if (data.message) {
                   // 思考过程
                   if (data.message.thinking) {
+                    // 当开始接收思考内容时，停止显示typing指示器
+                    if (this.showTypingIndicator) {
+                      this.showTypingIndicator = false
+                    }
                     this.streamingThinking += data.message.thinking
                     // 更新思考时长
                     if (this.thinkingStartTime) {
@@ -829,6 +845,10 @@ export default {
 
                   // 正式内容
                   if (data.message.content) {
+                    // 当开始接收内容时，停止显示typing指示器
+                    if (this.showTypingIndicator) {
+                      this.showTypingIndicator = false
+                    }
                     this.streamingContent += data.message.content
                     // 实时更新显示，确保代码高亮能正确应用
                     this.$nextTick(() => {
@@ -840,6 +860,10 @@ export default {
 
                 // 处理传统格式的响应（兼容）
                 if (data.type === 'content') {
+                  // 当开始接收内容时，停止显示typing指示器
+                  if (this.showTypingIndicator) {
+                    this.showTypingIndicator = false
+                  }
                   this.streamingContent += data.content
                   // 实时更新显示，确保代码高亮能正确应用
                   this.$nextTick(() => {
@@ -869,9 +893,6 @@ export default {
           }
         }
 
-
-        // 完成流式传输
-        this.isStreaming = false
 
         // 添加完整消息到列表
         const aiMessage = {
@@ -913,6 +934,10 @@ export default {
         this.streamingThinking = ''
         this.thinkingStartTime = null
         this.thinkingDuration = 0
+        
+        // 完成流式传输，停止显示加载状态
+        this.isStreaming = false
+        this.showTypingIndicator = false
       } catch (error) {
         console.error('发送消息失败:', error)
         this.isStreaming = false
@@ -1271,7 +1296,140 @@ export default {
      * 处理代码复制
      */
     handleCodeCopy(event) {
-      utilHandleCodeCopy(event, (text, msg) => this.copyToClipboard(text, msg))
+      utilHandleCodeCopy(event, 
+        (text, msg) => this.copyToClipboard(text, msg),
+        (sql) => this.executeSqlQuery(sql)
+      )
+    },
+    
+    /**
+     * 执行SQL查询
+     */
+    async executeSqlQuery(sql) {
+      try {
+        // 找到包含当前SQL的消息并设置处理状态
+        let targetMessageIndex = -1;
+        for (let i = this.messages.length - 1; i >= 0; i--) {
+          if (this.messages[i].content && this.messages[i].content.includes(sql.trim())) {
+            targetMessageIndex = i;
+            break;
+          }
+        }
+        
+        // 如果没找到包含此SQL的消息，则使用最后一条消息
+        if (targetMessageIndex === -1) {
+          targetMessageIndex = this.messages.length - 1;
+        }
+        
+        if (targetMessageIndex !== -1) {
+          // 设置处理状态，显示动态加载
+          this.$set(this.messages[targetMessageIndex], 'isProcessing', true);
+          this.$set(this.messages[targetMessageIndex], 'thinking', '正在执行SQL查询...');
+        }
+        
+        const response = await executeSql({ sql })
+        
+        if (response.code === 200) {
+          let resultMessage = ''
+          
+          if (response.data.type === 'SCALAR') {
+            // SCALAR类型：显示单值结果
+            const scalarData = response.data.data[0]
+            const keys = Object.keys(scalarData)
+            if (keys.length > 0) {
+              resultMessage = `查询结果：${scalarData[keys[0]]}`
+            } else {
+              resultMessage = '查询结果：无数据'
+            }
+          } else if (response.data.type === 'SINGLE_COLUMN') {
+            // SINGLE_COLUMN类型：显示数组结果
+            resultMessage = `查询结果：共 ${response.data.data.length} 条记录\n${JSON.stringify(response.data.data, null, 2)}`
+          } else if (response.data.type === 'MULTI_COLUMN') {
+            // MULTI_COLUMN类型：显示表格结果
+            resultMessage = `查询结果：共 ${response.data.data.length} 条记录\n${JSON.stringify(response.data.data, null, 2)}`
+          } else {
+            resultMessage = '查询结果：未知格式'
+          }
+          
+          // 更新目标消息，添加SQL执行结果并移除处理状态
+          const targetMessage = this.messages[targetMessageIndex];
+          if (targetMessage) {
+            // 移除处理状态
+            this.$set(targetMessage, 'isProcessing', false);
+            this.$set(targetMessage, 'thinking', ''); // 清除临时的思考文本
+                    
+            // 如果消息中还没有执行结果，则添加SQL执行结果
+            if (!targetMessage.sqlResults) {
+              this.$set(targetMessage, 'sqlResults', []);
+            }
+                    
+            // 根据数据类型决定显示格式
+            let resultDisplay;
+            if (response.data.type === 'MULTI_COLUMN' && response.data.data.length > 0) {
+              // 为表格数据创建表格形式的显示
+              resultDisplay = {
+                type: response.data.type,
+                data: response.data.data,
+                columns: Object.keys(response.data.data[0]) // 使用第一条记录的键作为列名
+              };
+            } else {
+              resultDisplay = {
+                type: response.data.type,
+                data: response.data.data,
+                rawMessage: resultMessage
+              };
+            }
+                    
+            const sqlResult = {
+              sql: sql,
+              result: resultDisplay,
+              timestamp: new Date()
+            };
+                    
+            // 添加到结果数组
+            targetMessage.sqlResults.push(sqlResult);
+                    
+            // 触发视图更新 - 用一个新的数组替换，确保Vue能检测到变化
+            this.$set(this.messages, targetMessageIndex, { ...targetMessage });
+          }
+          
+          this.$message.success('SQL执行成功')
+        } else {
+          this.$message.error(`SQL执行失败：${response.msg || response.error || '未知错误'}`)
+          
+          // 即使执行失败也要清除处理状态
+          if (targetMessageIndex !== -1 && this.messages[targetMessageIndex]) {
+            this.$set(this.messages[targetMessageIndex], 'isProcessing', false);
+            this.$set(this.messages[targetMessageIndex], 'thinking', '');
+          }
+        }
+      } catch (error) {
+        console.error('执行SQL失败:', error)
+        this.$message.error(`执行SQL失败：${error.message || '未知错误'}`)
+        
+        // 错误时也要清除处理状态
+        if (targetMessageIndex !== -1 && this.messages[targetMessageIndex]) {
+          this.$set(this.messages[targetMessageIndex], 'isProcessing', false);
+          this.$set(this.messages[targetMessageIndex], 'thinking', '');
+        }
+      }
+      
+      // 滚动到底部
+      this.$nextTick(() => {
+        this.scrollToBottom()
+      })
+    },
+    
+    /**
+     * 滚动到底部
+     */
+    scrollToBottom() {
+      this.$nextTick(() => {
+        const container = this.$refs.messagesContainer
+        if (container) {
+          container.scrollTop = container.scrollHeight
+        }
+      })
     },
 
     /**
@@ -1701,10 +1859,28 @@ export default {
   .code-copy-btn {
     position: absolute !important;
     top: 8px !important;
-    right: 8px !important;  // 右上角！
+    right: 8px !important;  // 右上角，执行按钮已移到更右边
     background: transparent !important;  // 透明背景
     border: none !important;             // 无边框
     color: #999999 !important;
+    border-radius: 4px !important;       // 添加圆角
+    z-index: 10 !important;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.06) !important;
+      color: #333333 !important;
+    }
+  }
+
+  // SQL执行按钮定位
+  .sql-execute-btn {
+    position: absolute !important;
+    top: 8px !important;
+    right: 40px !important;  // 紧邻复制按钮左侧，交换位置
+    background: transparent !important;  // 透明背景
+    border: none !important;             // 无边框
+    color: #999999 !important;
+    border-radius: 4px !important;       // 添加圆角
     z-index: 10 !important;
 
     &:hover {
@@ -1794,11 +1970,22 @@ export default {
   }
 
   .code-copy-btn {
-    color: #858585;
+    color: #676767;
+    border-radius: 4px !important;       // 添加圆角
 
     &:hover {
       background: rgba(255, 255, 255, 0.08);
-      color: #64b5f6;
+      color: #f0f0f0;
+    }
+  }
+
+  .sql-execute-btn {
+    color: #676767;
+    border-radius: 4px !important;       // 添加圆角
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #f0f0f0;
     }
   }
 

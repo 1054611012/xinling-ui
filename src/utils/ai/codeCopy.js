@@ -3,7 +3,7 @@
  * @param {Event} event - 点击事件
  * @param {Function} copyToClipboardFn - 复制到剪贴板的函数
  */
-export function handleCodeCopy(event, copyToClipboardFn) {
+export function handleCodeCopy(event, copyToClipboardFn, executeSqlFn) {
   const target = event.target
   const copyBtn = target.closest('.code-copy-btn')
   if (copyBtn) {
@@ -17,6 +17,20 @@ export function handleCodeCopy(event, copyToClipboardFn) {
       .replace(/&gt;/g, '>')
       .replace(/<br\s*\/?>/gi, '\n')  // 将<br>标签替换为换行符
     copyToClipboardFn(code, '代码已复制')
+  }
+  
+  const executeBtn = target.closest('.sql-execute-btn')
+  if (executeBtn && executeSqlFn) {
+    let sql = executeBtn.getAttribute('data-sql')
+    // 移除HTML实体和标签
+    sql = sql
+      .replace(/&quot;/g, '"')
+      .replace(/&#039;/g, "'")
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/<br\s*\/?>/gi, '\n')  // 将<br>标签替换为换行符
+    executeSqlFn(sql)
   }
 }
 
