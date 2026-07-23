@@ -1,50 +1,46 @@
 <template>
   <section class="app-main">
-    <transition name="fade-transform" mode="out-in">
-      <keep-alive :include="cachedViews">
-        <router-view v-if="!$route.meta.link" :key="key" />
-      </keep-alive>
-    </transition>
+    <router-view v-slot="{ Component }">
+      <transition name="fade-transform" mode="out-in">
+        <keep-alive :include="cachedViews">
+          <component :is="Component" v-if="!$route.meta.link" :key="key" />
+        </keep-alive>
+      </transition>
+    </router-view>
     <iframe-toggle />
   </section>
+
 </template>
 
-<script>
+<script setup>
+import { computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useTagsViewStore } from '@/store'
 import iframeToggle from "./IframeToggle/index"
 
-export default {
-  name: 'AppMain',
-  components: { iframeToggle },
-  computed: {
-    cachedViews() {
-      return this.$store.state.tagsView.cachedViews
-    },
-    key() {
-      return this.$route.path
-    }
-  },
-  watch: {
-    $route() {
-      this.addIframe()
-    }
-  },
-  mounted() {
-    this.addIframe()
-  },
-  methods: {
-    addIframe() {
-      const { name } = this.$route
-      if (name && this.$route.meta.link) {
-        this.$store.dispatch('tagsView/addIframeView', this.$route)
-      }
-    }
+const route = useRoute()
+const tagsViewStore = useTagsViewStore()
+
+const cachedViews = computed(() => tagsViewStore.cachedViews)
+const key = computed(() => route.path)
+
+const addIframe = () => {
+  if (route.name && route.meta.link) {
+    tagsViewStore.addIframeView(route)
   }
 }
+
+watch(() => route.path, () => {
+  addIframe()
+})
+
+onMounted(() => {
+  addIframe()
+})
 </script>
 
 <style lang="scss" scoped>
 .app-main {
-  /* 50= navbar  50  */
   min-height: calc(100vh - 50px);
   width: 100%;
   position: relative;
@@ -64,7 +60,6 @@ export default {
 
 .hasTagsView {
   .app-main {
-    /* 84 = navbar + tags-view = 50 + 34 */
     min-height: calc(100vh - 84px);
   }
 

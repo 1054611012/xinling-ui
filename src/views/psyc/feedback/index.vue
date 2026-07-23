@@ -6,7 +6,7 @@
           v-model="queryParams.contact"
           placeholder="请输入用户联系方式"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="处理状态" prop="status">
@@ -38,63 +38,55 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <div class="mb8 button-bar">
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          :icon="Plus"
           size="mini"
           @click="handleAdd"
           v-hasPermi="['psyc:feedback:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="success"
           plain
-          icon="el-icon-edit"
+          :icon="Edit"
           size="mini"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['psyc:feedback:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
+          :icon="Delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['psyc:feedback:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
+          :icon="Download"
           size="mini"
           @click="handleExport"
           v-hasPermi="['psyc:feedback:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar v-model="showSearch" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table v-loading="loading" :data="feedbackList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="主键ID" align="center" prop="id" />
       <el-table-column label="反馈用户ID" align="center" prop="userId" />
       <el-table-column label="反馈类型" align="center" prop="type">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag 
             :type="scope.row.type == 1 ? 'danger' : 
                    scope.row.type == 2 ? 'success' : 
@@ -114,7 +106,7 @@
       <el-table-column label="联系方式" align="center" prop="contact" />
       <el-table-column label="自动收集的设备信息" align="center" prop="deviceInfo" />
       <el-table-column label="处理状态" align="center" prop="status">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag 
             :type="scope.row.status == 0 ? 'info' : scope.row.status == 1 ? 'warning' : scope.row.status == 2 ? 'success' : 'danger'"
             style="cursor: pointer;"
@@ -125,18 +117,18 @@
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['psyc:feedback:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['psyc:feedback:remove']"
           >删除</el-button>
@@ -147,15 +139,14 @@
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改意见反馈对话框 -->
     <el-dialog 
       :title="title" 
-      :visible.sync="open" 
+      v-model="open" 
       width="950px" 
       append-to-body 
       :close-on-click-modal="false"
@@ -163,7 +154,7 @@
       :show-close="true"
     >
       <div class="dialog-content-wrapper">
-        <el-form ref="form" :model="form" :rules="rules" label-width="110px" class="feedback-form">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" class="feedback-form">
           <el-tabs v-model="activeTab" class="custom-tabs">
             <el-tab-pane label="基本信息" name="basic">
               <div class="form-section">
@@ -274,7 +265,7 @@
                   </div>
                   <el-button 
                     type="primary" 
-                    icon="el-icon-plus" 
+                    :icon="Plus" 
                     size="small"
                     @click="handleAddPsycFeedbackReply"
                     class="add-rule-btn"
@@ -291,20 +282,20 @@
                       class="rule-card"
                       shadow="hover"
                     >
-                      <div slot="header" class="rule-card-header">
+                      <template #header>
                         <div class="rule-header-left">
                           <span class="rule-badge">{{ index + 1 }}</span>
                           <span class="rule-index">回复 {{ index + 1 }}</span>
                         </div>
                         <el-button 
                           type="danger" 
-                          icon="el-icon-delete" 
+                          :icon="Delete" 
                           size="mini" 
                           circle
                           @click="removeReply(index)"
                           class="delete-btn"
                         ></el-button>
-                      </div>
+                      </template>
 
                       <div class="rule-content">
                         <el-row :gutter="20">
@@ -408,530 +399,506 @@
         </el-form>
       </div>
 
-      <div slot="footer" class="dialog-footer-custom">
+      <template #footer>
         <el-button @click="cancel" size="medium">取 消</el-button>
         <el-button type="primary" @click="submitForm" size="medium">确 定</el-button>
-      </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listFeedback, getFeedback, delFeedback, addFeedback, updateFeedback } from "@/api/psyc/feedback"
 import { getInfo } from "@/api/login"
-import { mapGetters } from "vuex"
+import { useUserStore } from '@/store/user'
+import { Search, Refresh, Plus, Edit, Delete, Download } from "@element-plus/icons-vue"
+import { resetForm } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
 
-export default {
-  name: "Feedback",
-  data() {
-    return {
-      // 添加反馈类型选项
-      feedbackTypeOptions: [
-        { value: 1, label: 'Bug问题' },
-        { value: 2, label: '产品建议' },
-        { value: 3, label: '投诉' },
-        { value: 4, label: '功能需求' },
-        { value: 5, label: '其他' },
-        { value: 6, label: '用户体验' },
-        { value: 7, label: '性能问题' },
-        { value: 8, label: '安全问题' }
-      ],
-      // 添加处理状态选项
-      feedbackStatusOptions: [
-        { value: 0, label: '待处理' },
-        { value: 1, label: '处理中' },
-        { value: 2, label: '已处理' },
-        { value: 3, label: '已关闭' }
-      ],
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 子表选中数据
-      checkedPsycFeedbackReply: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 意见反馈表格数据
-      feedbackList: [],
-      // 意见反馈的回复记录表格数据
-      psycFeedbackReplyList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 活动标签页
-      activeTab: "basic",
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        type: null,
-        content: null,
-        images: null,
-        contact: null,
-        deviceInfo: null,
-        status: null,
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        userId: [
-          { required: true, message: "用户ID不能为空", trigger: "blur" }
-        ],
-        // userName: [
-        //   { required: true, message: "用户名不能为空", trigger: "blur" }
-        // ],
-        type: [
-          { required: true, message: "反馈类型不能为空", trigger: "change" }
-        ],
-        content: [
-          { required: true, message: "反馈内容不能为空", trigger: "blur" }
-        ],
-        contact: [
-          { required: true, message: "用户联系方式不能为空", trigger: "blur" }
-        ],
-        status: [
-          { required: true, message: "处理状态不能为空", trigger: "change" }
-        ]
-      }
+defineOptions({ name: "Feedback" })
+
+const userStore = useUserStore()
+
+const feedbackTypeOptions = ref([
+  { value: 1, label: 'Bug问题' },
+  { value: 2, label: '产品建议' },
+  { value: 3, label: '投诉' },
+  { value: 4, label: '功能需求' },
+  { value: 5, label: '其他' },
+  { value: 6, label: '用户体验' },
+  { value: 7, label: '性能问题' },
+  { value: 8, label: '安全问题' }
+])
+
+const feedbackStatusOptions = ref([
+  { value: 0, label: '待处理' },
+  { value: 1, label: '处理中' },
+  { value: 2, label: '已处理' },
+  { value: 3, label: '已关闭' }
+])
+
+const loading = ref(true)
+const ids = ref([])
+const checkedPsycFeedbackReply = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const showSearch = ref(true)
+const total = ref(0)
+const feedbackList = ref([])
+const psycFeedbackReplyList = ref([])
+const title = ref("")
+const open = ref(false)
+const activeTab = ref("basic")
+
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  type: null,
+  content: null,
+  images: null,
+  contact: null,
+  deviceInfo: null,
+  status: null,
+})
+
+const form = reactive({
+  id: null,
+  userId: null,
+  userName: null,
+  type: null,
+  content: null,
+  images: null,
+  contact: null,
+  deviceInfo: null,
+  status: 0,
+  createTime: null,
+  updateTime: null
+})
+
+const rules = reactive({
+  userId: [
+    { required: true, message: "用户ID不能为空", trigger: "blur" }
+  ],
+  type: [
+    { required: true, message: "反馈类型不能为空", trigger: "change" }
+  ],
+  content: [
+    { required: true, message: "反馈内容不能为空", trigger: "blur" }
+  ],
+  contact: [
+    { required: true, message: "用户联系方式不能为空", trigger: "blur" }
+  ],
+  status: [
+    { required: true, message: "处理状态不能为空", trigger: "change" }
+  ]
+})
+
+const formRef = ref(null)
+const queryForm = ref(null)
+
+const id = computed(() => userStore.id)
+const name = computed(() => userStore.name)
+
+function getList() {
+  loading.value = true
+  listFeedback(queryParams).then(response => {
+    feedbackList.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
+}
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    id: null,
+    userId: id.value,
+    userName: name.value,
+    type: null,
+    content: null,
+    images: null,
+    contact: null,
+    deviceInfo: null,
+    status: 0,
+    createTime: null,
+    updateTime: null
+  })
+  psycFeedbackReplyList.value = []
+  activeTab.value = "basic"
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.id)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+}
+
+function handleAdd() {
+  reset()
+  form.userId = id.value
+  form.userName = name.value
+  open.value = true
+  title.value = "添加意见反馈"
+}
+
+function handleUpdate(row) {
+  reset()
+  const rowId = row.id || ids.value
+  getFeedback(rowId).then(response => {
+    Object.assign(form, response.data)
+    if (response.data.psycFeedbackReplyList) {
+      psycFeedbackReplyList.value = response.data.psycFeedbackReplyList.map(reply => ({
+        ...reply,
+        replyUserName: reply.replyUserName || reply.adminName || ''
+      }))
+    } else {
+      psycFeedbackReplyList.value = []
     }
-  },
-  computed: {
-    ...mapGetters(['id', 'name'])
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询意见反馈列表 */
-    getList() {
-      this.loading = true
-      listFeedback(this.queryParams).then(response => {
-        this.feedbackList = response.rows
-        this.total = response.total
-        this.loading = false
-      })
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        userId: this.id,
-        userName: this.name,
-        type: null,
-        content: null,
-        images: null,
-        contact: null,
-        deviceInfo: null,
-        status: 0, // 默认状态为待处理
-        createTime: null,
-        updateTime: null
+    open.value = true
+    title.value = "修改意见反馈"
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      const submitData = {
+        id: form.id,
+        userId: form.userId,
+        type: form.type,
+        content: form.content,
+        contact: form.contact,
+        status: form.status,
+        psycFeedbackReplyList: psycFeedbackReplyList.value.map(reply => ({
+          id: reply.id,
+          feedbackId: reply.feedbackId,
+          replyUserId: reply.replyUserId,
+          replyUserName: reply.replyUserName || '',
+          content: reply.content,
+          createTime: reply.createTime ? formatDate(new Date(reply.createTime)) : null,
+          updateTime: formatDate(new Date())
+        }))
       }
-      this.psycFeedbackReplyList = []
-      this.activeTab = "basic"
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      // 自动填充当前用户信息
-      this.form.userId = this.id
-      this.form.userName = this.name
-      this.open = true
-      this.title = "添加意见反馈"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getFeedback(id).then(response => {
-        this.form = response.data
-        // 确保回复记录中的管理员名称正确显示
-        if (response.data.psycFeedbackReplyList) {
-          this.psycFeedbackReplyList = response.data.psycFeedbackReplyList.map(reply => {
-            // 如果replyUserName为空但replyUserId存在，可以在这里添加默认值或者处理逻辑
-            // 这里确保字段存在并正确赋值
-            return {
-              ...reply,
-              replyUserName: reply.replyUserName || reply.adminName || '' // 兼容不同字段名
-            }
-          })
-        } else {
-          this.psycFeedbackReplyList = []
-        }
-        this.open = true
-        this.title = "修改意见反馈"
-      })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          // 构造提交数据，只包含必要的字段
-          const submitData = {
-            id: this.form.id,
-            userId: this.form.userId,
-            type: this.form.type,
-            content: this.form.content,
-            contact: this.form.contact,
-            status: this.form.status,
-            psycFeedbackReplyList: this.psycFeedbackReplyList.map(reply => {
-              // 只提交必要的回复字段，包括replyUserName
-              return {
-                id: reply.id,
-                feedbackId: reply.feedbackId,
-                replyUserId: reply.replyUserId,
-                replyUserName: reply.replyUserName || '', // 确保字段存在
-                content: reply.content,
-                createTime: reply.createTime ? this.formatDate(new Date(reply.createTime)) : null,
-                updateTime: this.formatDate(new Date()) // 更新时间为当前时间
-              }
-            })
-          }
-          
-          if (this.form.id != null) {
-            updateFeedback(submitData).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addFeedback(submitData).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除意见反馈编号为"' + ids + '"的数据项？').then(function() {
-        return delFeedback(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 更改处理状态 */
-    handleChangeStatus(row) {
-      // 使用更美观的弹窗方式
-      this.$msgbox({
-        title: '更改处理状态',
-        message: `
-          <div style="padding: 25px 30px; font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', Arial, sans-serif;">
-            <div style="margin-bottom: 20px; display: flex; align-items: flex-start;">
-              <i class="el-icon-warning" style="font-size: 20px; color: #409EFF; margin-right: 10px; margin-top: 2px;"></i>
-              <div>
-                <div style="font-size: 15px; font-weight: 500; color: #303133; margin-bottom: 8px;">当前反馈内容</div>
-                <div style="font-size: 14px; color: #606266; line-height: 1.5;">
-                  ${row.content ? row.content.substring(0, 50) + (row.content.length > 50 ? '...' : '') : '无内容'}
-                </div>
-              </div>
-            </div>
-            
-            <div style="margin-bottom: 25px; padding: 15px; background-color: #f5f7fa; border-radius: 8px; border-left: 4px solid #409EFF;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <span style="font-size: 14px; font-weight: 500; color: #606266;">当前状态</span>
-                <div style="display: inline-block;">
-                  ${this.getStatusTag(row.status)}
-                </div>
-              </div>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 14px; font-weight: 500; color: #606266;">更改状态</span>
-                <select id="status-select" class="el-select" style="width: 150px; padding: 6px 10px; border-radius: 4px; border: 1px solid #dcdfe6; background: #fff; font-size: 13px; color: #606266;">
-                  ${this.feedbackStatusOptions.map(option => 
-                    `<option value="${option.value}" ${option.value === row.status ? 'selected' : ''}>${option.label}</option>`
-                  ).join('')}
-                </select>
-              </div>
-            </div>
-            
-            <div style="font-size: 13px; color: #909399; display: flex; align-items: center;">
-              <i class="el-icon-info" style="margin-right: 5px;"></i>
-              选择新状态后点击"确定"完成更改
-            </div>
-          </div>
-        `,
-        dangerouslyUseHTMLString: true,
-        showCancelButton: true,
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        customClass: 'status-change-modal',
-        beforeClose: (action, instance, done) => {
-          if (action === 'confirm') {
-            const selectElement = document.getElementById('status-select');
-            const newStatus = parseInt(selectElement.value);
-            
-            // 如果状态没有改变，则不执行更新
-            if (newStatus === row.status) {
-              this.$modal.msgInfo("状态未发生变化");
-              done();
-              return;
-            }
-            
-            // 获取状态文本描述
-            const currentStatusText = this.getStatusText(row.status);
-            const newStatusText = this.getStatusText(newStatus);
-            
-            // 构造更新数据
-            const updateData = {
-              id: row.id,
-              status: newStatus
-            };
-            
-            // 调用更新接口
-            updateFeedback(updateData).then(response => {
-              this.$modal.msgSuccess(`状态已从"${currentStatusText}"更改为"${newStatusText}"`);
-              this.getList(); // 刷新列表
-              done();
-            }).catch(() => {
-              this.$modal.msgError("状态更新失败");
-              done();
-            });
-          } else {
-            done();
-          }
-        }
-      }).catch(() => {
-        // 用户取消操作
-      });
-    },
-    
-    /** 获取状态标签 */
-    getStatusTag(status) {
-      const statusMap = {
-        0: { text: '待处理', type: 'info' },
-        1: { text: '处理中', type: 'warning' },
-        2: { text: '已处理', type: 'success' },
-        3: { text: '已关闭', type: 'danger' }
-      };
       
-      const statusInfo = statusMap[status] || { text: '未知', type: 'info' };
-      return `<span class="el-tag el-tag--${statusInfo.type} el-tag--light" style="border: 1px solid transparent; border-radius: 4px; padding: 0 10px; height: 32px; line-height: 30px; font-size: 12px; display: inline-block; box-sizing: border-box; white-space: nowrap; background-color: ${statusInfo.type === 'info' ? '#f4f4f5' : statusInfo.type === 'warning' ? '#fdf6ec' : statusInfo.type === 'success' ? '#f0f9eb' : '#fef0f0'}; border-color: ${statusInfo.type === 'info' ? '#e9e9eb' : statusInfo.type === 'warning' ? '#faecd8' : statusInfo.type === 'success' ? '#e1f3d8' : '#fde2e2'}; color: ${statusInfo.type === 'info' ? '#909399' : statusInfo.type === 'warning' ? '#e6a23c' : statusInfo.type === 'success' ? '#67c23a' : '#f56c6c'};">${statusInfo.text}</span>`;
-    },
-    
-    /** 获取状态文本 */
-    getStatusText(status) {
-      const statusMap = {
-        0: '待处理',
-        1: '处理中',
-        2: '已处理',
-        3: '已关闭'
-      };
-      return statusMap[status] || '未知';
-    },
-    
-    /** 获取反馈类型标签 */
-    getFeedbackTypeLabel(type) {
-      const typeMap = {
-        1: 'Bug问题',
-        2: '产品建议',
-        3: '投诉',
-        4: '功能需求',
-        5: '其他',
-        6: '用户体验',
-        7: '性能问题',
-        8: '安全问题'
-      };
-      return typeMap[type] || '未知类型';
-    },
-	/** 意见反馈的回复记录序号 */
-    rowPsycFeedbackReplyIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1
-    },
-    /** 意见反馈的回复记录添加按钮操作 */
-    handleAddPsycFeedbackReply() {
-      // 使用 getInfo 接口获取当前管理员信息
-      getInfo().then(res => {
-        let obj = {
-          id: 'new_' + Date.now() + '_' + Math.floor(Math.random() * 1000), // 生成唯一ID
-          replyUserId: res.user.userId,
-          replyUserName: res.user.userName,
-          content: "",
-          createTime: this.formatDate(new Date()), // 使用后端期望的格式
-          updateTime: this.formatDate(new Date())  // 使用后端期望的格式
-        }
-        this.psycFeedbackReplyList.push(obj)
-      }).catch(() => {
-        // 如果获取失败，使用 Vuex 中的信息作为备选
-        let obj = {
-          id: 'new_' + Date.now() + '_' + Math.floor(Math.random() * 1000), // 生成唯一ID
-          replyUserId: this.id,
-          replyUserName: this.name,
-          content: "",
-          createTime: this.formatDate(new Date()), // 使用后端期望的格式
-          updateTime: this.formatDate(new Date())  // 使用后端期望的格式
-        }
-        this.psycFeedbackReplyList.push(obj)
-      })
-    },
-    /** 删除单个回复 */
-    removeReply(index) {
-      this.$confirm('确定要删除这条回复吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.psycFeedbackReplyList.splice(index, 1)
-        this.$message.success('删除成功')
-      }).catch(() => {})
-    },
-    /** 格式化日期为后端期望的格式 */
-    formatDate(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      const seconds = String(date.getSeconds()).padStart(2, '0');
-      
-      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    },
-    /** 意见反馈的回复记录删除按钮操作 */
-    handleDeletePsycFeedbackReply() {
-      if (this.checkedPsycFeedbackReply.length == 0) {
-        this.$modal.msgError("请先选择要删除的意见反馈的回复记录数据")
+      if (form.id != null) {
+        updateFeedback(submitData).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
       } else {
-        const psycFeedbackReplyList = this.psycFeedbackReplyList
-        const checkedPsycFeedbackReply = this.checkedPsycFeedbackReply
-        this.psycFeedbackReplyList = psycFeedbackReplyList.filter(function(item) {
-          return checkedPsycFeedbackReply.indexOf(item.index) == -1
+        addFeedback(submitData).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
         })
       }
-    },
-    /** 复选框选中数据 */
-    handlePsycFeedbackReplySelectionChange(selection) {
-      this.checkedPsycFeedbackReply = selection.map(item => item.index)
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('psyc/feedback/export', {
-        ...this.queryParams
-      }, `feedback_${new Date().getTime()}.xlsx`)
     }
+  })
+}
+
+function handleDelete(row) {
+  const idsVal = row.id || ids.value
+  ElMessageBox.confirm('是否确认删除意见反馈编号为"' + idsVal + '"的数据项？').then(function() {
+    return delFeedback(idsVal)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function handleChangeStatus(row) {
+  ElMessageBox({
+    title: '更改处理状态',
+    message: `
+      <div style="padding: 25px 30px; font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', Arial, sans-serif;">
+        <div style="margin-bottom: 20px; display: flex; align-items: flex-start;">
+          <i class="el-icon-warning" style="font-size: 20px; color: #409EFF; margin-right: 10px; margin-top: 2px;"></i>
+          <div>
+            <div style="font-size: 15px; font-weight: 500; color: #303133; margin-bottom: 8px;">当前反馈内容</div>
+            <div style="font-size: 14px; color: #606266; line-height: 1.5;">
+              ${row.content ? row.content.substring(0, 50) + (row.content.length > 50 ? '...' : '') : '无内容'}
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 25px; padding: 15px; background-color: #f5f7fa; border-radius: 8px; border-left: 4px solid #409EFF;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 14px; font-weight: 500; color: #606266;">当前状态</span>
+            <div style="display: inline-block;">
+              ${getStatusTag(row.status)}
+            </div>
+          </div>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 14px; font-weight: 500; color: #606266;">更改状态</span>
+            <select id="status-select" class="el-select" style="width: 150px; padding: 6px 10px; border-radius: 4px; border: 1px solid #dcdfe6; background: #fff; font-size: 13px; color: #606266;">
+              ${feedbackStatusOptions.value.map(option => 
+                `<option value="${option.value}" ${option.value === row.status ? 'selected' : ''}>${option.label}</option>`
+              ).join('')}
+            </select>
+          </div>
+        </div>
+        
+        <div style="font-size: 13px; color: #909399; display: flex; align-items: center;">
+          <i class="el-icon-info" style="margin-right: 5px;"></i>
+          选择新状态后点击"确定"完成更改
+        </div>
+      </div>
+    `,
+    dangerouslyUseHTMLString: true,
+    showCancelButton: true,
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    customClass: 'status-change-modal',
+    beforeClose: (action, instance, done) => {
+      if (action === 'confirm') {
+        const selectElement = document.getElementById('status-select');
+        const newStatus = parseInt(selectElement.value);
+        
+        if (newStatus === row.status) {
+          ElMessage.info("状态未发生变化");
+          done();
+          return;
+        }
+        
+        const currentStatusText = getStatusText(row.status);
+        const newStatusText = getStatusText(newStatus);
+        
+        const updateData = {
+          id: row.id,
+          status: newStatus
+        };
+        
+        updateFeedback(updateData).then(response => {
+          ElMessage.success(`状态已从"${currentStatusText}"更改为"${newStatusText}"`);
+          getList();
+          done();
+        }).catch(() => {
+          ElMessage.error("状态更新失败");
+          done();
+        });
+      } else {
+        done();
+      }
+    }
+  }).catch(() => {})
+}
+
+function getStatusTag(status) {
+  const statusMap = {
+    0: { text: '待处理', type: 'info' },
+    1: { text: '处理中', type: 'warning' },
+    2: { text: '已处理', type: 'success' },
+    3: { text: '已关闭', type: 'danger' }
+  };
+  
+  const statusInfo = statusMap[status] || { text: '未知', type: 'info' };
+  return `<span class="el-tag el-tag--${statusInfo.type} el-tag--light" style="border: 1px solid transparent; border-radius: 4px; padding: 0 10px; height: 32px; line-height: 30px; font-size: 12px; display: inline-block; box-sizing: border-box; white-space: nowrap; background-color: ${statusInfo.type === 'info' ? '#f4f4f5' : statusInfo.type === 'warning' ? '#fdf6ec' : statusInfo.type === 'success' ? '#f0f9eb' : '#fef0f0'}; border-color: ${statusInfo.type === 'info' ? '#e9e9eb' : statusInfo.type === 'warning' ? '#faecd8' : statusInfo.type === 'success' ? '#e1f3d8' : '#fde2e2'}; color: ${statusInfo.type === 'info' ? '#909399' : statusInfo.type === 'warning' ? '#e6a23c' : statusInfo.type === 'success' ? '#67c23a' : '#f56c6c'};">${statusInfo.text}</span>`;
+}
+
+function getStatusText(status) {
+  const statusMap = {
+    0: '待处理',
+    1: '处理中',
+    2: '已处理',
+    3: '已关闭'
+  };
+  return statusMap[status] || '未知';
+}
+
+function getFeedbackTypeLabel(type) {
+  const typeMap = {
+    1: 'Bug问题',
+    2: '产品建议',
+    3: '投诉',
+    4: '功能需求',
+    5: '其他',
+    6: '用户体验',
+    7: '性能问题',
+    8: '安全问题'
+  };
+  return typeMap[type] || '未知类型';
+}
+
+function rowPsycFeedbackReplyIndex({ row, rowIndex }) {
+  row.index = rowIndex + 1
+}
+
+function handleAddPsycFeedbackReply() {
+  getInfo().then(res => {
+    const obj = {
+      id: 'new_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      replyUserId: res.user.userId,
+      replyUserName: res.user.userName,
+      content: "",
+      createTime: formatDate(new Date()),
+      updateTime: formatDate(new Date())
+    }
+    psycFeedbackReplyList.value.push(obj)
+  }).catch(() => {
+    const obj = {
+      id: 'new_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      replyUserId: id.value,
+      replyUserName: name.value,
+      content: "",
+      createTime: formatDate(new Date()),
+      updateTime: formatDate(new Date())
+    }
+    psycFeedbackReplyList.value.push(obj)
+  })
+}
+
+function removeReply(index) {
+  ElMessageBox.confirm('确定要删除这条回复吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    psycFeedbackReplyList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function handleDeletePsycFeedbackReply() {
+  if (checkedPsycFeedbackReply.value.length == 0) {
+    ElMessage.error("请先选择要删除的意见反馈的回复记录数据")
+  } else {
+    const psycFeedbackReplyListVal = psycFeedbackReplyList.value
+    const checkedPsycFeedbackReplyVal = checkedPsycFeedbackReply.value
+    psycFeedbackReplyList.value = psycFeedbackReplyListVal.filter(function(item) {
+      return checkedPsycFeedbackReplyVal.indexOf(item.index) == -1
+    })
   }
 }
+
+function handlePsycFeedbackReplySelectionChange(selection) {
+  checkedPsycFeedbackReply.value = selection.map(item => item.index)
+}
+
+function handleExport() {
+  download('psyc/feedback/export', {
+    ...queryParams
+  }, `feedback_${new Date().getTime()}.xlsx`)
+}
+
+onMounted(() => {
+  getList()
+})
 </script>
 
 <style scoped>
-/* ========== 弹窗通用样式 ========== */
-.feedback-dialog ::v-deep .el-dialog__header {
+.feedback-dialog :deep() .el-dialog__header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px 24px;
   border-radius: 4px 4px 0 0;
 }
 
-.feedback-dialog ::v-deep .el-dialog__title {
+.feedback-dialog :deep() .el-dialog__title {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.feedback-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close {
+.feedback-dialog :deep() .el-dialog__headerbtn .el-dialog__close {
   color: #fff;
   font-size: 20px;
 }
 
-.feedback-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close:hover {
+.feedback-dialog :deep() .el-dialog__headerbtn .el-dialog__close:hover {
   color: #f0f0f0;
 }
 
-/* 状态更改弹窗样式 */
-.status-change-modal ::v-deep .el-message-box {
+.status-change-modal :deep() .el-message-box {
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   border: none;
 }
 
-.status-change-modal ::v-deep .el-message-box__header {
+.status-change-modal :deep() .el-message-box__header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 18px 24px;
   border-radius: 8px 8px 0 0;
 }
 
-.status-change-modal ::v-deep .el-message-box__title {
+.status-change-modal :deep() .el-message-box__title {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.status-change-modal ::v-deep .el-message-box__headerbtn .el-message-box__close {
+.status-change-modal :deep() .el-message-box__headerbtn .el-message-box__close {
   color: #fff;
 }
 
-.status-change-modal ::v-deep .el-message-box__headerbtn .el-message-box__close:hover {
+.status-change-modal :deep() .el-message-box__headerbtn .el-message-box__close:hover {
   color: #f0f0f0;
 }
 
-.status-change-modal ::v-deep .el-message-box__content {
+.status-change-modal :deep() .el-message-box__content {
   padding: 0;
 }
 
-.status-change-modal ::v-deep .el-message-box__btns {
+.status-change-modal :deep() .el-message-box__btns {
   padding: 20px 24px;
   background-color: #fafafa;
   border-radius: 0 0 8px 8px;
 }
 
-.status-change-modal ::v-deep .el-button--primary {
+.status-change-modal :deep() .el-button--primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   padding: 10px 20px;
 }
 
-.status-change-modal ::v-deep .el-button--primary:hover {
+.status-change-modal :deep() .el-button--primary:hover {
   opacity: 0.9;
   transform: translateY(-1px);
 }
 
-.status-change-modal ::v-deep .el-button {
+.status-change-modal :deep() .el-button {
   padding: 10px 20px;
   border-radius: 4px;
 }
 
-/* ========== 表单样式 ========== */
 .feedback-form {
   padding: 0 15px;
 }
 
-.custom-tabs ::v-deep .el-tabs__header {
+.custom-tabs :deep() .el-tabs__header {
   margin-bottom: 24px;
   padding: 0 10px;
 }
 
-.custom-tabs ::v-deep .el-tabs__item {
+.custom-tabs :deep() .el-tabs__item {
   font-size: 15px;
   font-weight: 500;
   padding: 0 24px;
@@ -941,12 +908,12 @@ export default {
   transition: all 0.3s ease;
 }
 
-.custom-tabs ::v-deep .el-tabs__item:hover {
+.custom-tabs :deep() .el-tabs__item:hover {
   color: #409EFF;
   background-color: rgba(64, 158, 255, 0.05);
 }
 
-.custom-tabs ::v-deep .el-tabs__active-bar {
+.custom-tabs :deep() .el-tabs__active-bar {
   height: 3px;
   border-radius: 2px;
 }
@@ -990,37 +957,36 @@ export default {
   border-radius: 8px;
 }
 
-.form-item-custom ::v-deep .el-form-item__label {
+.form-item-custom :deep() .el-form-item__label {
   font-weight: 500;
   color: #606266;
   font-size: 14px;
 }
 
-.form-item-custom ::v-deep .el-input__inner,
-.form-item-custom ::v-deep .el-textarea__inner {
+.form-item-custom :deep() .el-input__inner,
+.form-item-custom :deep() .el-textarea__inner {
   border-radius: 8px;
   transition: all 0.3s ease;
   border: 1px solid #dcdfe6;
 }
 
-.form-item-custom ::v-deep .el-input__inner:focus,
-.form-item-custom ::v-deep .el-textarea__inner:focus {
+.form-item-custom :deep() .el-input__inner:focus,
+.form-item-custom :deep() .el-textarea__inner:focus {
   border-color: #409EFF;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
-.form-item-custom ::v-deep .el-input__prefix {
+.form-item-custom :deep() .el-input__prefix {
   left: 12px;
   color: #909399;
 }
 
-.textarea-custom ::v-deep .el-textarea__inner {
+.textarea-custom :deep() .el-textarea__inner {
   resize: vertical;
   min-height: 120px;
   line-height: 1.6;
 }
 
-/* ========== 回复记录样式 ========== */
 .rules-section {
   padding: 0 15px;
 }
@@ -1109,7 +1075,7 @@ export default {
   transform: translateY(-3px);
 }
 
-.rule-card ::v-deep .el-card__header {
+.rule-card :deep() .el-card__header {
   padding: 16px 20px;
   background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
   border-bottom: 2px solid #e4e7ed;
@@ -1159,7 +1125,7 @@ export default {
   padding: 15px;
 }
 
-.reply-content-input ::v-deep .el-textarea__inner {
+.reply-content-input :deep() .el-textarea__inner {
   min-height: 80px !important;
   resize: vertical;
   font-size: 14px;
@@ -1189,7 +1155,6 @@ export default {
   font-size: 15px;
 }
 
-/* ========== 空状态样式 ========== */
 .empty-rules {
   text-align: center;
   padding: 80px 20px;
@@ -1230,7 +1195,6 @@ export default {
   color: #c0c4cc;
 }
 
-/* ========== 底部按钮样式 ========== */
 .dialog-footer-custom {
   padding: 20px 24px;
   text-align: right;
@@ -1256,7 +1220,6 @@ export default {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* ========== 动画效果 ========== */
 .option-list-enter-active,
 .option-list-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1272,7 +1235,6 @@ export default {
   transform: translateX(30px) scale(0.9);
 }
 
-/* ========== 响应式设计 ========== */
 @media (max-width: 768px) {
   .rules-header {
     flex-direction: column;

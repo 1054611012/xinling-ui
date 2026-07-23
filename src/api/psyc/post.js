@@ -9,7 +9,7 @@ export function listPost(query) {
   })
 }
 
-// 查询动态管理详细
+// 查询动态管理详细 
 export function getPost(id) {
   return request({
     url: '/psyc/post/' + id,
@@ -35,10 +35,42 @@ export function updatePost(data) {
   })
 }
 
-// 删除动态管理
+// 软删除动态管理
 export function delPost(id) {
   return request({
-    url: '/psyc/post/' + id,
+    url: '/psyc/post/delete/' + id,
+    method: 'post'
+  })
+}
+
+// 恢复动态管理
+export function restorePost(id) {
+  return request({
+    url: '/psyc/post/restore/' + id,
+    method: 'post'
+  })
+}
+
+// 物理删除动态管理
+export function forceDelPost(ids) {
+  return request({
+    url: '/psyc/post/' + ids,
+    method: 'delete'
+  })
+}
+
+// 查询评论列表
+export function listPostComment(postId) {
+  return request({
+    url: '/psyc/post/comment/list/' + postId,
+    method: 'get'
+  })
+}
+
+// 删除评论
+export function delPostComment(commentId) {
+  return request({
+    url: '/psyc/post/comment/' + commentId,
     method: 'delete'
   })
 }

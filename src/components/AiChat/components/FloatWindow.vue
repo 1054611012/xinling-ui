@@ -3,6 +3,7 @@
   <div
     v-if="isLogoMode"
     class="ai-logo-float"
+    :class="{ 'no-transition': isDragging }"
     :style="{
       left: floatPosition.x + 'px',
       top: floatPosition.y + 'px'
@@ -22,7 +23,7 @@
   <div
     v-else
     class="ollama-chat-float-container"
-    :class="{ 'float-mode': isFloatMode, 'minimized': isMinimized, 'maximized': isMaximized }"
+    :class="{ 'float-mode': isFloatMode, 'minimized': isMinimized, 'maximized': isMaximized, 'no-transition': isDragging || isResizing }"
     :style="floatContainerStyle"
   >
     <!-- 调整大小手柄 -->
@@ -34,73 +35,84 @@
     
     <slot></slot>
   </div>
+
 </template>
 
-<script>
-export default {
-  name: 'FloatWindow',
-  props: {
-    isLogoMode: {
-      type: Boolean,
-      default: true
-    },
-    isFloatMode: {
-      type: Boolean,
-      default: false
-    },
-    isMinimized: {
-      type: Boolean,
-      default: false
-    },
-    isMaximized: {
-      type: Boolean,
-      default: false
-    },
-    floatPosition: {
-      type: Object,
-      default: () => ({ x: 0, y: 0 })
-    },
-    floatSize: {
-      type: Object,
-      default: () => ({ width: 800, height: 600 })
-    },
-    isDarkMode: {
-      type: Boolean,
-      default: false
-    },
-    aiLogoIcon: {
-      type: String,
-      default: ''
-    }
-  },
-  computed: {
-    floatContainerStyle() {
-      if (!this.isFloatMode) return {}
+<script setup>
+import { computed } from 'vue'
 
-      const style = {
-        left: this.floatPosition.x + 'px',
-        top: this.floatPosition.y + 'px',
-        width: this.isMinimized ? '200px' : this.floatSize.width + 'px',
-        height: this.isMinimized ? '50px' : this.floatSize.height + 'px'
-      }
-
-      return style
-    }
+const props = defineProps({
+  isLogoMode: {
+    type: Boolean,
+    default: true
   },
-  methods: {
-    startDrag(event) {
-      this.$emit('start-drag', event);
-    },
-    expandFromLogo(event) {
-      this.$emit('expand-from-logo', event);
-    },
-    startResize(event) {
-      this.$emit('start-resize', event);
-    },
-    handleImageError(event) {
-      event.target.src = 'https://via.placeholder.com/44';
-    }
+  isFloatMode: {
+    type: Boolean,
+    default: false
+  },
+  isMinimized: {
+    type: Boolean,
+    default: false
+  },
+  isMaximized: {
+    type: Boolean,
+    default: false
+  },
+  floatPosition: {
+    type: Object,
+    default: () => ({ x: 0, y: 0 })
+  },
+  floatSize: {
+    type: Object,
+    default: () => ({ width: 800, height: 600 })
+  },
+  isDarkMode: {
+    type: Boolean,
+    default: false
+  },
+  aiLogoIcon: {
+    type: String,
+    default: ''
+  },
+  isDragging: {
+    type: Boolean,
+    default: false
+  },
+  isResizing: {
+    type: Boolean,
+    default: false
   }
+})
+
+const emit = defineEmits(['start-drag', 'expand-from-logo', 'start-resize'])
+
+const floatContainerStyle = computed(() => {
+  if (!props.isFloatMode) return {}
+
+  const style = {
+    left: props.floatPosition.x + 'px',
+    top: props.floatPosition.y + 'px',
+    width: props.isMinimized ? '200px' : props.floatSize.width + 'px',
+    height: props.isMinimized ? '50px' : props.floatSize.height + 'px'
+  }
+
+  return style
+})
+
+const startDrag = (event) => {
+  emit('start-drag', event)
+}
+
+const expandFromLogo = (event) => {
+  emit('expand-from-logo', event)
+}
+
+const startResize = (event) => {
+  emit('start-resize', event)
+}
+
+const handleImageError = (event) => {
+  event.target.src = require('@/assets/icons/ai-logo.png')
 }
 </script>
 
@@ -113,6 +125,11 @@ export default {
   z-index: 1002;
   cursor: pointer;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* 拖拽时禁用transition,确保移动丝滑 */
+.ai-logo-float.no-transition {
+  transition: none !important;
 }
 
 .ai-logo-float:hover {
@@ -207,6 +224,11 @@ export default {
   border-radius: 16px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 拖拽时禁用transition,确保移动丝滑 */
+.ollama-chat-float-container.no-transition {
+  transition: none !important;
 }
 
 .ollama-chat-float-container:not(.float-mode) {

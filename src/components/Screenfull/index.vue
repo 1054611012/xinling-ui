@@ -1,55 +1,46 @@
 <template>
   <div>
-    <svg-icon :icon-class="isFullscreen?'exit-fullscreen':'fullscreen'" @click="click" />
+    <svg-icon :icon-class="isFullscreen ? 'exit-fullscreen' : 'fullscreen'" @click="click" />
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import screenfull from 'screenfull'
+import { ElMessage } from 'element-plus'
 
-export default {
-  name: 'Screenfull',
-  data() {
-    return {
-      isFullscreen: false
-    }
-  },
-  mounted() {
-    this.init()
-  },
-  beforeDestroy() {
-    this.destroy()
-  },
-  methods: {
-    click() {
-      if (!screenfull.isEnabled) {
-        this.$message({ message: '你的浏览器不支持全屏', type: 'warning' })
-        return false
-      }
-      screenfull.toggle()
-    },
-    change() {
-      this.isFullscreen = screenfull.isFullscreen
-    },
-    init() {
-      if (screenfull.isEnabled) {
-        screenfull.on('change', this.change)
-      }
-    },
-    destroy() {
-      if (screenfull.isEnabled) {
-        screenfull.off('change', this.change)
-      }
-    }
+const isFullscreen = ref(false)
+
+const click = () => {
+  if (!screenfull.isEnabled) {
+    ElMessage.warning('你的浏览器不支持全屏')
+    return false
   }
+  screenfull.toggle()
 }
+
+const change = () => {
+  isFullscreen.value = screenfull.isFullscreen
+}
+
+onMounted(() => {
+  if (screenfull.isEnabled) {
+    screenfull.on('change', change)
+  }
+})
+
+onUnmounted(() => {
+  if (screenfull.isEnabled) {
+    screenfull.off('change', change)
+  }
+})
 </script>
 
 <style scoped>
 .screenfull-svg {
   display: inline-block;
   cursor: pointer;
-  fill: #5a5e66;;
+  fill: #5a5e66;
   width: 20px;
   height: 20px;
   vertical-align: 10px;

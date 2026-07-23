@@ -7,7 +7,7 @@
           placeholder="请输入参数名称"
           clearable
           style="width: 240px"
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="参数键名" prop="configKey">
@@ -16,7 +16,7 @@
           placeholder="请输入参数键名"
           clearable
           style="width: 240px"
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="系统内置" prop="configType">
@@ -41,66 +41,56 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
+    <div class="mb8 button-bar">
+      <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
-          size="mini"
+          :icon="Plus"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['system:config:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="success"
           plain
-          icon="el-icon-edit"
-          size="mini"
+          :icon="Edit"
+          size="small"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['system:config:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
-          size="mini"
+          :icon="Delete"
+          size="small"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['system:config:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="warning"
           plain
-          icon="el-icon-download"
-          size="mini"
+          :icon="Download"
+          size="small"
           @click="handleExport"
           v-hasPermi="['system:config:export']"
         >导出</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="danger"
           plain
-          icon="el-icon-refresh"
-          size="mini"
+          :icon="Refresh"
+          size="small"
           @click="handleRefreshCache"
           v-hasPermi="['system:config:remove']"
         >刷新缓存</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar :show-search="showSearch" @update:show-search="showSearch = $event" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
@@ -109,47 +99,49 @@
       <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" />
       <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" />
       <el-table-column label="系统内置" align="center" prop="configType">
-        <template slot-scope="scope">
+        <template #default="scope">
           <dict-tag :options="dict.type.sys_yes_no" :value="scope.row.configType"/>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:config:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:config:remove']"
           >删除</el-button>
-        </template>
+            </template>
       </el-table-column>
     </el-table>
 
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      :page="queryParams.pageNum"
+      :limit="queryParams.pageSize"
+      @update:page="queryParams.pageNum = $event"
+      @update:limit="queryParams.pageSize = $event"
       @pagination="getList"
     />
 
     <!-- 添加或修改参数配置对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+    <el-dialog :title="title" :model-value="open" @update:model-value="open = $event" width="500px" append-to-body>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="参数名称" prop="configName">
           <el-input v-model="form.configName" placeholder="请输入参数名称" />
         </el-form-item>
@@ -172,172 +164,168 @@
           <el-input v-model="form.remark" type="textarea" placeholder="请输入内容" />
         </el-form-item>
       </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
+      <template #footer>
+      <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config"
+import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
+import { useDict } from '@/utils/dict/useDict'
+import { Delete, Download, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 
-export default {
-  name: "Config",
-  dicts: ['sys_yes_no'],
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 参数表格数据
-      configList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 日期范围
-      dateRange: [],
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        configName: undefined,
-        configKey: undefined,
-        configType: undefined
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        configName: [
-          { required: true, message: "参数名称不能为空", trigger: "blur" }
-        ],
-        configKey: [
-          { required: true, message: "参数键名不能为空", trigger: "blur" }
-        ],
-        configValue: [
-          { required: true, message: "参数键值不能为空", trigger: "blur" }
-        ]
-      }
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询参数列表 */
-    getList() {
-      this.loading = true
-      listConfig(this.addDateRange(this.queryParams, this.dateRange)).then(response => {
-          this.configList = response.rows
-          this.total = response.total
-          this.loading = false
-        }
-      )
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        configId: undefined,
-        configName: undefined,
-        configKey: undefined,
-        configValue: undefined,
-        configType: "Y",
-        remark: undefined
-      }
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.dateRange = []
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加参数"
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.configId)
-      this.single = selection.length!=1
-      this.multiple = !selection.length
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const configId = row.configId || this.ids
-      getConfig(configId).then(response => {
-        this.form = response.data
-        this.open = true
-        this.title = "修改参数"
-      })
-    },
-    /** 提交按钮 */
-    submitForm: function() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.configId != undefined) {
-            updateConfig(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addConfig(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const configIds = row.configId || this.ids
-      this.$modal.confirm('是否确认删除参数编号为"' + configIds + '"的数据项？').then(function() {
-        return delConfig(configIds)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('system/config/export', {
-        ...this.queryParams
-      }, `config_${new Date().getTime()}.xlsx`)
-    },
-    /** 刷新缓存按钮操作 */
-    handleRefreshCache() {
-      refreshCache().then(() => {
-        this.$modal.msgSuccess("刷新成功")
-      })
-    }
-  }
+defineOptions({ name: "Config" })
+
+const dict = useDict('sys_yes_no')
+
+const loading = ref(true)
+const ids = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const showSearch = ref(true)
+const total = ref(0)
+const configList = ref([])
+const title = ref("")
+const open = ref(false)
+const dateRange = ref([])
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  configName: undefined,
+  configKey: undefined,
+  configType: undefined
+})
+const form = reactive({})
+const rules = reactive({
+  configName: [
+    { required: true, message: "参数名称不能为空", trigger: "blur" }
+  ],
+  configKey: [
+    { required: true, message: "参数键名不能为空", trigger: "blur" }
+  ],
+  configValue: [
+    { required: true, message: "参数键值不能为空", trigger: "blur" }
+  ]
+})
+
+function getList() {
+  loading.value = true
+  listConfig(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+    configList.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
 }
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    configId: undefined,
+    configName: undefined,
+    configKey: undefined,
+    configValue: undefined,
+    configType: "Y",
+    remark: undefined
+  })
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  dateRange.value = []
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleAdd() {
+  reset()
+  open.value = true
+  title.value = "添加参数"
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.configId)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+}
+
+function handleUpdate(row) {
+  reset()
+  const configId = row.configId || ids.value
+  getConfig(configId).then(response => {
+    Object.assign(form, response.data)
+    open.value = true
+    title.value = "修改参数"
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      if (form.configId != undefined) {
+        updateConfig(form).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
+      } else {
+        addConfig(form).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
+        })
+      }
+    }
+  })
+}
+
+function handleDelete(row) {
+  const configIds = row.configId || ids.value
+  ElMessageBox.confirm('是否确认删除参数编号为"' + configIds + '"的数据项？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return delConfig(configIds)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function handleExport() {
+  download('system/config/export', {
+    ...queryParams
+  }, `config_${new Date().getTime()}.xlsx`)
+}
+
+function handleRefreshCache() {
+  refreshCache().then(() => {
+    ElMessage.success("刷新成功")
+  })
+}
+
+const formRef = ref(null)
+const queryForm = ref(null)
+
+onMounted(() => {
+  getList()
+})
 </script>

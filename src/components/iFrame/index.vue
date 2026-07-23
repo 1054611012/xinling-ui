@@ -8,29 +8,32 @@
     />
   </div>
 </template>
-<script>
-export default {
-  props: {
-    src: {
-      type: String,
-      required: true
-    },
-  },
-  data() {
-    return {
-      height: document.documentElement.clientHeight - 94.5 + "px;",
-      loading: true,
-      url: this.src
-    }
-  },
-  mounted: function () {
-    setTimeout(() => {
-      this.loading = false
-    }, 300)
-    const that = this
-    window.onresize = function temp() {
-      that.height = document.documentElement.clientHeight - 94.5 + "px;"
-    }
+
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const props = defineProps({
+  src: {
+    type: String,
+    required: true
   }
+})
+
+const height = ref(document.documentElement.clientHeight - 94.5 + 'px;')
+const loading = ref(true)
+
+const handleResize = () => {
+  height.value = document.documentElement.clientHeight - 94.5 + 'px;'
 }
+
+onMounted(() => {
+  setTimeout(() => {
+    loading.value = false
+  }, 300)
+  window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+})
 </script>

@@ -24,26 +24,23 @@
       </div>
     </div>
   </div>
+
 </template>
 
-<script>
-export default {
-  name: 'SqlResult',
-  props: {
-    results: {
-      type: Array,
-      required: true
-    }
-  },
-  methods: {
-    formatTime(timestamp) {
-      if (!timestamp) return ''
-      const date = new Date(timestamp)
-      const hours = date.getHours().toString().padStart(2, '0')
-      const minutes = date.getMinutes().toString().padStart(2, '0')
-      return `${hours}:${minutes}`
-    }
+<script setup>
+defineProps({
+  results: {
+    type: Array,
+    required: true
   }
+})
+
+const formatTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = new Date(timestamp)
+  const hours = date.getHours().toString().padStart(2, '0')
+  const minutes = date.getMinutes().toString().padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 </script>
 
@@ -51,28 +48,41 @@ export default {
 /* SQL执行结果样式 */
 .sql-results-container {
   margin-top: 12px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: 14px;
+  background: #f5f8ff;
+  border-radius: 16px;
   border-left: 4px solid #409eff;
+  box-shadow: 0 10px 30px rgba(64, 158, 255, 0.05);
+}
+
+/* 深色模式下的SQL结果 */
+.dark-theme .sql-results-container {
+  background: rgba(255, 255, 255, 0.05);
+  border-left-color: #64b5f6;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
 }
 
 .sql-result {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .result-header-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .result-header {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
-  color: #409eff;
+  font-weight: 700;
+  color: #2f4f9f;
+}
+
+/* 深色模式下的结果标题 */
+.dark-theme .result-header {
+  color: #8ab4f8;
 }
 
 .result-timestamp {
@@ -81,12 +91,24 @@ export default {
   font-style: italic;
 }
 
+/* 深色模式下的时间戳 */
+.dark-theme .result-timestamp {
+  color: #8a8f99;
+}
+
 .result-table-container {
   overflow-x: auto;
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
+  border: 1px solid #dde6f3;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+/* 深色模式下的表格容器 */
+.dark-theme .result-table-container {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .result-table {
@@ -97,16 +119,28 @@ export default {
 
 .result-table th,
 .result-table td {
-  padding: 8px 12px;
+  padding: 10px 14px;
   text-align: left;
-  border-bottom: 1px solid #ebeef5;
-  border-right: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeff5;
+}
+
+/* 深色模式下的表格单元格 */
+.dark-theme .result-table th,
+.dark-theme .result-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #e0e0e0;
 }
 
 .result-table th {
-  background-color: #f5f7fa;
-  font-weight: 600;
-  color: #606266;
+  background-color: #eef4ff;
+  font-weight: 700;
+  color: #4b5f84;
+}
+
+/* 深色模式下的表格头部 */
+.dark-theme .result-table th {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #c8d7ff;
 }
 
 .result-table tr:last-child td {
@@ -114,14 +148,26 @@ export default {
 }
 
 .result-table tr:hover td {
-  background-color: #fafafa;
+  background-color: #f5f9ff;
+}
+
+/* 深色模式下的表格悬停 */
+.dark-theme .result-table tr:hover td {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 
 .result-text {
-  padding: 8px;
-  background: #f8f9fa;
-  border-radius: 4px;
-  font-family: monospace;
+  padding: 10px 12px;
+  background: #eff4ff;
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   white-space: pre-wrap;
+  color: #2b2b2b;
+}
+
+/* 深色模式下的结果文本 */
+.dark-theme .result-text {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e0e0e0;
 }
 </style>

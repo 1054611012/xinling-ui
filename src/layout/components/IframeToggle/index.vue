@@ -8,26 +8,23 @@
       :src="iframeUrl(item.meta.link, item.query)"
     ></inner-link>
   </transition-group>
+
 </template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
+import { useTagsViewStore } from '@/store'
 import InnerLink from "../InnerLink/index"
 
-export default {
-  components: { InnerLink },
-  computed: {
-    iframeViews() {
-      return this.$store.state.tagsView.iframeViews
-    }
-  },
-  methods: {
-    iframeUrl(url, query) {
-      if (Object.keys(query).length > 0) {
-        let params = Object.keys(query).map((key) => key + "=" + query[key]).join("&")
-        return url + "?" + params
-      }
-      return url
-    }
+const tagsViewStore = useTagsViewStore()
+
+const iframeViews = computed(() => tagsViewStore.iframeViews)
+
+const iframeUrl = (url, query) => {
+  if (Object.keys(query).length > 0) {
+    let params = Object.keys(query).map((key) => key + "=" + query[key]).join("&")
+    return url + "?" + params
   }
+  return url
 }
 </script>

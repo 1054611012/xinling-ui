@@ -119,12 +119,14 @@
     .submenu-title-noDropdown {
       padding: 0 !important;
       position: relative;
+      display: flex;
+      justify-content: center;
 
       .el-tooltip {
         padding: 0 !important;
 
         .svg-icon {
-          margin-left: 20px;
+          margin-left: 0;
         }
       }
     }
@@ -134,9 +136,11 @@
 
       &>.el-submenu__title {
         padding: 0 !important;
+        display: flex;
+        justify-content: center;
 
         .svg-icon {
-          margin-left: 20px;
+          margin-left: 0;
         }
 
       }
@@ -152,6 +156,16 @@
             visibility: hidden;
             display: inline-block;
           }
+        }
+      }
+
+      .el-menu-item {
+        .menu-item span:last-child {
+          height: 0;
+          width: 0;
+          overflow: hidden;
+          visibility: hidden;
+          display: inline-block;
         }
       }
     }

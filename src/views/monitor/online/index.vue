@@ -6,7 +6,7 @@
           v-model="queryParams.ipaddr"
           placeholder="请输入登录地址"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="用户名称" prop="userName">
@@ -14,22 +14,22 @@
           v-model="queryParams.userName"
           placeholder="请输入用户名称"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
 
     </el-form>
     <el-table
       v-loading="loading"
-      :data="list.slice((pageNum-1)*pageSize,pageNum*pageSize)"
+      :data="listData.slice((pageNum-1)*pageSize,pageNum*pageSize)"
       style="width: 100%;"
     >
       <el-table-column label="序号" type="index" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{(pageNum - 1) * pageSize + scope.$index + 1}}</span>
         </template>
       </el-table-column>
@@ -41,82 +41,80 @@
       <el-table-column label="浏览器" align="center" prop="browser" />
       <el-table-column label="操作系统" align="center" prop="os" />
       <el-table-column label="登录时间" align="center" prop="loginTime" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.loginTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleForceLogout(scope.row)"
             v-hasPermi="['monitor:online:forceLogout']"
           >强退</el-button>
-        </template>
+            </template>
       </el-table-column>
     </el-table>
 
-    <pagination v-show="total>0" :total="total" :page.sync="pageNum" :limit.sync="pageSize" />
+    <pagination v-show="total>0" :total="total" :page="pageNum" :limit="pageSize" @update:page="pageNum = $event; getList()" @update:limit="pageSize = $event; pageNum = 1; getList()" />
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { list, forceLogout } from "@/api/monitor/online"
+import { parseTime, resetForm } from '@/utils/ruoyi'
+import { Delete, Refresh, Search } from '@element-plus/icons-vue'
 
-export default {
-  name: "Online",
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 总条数
-      total: 0,
-      // 表格数据
-      list: [],
-      pageNum: 1,
-      pageSize: 10,
-      // 查询参数
-      queryParams: {
-        ipaddr: undefined,
-        userName: undefined
-      }
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询登录日志列表 */
-    getList() {
-      this.loading = true
-      list(this.queryParams).then(response => {
-        this.list = response.rows
-        this.total = response.total
-        this.loading = false
-      })
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    /** 强退按钮操作 */
-    handleForceLogout(row) {
-      this.$modal.confirm('是否确认强退名称为"' + row.userName + '"的用户？').then(function() {
-        return forceLogout(row.tokenId)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("强退成功")
-      }).catch(() => {})
-    }
-  }
+defineOptions({ name: "Online" })
+
+const loading = ref(true)
+const total = ref(0)
+const listData = ref([])
+const pageNum = ref(1)
+const pageSize = ref(10)
+const queryForm = ref(null)
+const queryParams = reactive({
+  ipaddr: undefined,
+  userName: undefined
+})
+
+function getList() {
+  loading.value = true
+  list(queryParams).then(response => {
+    listData.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
 }
-</script>
 
+function handleQuery() {
+  pageNum.value = 1
+  getList()
+}
+
+function resetQuery() {
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleForceLogout(row) {
+  ElMessageBox.confirm('是否确认强退名称为"' + row.userName + '"的用户？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return forceLogout(row.tokenId)
+  }).then(() => {
+    getList()
+    ElMessage.success("强退成功")
+  }).catch(() => {})
+}
+
+onMounted(() => {
+  getList()
+})
+</script>

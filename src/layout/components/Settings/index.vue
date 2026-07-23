@@ -1,5 +1,5 @@
 <template>
-  <el-drawer size="280px" :visible="showSettings" :with-header="false" :append-to-body="true" :before-close="closeSetting" :lock-scroll="false">
+  <el-drawer size="280px" :visible="settingsStore.showSettingsPanel" :with-header="false" :append-to-body="true" :before-close="closeSetting" :lock-scroll="false">
     <div class="drawer-container">
       <div>
         <div class="setting-drawer-content">
@@ -76,155 +76,130 @@
 
         <el-divider/>
 
-        <el-button size="small" type="primary" plain icon="el-icon-document-add" @click="saveSetting">保存配置</el-button>
-        <el-button size="small" plain icon="el-icon-refresh" @click="resetSetting">重置配置</el-button>
+        <el-button size="small" type="primary" plain :icon="DocumentAdd" @click="saveSetting">保存配置</el-button>
+        <el-button size="small" plain :icon="Refresh" @click="resetSetting">重置配置</el-button>
       </div>
     </div>
   </el-drawer>
-</template>
+        </template>
 
-<script>
+<script setup>
+import { DocumentAdd, Refresh } from '@element-plus/icons-vue'
+import { ref, computed, getCurrentInstance, watch } from 'vue'
+import { useSettingsStore, useAppStore, usePermissionStore } from '@/store'
+import { storeToRefs } from 'pinia'
 import ThemePicker from '@/components/ThemePicker'
 
-export default {
-  components: { ThemePicker },
-  expose: ['openSetting'],
-  data() {
-    return {
-      theme: this.$store.state.settings.theme,
-      sideTheme: this.$store.state.settings.sideTheme,
-      showSettings: false
-    }
-  },
-  computed: {
-    fixedHeader: {
-      get() {
-        return this.$store.state.settings.fixedHeader
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'fixedHeader',
-          value: val
-        })
-      }
-    },
-    topNav: {
-      get() {
-        return this.$store.state.settings.topNav
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'topNav',
-          value: val
-        })
-        if (!val) {
-          this.$store.dispatch('app/toggleSideBarHide', false)
-          this.$store.commit("SET_SIDEBAR_ROUTERS", this.$store.state.permission.defaultRoutes)
-        }
-      }
-    },
-    tagsView: {
-      get() {
-        return this.$store.state.settings.tagsView
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'tagsView',
-          value: val
-        })
-      }
-    },
-    tagsIcon: {
-      get() {
-        return this.$store.state.settings.tagsIcon
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'tagsIcon',
-          value: val
-        })
-      }
-    },
-    sidebarLogo: {
-      get() {
-        return this.$store.state.settings.sidebarLogo
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'sidebarLogo',
-          value: val
-        })
-      }
-    },
-    dynamicTitle: {
-      get() {
-        return this.$store.state.settings.dynamicTitle
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'dynamicTitle',
-          value: val
-        })
-        this.$store.dispatch('settings/setTitle', this.$store.state.settings.title)
-      }
-    },
-    footerVisible: {
-      get() {
-        return this.$store.state.settings.footerVisible
-      },
-      set(val) {
-        this.$store.dispatch('settings/changeSetting', {
-          key: 'footerVisible',
-          value: val
-        })
-      }
-    }
-  },
-  methods: {
-    themeChange(val) {
-      this.$store.dispatch('settings/changeSetting', {
-        key: 'theme',
-        value: val
-      })
-      this.theme = val
-    },
-    handleTheme(val) {
-      this.$store.dispatch('settings/changeSetting', {
-        key: 'sideTheme',
-        value: val
-      })
-      this.sideTheme = val
-    },
-    openSetting() {
-      this.showSettings = true
-    },
-    closeSetting(){
-      this.showSettings = false
-    },
-    saveSetting() {
-      this.$modal.loading("正在保存到本地，请稍候...")
-      this.$cache.local.set(
-        "layout-setting",
-        `{
-            "topNav":${this.topNav},
-            "tagsView":${this.tagsView},
-            "tagsIcon":${this.tagsIcon},
-            "fixedHeader":${this.fixedHeader},
-            "sidebarLogo":${this.sidebarLogo},
-            "dynamicTitle":${this.dynamicTitle},
-            "footerVisible":${this.footerVisible},
-            "sideTheme":"${this.sideTheme}",
-            "theme":"${this.theme}"
-          }`
-      )
-      setTimeout(this.$modal.closeLoading(), 1000)
-    },
-    resetSetting() {
-      this.$modal.loading("正在清除设置缓存并刷新，请稍候...")
-      this.$cache.local.remove("layout-setting")
-      setTimeout("window.location.reload()", 1000)
+const settingsStore = useSettingsStore()
+const { showSettingsPanel } = storeToRefs(settingsStore)
+const appStore = useAppStore()
+const permissionStore = usePermissionStore()
+const { proxy } = getCurrentInstance() // 获取当前实例以访问全局属性
+
+const theme = ref(settingsStore.theme)
+const sideTheme = ref(settingsStore.sideTheme)
+
+watch(showSettingsPanel, () => {})
+
+const fixedHeader = computed({
+  get: () => settingsStore.fixedHeader,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'fixedHeader', value: val })
+  }
+})
+
+const topNav = computed({
+  get: () => settingsStore.topNav,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'topNav', value: val })
+    if (!val) {
+      appStore.toggleSideBarHide(false)
+      permissionStore.setSidebarRouters(permissionStore.defaultRoutes)
     }
   }
+})
+
+const tagsView = computed({
+  get: () => settingsStore.tagsView,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'tagsView', value: val })
+  }
+})
+
+const tagsIcon = computed({
+  get: () => settingsStore.tagsIcon,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'tagsIcon', value: val })
+  }
+})
+
+const sidebarLogo = computed({
+  get: () => settingsStore.sidebarLogo,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'sidebarLogo', value: val })
+  }
+})
+
+const dynamicTitle = computed({
+  get: () => settingsStore.dynamicTitle,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'dynamicTitle', value: val })
+    settingsStore.setTitle(settingsStore.title)
+  }
+})
+
+const footerVisible = computed({
+  get: () => settingsStore.footerVisible,
+  set: (val) => {
+    settingsStore.changeSetting({ key: 'footerVisible', value: val })
+  }
+})
+
+const themeChange = (val) => {
+  // ThemePicker 组件已经处理了 store 更新，这里不需要再调用
+  // settingsStore.changeSetting({ key: 'theme', value: val })
+  theme.value = val
+}
+
+const handleTheme = (val) => {
+  settingsStore.changeSetting({ key: 'sideTheme', value: val })
+  sideTheme.value = val
+}
+
+const openSetting = () => {
+  settingsStore.openSettings()
+}
+
+defineExpose({ openSetting })
+
+const closeSetting = () => {
+  settingsStore.closeSettings()
+}
+
+const saveSetting = () => {
+  // 使用全局 $modal 和 $cache（已在 main.js 中注册）
+  proxy.$modal?.loading("正在保存到本地，请稍候...")
+  proxy.$cache?.local.set(
+    "layout-setting",
+    `{
+        "topNav":${topNav.value},
+        "tagsView":${tagsView.value},
+        "tagsIcon":${tagsIcon.value},
+        "fixedHeader":${fixedHeader.value},
+        "sidebarLogo":${sidebarLogo.value},
+        "dynamicTitle":${dynamicTitle.value},
+        "footerVisible":${footerVisible.value},
+        "sideTheme":"${sideTheme.value}",
+        "theme":"${theme.value}"
+      }`
+  )
+  setTimeout(() => proxy.$modal?.closeLoading(), 1000)
+}
+
+const resetSetting = () => {
+  proxy.$modal?.loading("正在清除设置缓存并刷新，请稍候...")
+  proxy.$cache?.local.remove("layout-setting")
+  setTimeout(() => window.location.reload(), 1000)
 }
 </script>
 

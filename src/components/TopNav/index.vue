@@ -14,9 +14,8 @@
     </template>
 
     <!-- 顶部菜单超出数量折叠 -->
-    <el-submenu :style="{'--theme': theme}" index="more" :key="visibleNumber" v-if="topMenus.length > visibleNumber">
-      <template slot="title">更多菜单</template>
-      <template v-for="(item, index) in topMenus">
+    <el-sub-menu :style="{'--theme': theme}" index="more" :key="visibleNumber" v-if="topMenus.length > visibleNumber">
+      <template #title>更多菜单</template><template v-for="(item, index) in topMenus">
         <el-menu-item
           :index="item.path"
           :key="index"
@@ -27,143 +26,146 @@
           {{ item.meta.title }}
         </el-menu-item>
       </template>
-    </el-submenu>
+    </el-sub-menu>
   </el-menu>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useSettingsStore, useAppStore, usePermissionStore } from '@/store'
 import { constantRoutes } from "@/router"
 import { isHttp } from "@/utils/validate"
 
 // 隐藏侧边栏路由
 const hideList = ['/index', '/user/profile']
 
-export default {
-  data() {
-    return {
-      // 顶部栏初始数
-      visibleNumber: 5,
-      // 当前激活菜单的 index
-      currentIndex: undefined
-    }
-  },
-  computed: {
-    theme() {
-      return this.$store.state.settings.theme
-    },
-    // 顶部显示菜单
-    topMenus() {
-      let topMenus = []
-      this.routers.map((menu) => {
-        if (menu.hidden !== true) {
-          // 兼容顶部栏一级菜单内部跳转
-          if (menu.path === '/' && menu.children) {
-            topMenus.push(menu.children[0])
-          } else {
-            topMenus.push(menu)
-          }
-        }
-      })
-      return topMenus
-    },
-    // 所有的路由信息
-    routers() {
-      return this.$store.state.permission.topbarRouters
-    },
-    // 设置子路由
-    childrenMenus() {
-      var childrenMenus = []
-      this.routers.map((router) => {
-        for (var item in router.children) {
-          if (router.children[item].parentPath === undefined) {
-            if(router.path === "/") {
-              router.children[item].path = "/" + router.children[item].path
-            } else {
-              if(!isHttp(router.children[item].path)) {
-                router.children[item].path = router.path + "/" + router.children[item].path
-              }
-            }
-            router.children[item].parentPath = router.path
-          }
-          childrenMenus.push(router.children[item])
-        }
-      })
-      return constantRoutes.concat(childrenMenus)
-    },
-    // 默认激活的菜单
-    activeMenu() {
-      const path = this.$route.path
-      let activePath = path
-      if (path !== undefined && path.lastIndexOf("/") > 0 && hideList.indexOf(path) === -1) {
-        const tmpPath = path.substring(1, path.length)
-        if (!this.$route.meta.link) {
-          activePath = "/" + tmpPath.substring(0, tmpPath.indexOf("/"))
-          this.$store.dispatch('app/toggleSideBarHide', false)
-        }
-      } else if(!this.$route.children) {
-        activePath = path
-        this.$store.dispatch('app/toggleSideBarHide', true)
+const route = useRoute()
+const router = useRouter()
+const settingsStore = useSettingsStore()
+const appStore = useAppStore()
+const permissionStore = usePermissionStore()
+
+// 顶部栏初始数
+const visibleNumber = ref(5)
+// 当前激活菜单的 index
+const currentIndex = ref(undefined)
+
+const theme = computed(() => settingsStore.theme)
+
+// 顶部显示菜单
+const topMenus = computed(() => {
+  let topMenus = []
+  routers.value.map((menu) => {
+    if (menu.hidden !== true) {
+      // 兼容顶部栏一级菜单内部跳转
+      if (menu.path === '/' && menu.children) {
+        topMenus.push(menu.children[0])
+      } else {
+        topMenus.push(menu)
       }
-      this.activeRoutes(activePath)
-      return activePath
-    },
-  },
-  beforeMount() {
-    window.addEventListener('resize', this.setVisibleNumber)
-  },
-  beforeDestroy() {
-    window.removeEventListener('resize', this.setVisibleNumber)
-  },
-  mounted() {
-    this.setVisibleNumber()
-  },
-  methods: {
-    // 根据宽度计算设置显示栏数
-    setVisibleNumber() {
-      const width = document.body.getBoundingClientRect().width / 3
-      this.visibleNumber = parseInt(width / 85)
-    },
-    // 菜单选择事件
-    handleSelect(key, keyPath) {
-      this.currentIndex = key
-      const route = this.routers.find(item => item.path === key)
-      if (isHttp(key)) {
-        // http(s):// 路径新窗口打开
-        window.open(key, "_blank")
-      } else if (!route || !route.children) {
-        // 没有子路由路径内部打开
-        const routeMenu = this.childrenMenus.find(item => item.path === key)
-        if (routeMenu && routeMenu.query) {
-          let query = JSON.parse(routeMenu.query)
-          this.$router.push({ path: key, query: query })
+    }
+  })
+  return topMenus
+})
+
+// 所有的路由信息
+const routers = computed(() => permissionStore.topbarRouters)
+
+// 设置子路由
+const childrenMenus = computed(() => {
+  var childrenMenus = []
+  routers.value.map((router) => {
+    for (var item in router.children) {
+      if (router.children[item].parentPath === undefined) {
+        if(router.path === "/") {
+          router.children[item].path = "/" + router.children[item].path
         } else {
-          this.$router.push({ path: key })
-        }
-        this.$store.dispatch('app/toggleSideBarHide', true)
-      } else {
-        // 显示左侧联动菜单
-        this.activeRoutes(key)
-        this.$store.dispatch('app/toggleSideBarHide', false)
-      }
-    },
-    // 当前激活的路由
-    activeRoutes(key) {
-      var routes = []
-      if (this.childrenMenus && this.childrenMenus.length > 0) {
-        this.childrenMenus.map((item) => {
-          if (key == item.parentPath || (key == "index" && "" == item.path)) {
-            routes.push(item)
+          if(!isHttp(router.children[item].path)) {
+            router.children[item].path = router.path + "/" + router.children[item].path
           }
-        })
+        }
+        router.children[item].parentPath = router.path
       }
-      if(routes.length > 0) {
-        this.$store.commit("SET_SIDEBAR_ROUTERS", routes)
-      } else {
-        this.$store.dispatch('app/toggleSideBarHide', true)
-      }
+      childrenMenus.push(router.children[item])
     }
-  },
+  })
+  return constantRoutes.concat(childrenMenus)
+})
+
+// 默认激活的菜单
+const activeMenu = computed(() => {
+  const path = route.path
+  let activePath = path
+  if (path !== undefined && path.lastIndexOf("/") > 0 && hideList.indexOf(path) === -1) {
+    const tmpPath = path.substring(1, path.length)
+    if (!route.meta.link) {
+      activePath = "/" + tmpPath.substring(0, tmpPath.indexOf("/"))
+      appStore.toggleSideBarHide(false)
+    }
+  } else if(!route.children) {
+    activePath = path
+    appStore.toggleSideBarHide(true)
+  }
+  activeRoutes(activePath)
+  return activePath
+})
+
+// 根据宽度计算设置显示栏数
+const setVisibleNumber = () => {
+  const width = document.body.getBoundingClientRect().width / 3
+  visibleNumber.value = parseInt(width / 85)
 }
+
+// 菜单选择事件
+const handleSelect = (key, keyPath) => {
+  currentIndex.value = key
+  const routeItem = routers.value.find(item => item.path === key)
+  if (isHttp(key)) {
+    // http(s):// 路径新窗口打开
+    window.open(key, "_blank")
+  } else if (!routeItem || !routeItem.children) {
+    // 没有子路由路径内部打开
+    const routeMenu = childrenMenus.value.find(item => item.path === key)
+    if (routeMenu && routeMenu.query) {
+      let query = JSON.parse(routeMenu.query)
+      router.push({ path: key, query: query })
+    } else {
+      router.push({ path: key })
+    }
+    appStore.toggleSideBarHide(true)
+  } else {
+    // 显示左侧联动菜单
+    activeRoutes(key)
+    appStore.toggleSideBarHide(false)
+  }
+}
+
+// 当前激活的路由
+const activeRoutes = (key) => {
+  var routes = []
+  if (childrenMenus.value && childrenMenus.value.length > 0) {
+    childrenMenus.value.map((item) => {
+      if (key == item.parentPath || (key == "index" && "" == item.path)) {
+        routes.push(item)
+      }
+    })
+  }
+  if(routes.length > 0) {
+    permissionStore.setSidebarRouters(routes)
+  } else {
+    appStore.toggleSideBarHide(true)
+  }
+}
+
+onMounted(() => {
+  setVisibleNumber()
+  window.addEventListener('resize', setVisibleNumber)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', setVisibleNumber)
+})
 </script>
 
 <style lang="scss">
@@ -176,13 +178,13 @@ export default {
   margin: 0 10px !important;
 }
 
-.topmenu-container.el-menu--horizontal > .el-menu-item.is-active, .el-menu--horizontal > .el-submenu.is-active .el-submenu__title {
+.topmenu-container.el-menu--horizontal > .el-menu-item.is-active, .el-menu--horizontal > .el-sub-menu.is-active .el-sub-menu__title {
   border-bottom: 2px solid #{'var(--theme)'} !important;
   color: #303133;
 }
 
 /* submenu item */
-.topmenu-container.el-menu--horizontal > .el-submenu .el-submenu__title {
+.topmenu-container.el-menu--horizontal > .el-sub-menu .el-sub-menu__title {
   float: left;
   height: 50px !important;
   line-height: 50px !important;

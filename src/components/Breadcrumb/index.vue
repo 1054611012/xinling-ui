@@ -7,86 +7,87 @@
       </el-breadcrumb-item>
     </transition-group>
   </el-breadcrumb>
-</template>
+        </template>
 
-<script>
-export default {
-  data() {
-    return {
-      levelList: null
-    }
-  },
-  watch: {
-    $route(route) {
-      // if you go to the redirect page, do not update the breadcrumbs
-      if (route.path.startsWith('/redirect/')) {
-        return
-      }
-      this.getBreadcrumb()
-    }
-  },
-  created() {
-    this.getBreadcrumb()
-  },
-  methods: {
-    getBreadcrumb() {
-      // only show routes with meta.title
-      let matched = []
-      const router = this.$route
-      const pathNum = this.findPathNum(router.path)
-      // multi-level menu
-      if (pathNum > 2) {
-        const reg = /\/\w+/gi
-        const pathList = router.path.match(reg).map((item, index) => {
-          if (index !== 0) item = item.slice(1)
-          return item
-        })
-        this.getMatched(pathList, this.$store.getters.defaultRoutes, matched)
-      } else {
-        matched = router.matched.filter(item => item.meta && item.meta.title)
-      }
-      // 判断是否为首页
-      if (!this.isDashboard(matched[0])) {
-        matched = [{ path: "/index", meta: { title: "首页" } }].concat(matched)
-      }
-      this.levelList = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
-    },
-    findPathNum(str, char = "/") {
-      let index = str.indexOf(char)
-      let num = 0
-      while (index !== -1) {
-        num++
-        index = str.indexOf(char, index + 1)
-      }
-      return num
-    },
-    getMatched(pathList, routeList, matched) {
-      let data = routeList.find(item => item.path == pathList[0] || (item.name += '').toLowerCase() == pathList[0])
-      if (data) {
-        matched.push(data)
-        if (data.children && pathList.length) {
-          pathList.shift()
-          this.getMatched(pathList, data.children, matched)
-        }
-      }
-    },
-    isDashboard(route) {
-      const name = route && route.name
-      if (!name) {
-        return false
-      }
-      return name.trim() === 'Index'
-    },
-    handleLink(item) {
-      const { redirect, path } = item
-      if (redirect) {
-        this.$router.push(redirect)
-        return
-      }
-      this.$router.push(path)
+<script setup>
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { usePermissionStore } from '@/store'
+
+const route = useRoute()
+const router = useRouter()
+const permissionStore = usePermissionStore()
+
+const levelList = ref(null)
+
+const getBreadcrumb = () => {
+  // only show routes with meta.title
+  let matched = []
+  const pathNum = findPathNum(route.path)
+  // multi-level menu
+  if (pathNum > 2) {
+    const reg = /\/\w+/gi
+    const pathList = route.path.match(reg).map((item, index) => {
+      if (index !== 0) item = item.slice(1)
+      return item
+    })
+    getMatched(pathList, permissionStore.defaultRoutes, matched)
+  } else {
+    matched = route.matched.filter(item => item.meta && item.meta.title)
+  }
+  // 判断是否为首页
+  if (!isDashboard(matched[0])) {
+    matched = [{ path: "/index", meta: { title: "首页" } }].concat(matched)
+  }
+  levelList.value = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
+}
+
+const findPathNum = (str, char = "/") => {
+  let index = str.indexOf(char)
+  let num = 0
+  while (index !== -1) {
+    num++
+    index = str.indexOf(char, index + 1)
+  }
+  return num
+}
+
+const getMatched = (pathList, routeList, matched) => {
+  let data = routeList.find(item => item.path == pathList[0] || (item.name += '').toLowerCase() == pathList[0])
+  if (data) {
+    matched.push(data)
+    if (data.children && pathList.length) {
+      pathList.shift()
+      getMatched(pathList, data.children, matched)
     }
   }
 }
+
+const isDashboard = (route) => {
+  const name = route && route.name
+  if (!name) {
+    return false
+  }
+  return name.trim() === 'Index'
+}
+
+const handleLink = (item) => {
+  const { redirect, path } = item
+  if (redirect) {
+    router.push(redirect)
+    return
+  }
+  router.push(path)
+}
+
+// 只监听 route.path 而不是整个 route 对象，避免无限循环
+watch(() => route.path, () => {
+  // if you go to the redirect page, do not update the breadcrumbs
+  if (route.path.startsWith('/redirect/')) {
+    return
+  }
+  getBreadcrumb()
+}, { immediate: true })
 </script>
 
 <style lang="scss" scoped>

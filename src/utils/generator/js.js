@@ -6,6 +6,14 @@ const units = {
   MB: '1024 / 1024',
   GB: '1024 / 1024 / 1024'
 }
+
+function parseRegExp(patternStr) {
+  const match = patternStr.match(/^\/(.+)\/([gimsuy]*)$/)
+  if (match) {
+    return new RegExp(match[1], match[2])
+  }
+  return new RegExp(patternStr)
+}
 let confGlobal
 const inheritAttrs = {
   file: '',
@@ -140,7 +148,7 @@ function buildRules(conf, ruleList) {
     if (conf.regList && Array.isArray(conf.regList)) {
       conf.regList.forEach(item => {
         if (item.pattern) {
-          rules.push(`{ pattern: ${eval(item.pattern)}, message: '${item.message}', trigger: '${trigger[conf.tag]}' }`)
+          rules.push(`{ pattern: ${item.pattern}, message: '${item.message}', trigger: '${trigger[conf.tag]}' }`)
         }
       })
     }
@@ -171,14 +179,14 @@ function buildBeforeUpload(conf) {
   if (conf.fileSize) {
     rightSizeCode = `let isRightSize = file.size / ${unitNum} < ${conf.fileSize}
     if(!isRightSize){
-      this.$message.error('文件大小超过 ${conf.fileSize}${conf.sizeUnit}')
+      ElMessage.error('文件大小超过 ${conf.fileSize}${conf.sizeUnit}')
     }`
     returnList.push('isRightSize')
   }
   if (conf.accept) {
     acceptCode = `let isAccept = new RegExp('${conf.accept}').test(file.type)
     if(!isAccept){
-      this.$message.error('应该选择${conf.accept}类型的文件')
+      ElMessage.error('应该选择${conf.accept}类型的文件')
     }`
     returnList.push('isAccept')
   }

@@ -1,34 +1,6 @@
-import Vue from 'vue'
-import Router from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import Layout from '@/layout/index.vue'
 
-Vue.use(Router)
-
-/* Layout */
-import Layout from '@/layout'
-
-/**
- * Note: 路由配置项
- *
- * hidden: true                     // 当设置 true 的时候该路由不会再侧边栏出现 如401，login等页面，或者如一些编辑页面/edit/1
- * alwaysShow: true                 // 当你一个路由下面的 children 声明的路由大于1个时，自动会变成嵌套的模式--如组件页面
- *                                  // 只有一个时，会将那个子路由当做根路由显示在侧边栏--如引导页面
- *                                  // 若你想不管路由下面的 children 声明的个数都显示你的根路由
- *                                  // 你可以设置 alwaysShow: true，这样它就会忽略之前定义的规则，一直显示根路由
- * redirect: noRedirect             // 当设置 noRedirect 的时候该路由在面包屑导航中不可被点击
- * name:'router-name'               // 设定路由的名字，一定要填写不然使用<keep-alive>时会出现各种问题
- * query: '{"id": 1, "name": "ry"}' // 访问路由的默认传递参数
- * roles: ['admin', 'common']       // 访问路由的角色权限
- * permissions: ['a:a:a', 'b:b:b']  // 访问路由的菜单权限
- * meta : {
-    noCache: true                   // 如果设置为true，则不会被 <keep-alive> 缓存(默认 false)
-    title: 'title'                  // 设置该路由在侧边栏和面包屑中展示的名字
-    icon: 'svg-name'                // 设置该路由的图标，对应路径src/assets/icons/svg
-    breadcrumb: false               // 如果设置为false，则不会在breadcrumb面包屑中显示
-    activeMenu: '/system/user'      // 当路由设置了该属性，则会高亮相对应的侧边栏。
-  }
- */
-
-// 公共路由
 export const constantRoutes = [
   {
     path: '/redirect',
@@ -37,39 +9,46 @@ export const constantRoutes = [
     children: [
       {
         path: '/redirect/:path(.*)',
-        component: () => import('@/views/redirect')
+        component: () => import('@/views/redirect/index.vue')
       }
     ]
   },
   {
     path: '/login',
-    component: () => import('@/views/login'),
+    component: () => import('@/views/login.vue'),
     hidden: true
   },
   {
     path: '/register',
-    component: () => import('@/views/register'),
-    hidden: true
-  },
-  {
-    path: '/404',
-    component: () => import('@/views/error/404'),
+    component: () => import('@/views/register.vue'),
     hidden: true
   },
   {
     path: '/401',
-    component: () => import('@/views/error/401'),
+    component: () => import('@/views/error/401.vue'),
     hidden: true
   },
   {
-    path: '',
+    path: '/404',
+    component: () => import('@/views/error/404.vue'),
+    hidden: true
+  },
+  {
+    path: '/website',
+    component: () => import('@/views/website/index.vue'),
+    name: 'Website',
+    hidden: true,
+    meta: { title: '心灵视频 - 官网' }
+  },
+  {
+    path: '/',
     component: Layout,
-    redirect: 'index',
+    redirect: '/index',
     children: [
       {
         path: 'index',
-        component: () => import('@/views/index'),
         name: 'Index',
+        component: () => import('@/views/index.vue'),
         meta: { title: '首页', icon: 'dashboard', affix: true }
       }
     ]
@@ -82,118 +61,294 @@ export const constantRoutes = [
     children: [
       {
         path: 'profile',
-        component: () => import('@/views/system/user/profile/index'),
+        component: () => import('@/views/system/user/profile/index.vue'),
         name: 'Profile',
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
-  }
+  },
 ]
 
-// 动态路由，基于用户权限动态去加载
 export const dynamicRoutes = [
   {
-    path: '/system/user-auth',
+    path: '/ai',
     component: Layout,
-    hidden: true,
-    permissions: ['system:user:edit'],
+    redirect: 'noRedirect',
+    name: 'Ai',
+    meta: {
+      title: 'AI管理',
+      icon: 'tree',
+      roles: ['admin']
+    },
     children: [
       {
-        path: 'role/:userId(\\d+)',
-        component: () => import('@/views/system/user/authRole'),
-        name: 'AuthRole',
-        meta: { title: '分配角色', activeMenu: '/system/user' }
+        path: 'model',
+        component: () => import('@/views/ai/model/index.vue'),
+        name: 'AiModel',
+        meta: {
+          title: '模型管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'provider',
+        component: () => import('@/views/ai/provider/index.vue'),
+        name: 'AiProvider',
+        meta: {
+          title: '提供商管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'session',
+        component: () => import('@/views/ai/session/index.vue'),
+        name: 'AiSession',
+        meta: {
+          title: '会话管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'prompt',
+        component: () => import('@/views/ai/prompt/index.vue'),
+        name: 'AiPrompt',
+        meta: {
+          title: '提示词管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology',
+        component: () => import('@/views/ai/ontology/index.vue'),
+        name: 'Ontology',
+        meta: {
+          title: '本体管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/concept',
+        component: () => import('@/views/ai/ontology/concept/index.vue'),
+        name: 'OntologyConcept',
+        meta: {
+          title: '概念管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/relation',
+        component: () => import('@/views/ai/ontology/relation/index.vue'),
+        name: 'OntologyRelation',
+        meta: {
+          title: '关系管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/property',
+        component: () => import('@/views/ai/ontology/property/index.vue'),
+        name: 'OntologyProperty',
+        meta: {
+          title: '属性管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/instance',
+        component: () => import('@/views/ai/ontology/instance/index.vue'),
+        name: 'OntologyInstance',
+        meta: {
+          title: '实例管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/instanceValue',
+        component: () => import('@/views/ai/ontology/instanceValue/index.vue'),
+        name: 'OntologyInstanceValue',
+        meta: {
+          title: '实例属性值',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/rule',
+        component: () => import('@/views/ai/ontology/rule/index.vue'),
+        name: 'OntologyRule',
+        meta: {
+          title: '业务规则',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/action',
+        component: () => import('@/views/ai/ontology/action/index.vue'),
+        name: 'OntologyAction',
+        meta: {
+          title: '行为管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'ontology/fieldMapping',
+        component: () => import('@/views/ai/ontology/fieldMapping/index.vue'),
+        name: 'OntologyFieldMapping',
+        meta: {
+          title: '字段映射',
+          icon: 'tree',
+          roles: ['admin']
+        }
       }
     ]
   },
   {
-    path: '/system/role-auth',
+    path: '/tool',
     component: Layout,
-    hidden: true,
-    permissions: ['system:role:edit'],
+    redirect: 'noRedirect',
+    name: 'Tool',
+    meta: {
+      title: '工具管理',
+      icon: 'tool',
+      roles: ['admin']
+    },
     children: [
       {
-        path: 'user/:roleId(\\d+)',
-        component: () => import('@/views/system/role/authUser'),
-        name: 'AuthUser',
-        meta: { title: '分配用户', activeMenu: '/system/role' }
+        path: 'gen',
+        component: () => import('@/views/tool/gen/index.vue'),
+        name: 'ToolGen',
+        meta: {
+          title: '代码生成',
+          icon: 'code',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'gen-edit/index/:tableId',
+        component: () => import('@/views/tool/gen/editTable.vue'),
+        name: 'ToolGenEdit',
+        meta: {
+          title: '编辑生成',
+          icon: 'edit',
+          roles: ['admin'],
+          hidden: true
+        }
       }
     ]
   },
   {
-    path: '/system/dict-data',
+    path: '/system',
     component: Layout,
-    hidden: true,
-    permissions: ['system:dict:list'],
+    redirect: 'noRedirect',
+    name: 'System',
+    meta: {
+      title: '系统管理',
+      icon: 'system',
+      roles: ['admin']
+    },
     children: [
       {
-        path: 'index/:dictId(\\d+)',
-        component: () => import('@/views/system/dict/data'),
-        name: 'Data',
-        meta: { title: '字典数据', activeMenu: '/system/dict' }
-      }
-    ]
-  },
-  {
-    path: '/monitor/job-log',
-    component: Layout,
-    hidden: true,
-    permissions: ['monitor:job:list'],
-    children: [
+        path: 'user',
+        component: () => import('@/views/system/user/index.vue'),
+        name: 'SystemUser',
+        meta: {
+          title: '用户管理',
+          icon: 'user',
+          roles: ['admin']
+        }
+      },
       {
-        path: 'index/:jobId(\\d+)',
-        component: () => import('@/views/monitor/job/log'),
-        name: 'JobLog',
-        meta: { title: '调度日志', activeMenu: '/monitor/job' }
-      }
-    ]
-  },
-  {
-    path: '/psyc/test-questions',
-    component: Layout,
-    hidden: true,
-    permissions: ['psyc:test:list'], // 根据实际权限设置
-    children: [
+        path: 'role',
+        component: () => import('@/views/system/role/index.vue'),
+        name: 'SystemRole',
+        meta: {
+          title: '角色管理',
+          icon: 'peoples',
+          roles: ['admin']
+        }
+      },
       {
-        path: 'index/:testId(\d+)',
-        component: () => import('@/views/psyc/test/questions'),
-        name: 'TestQuestions',
-        meta: { title: '测评题目管理', activeMenu: '/psyc/test' }
-      }
-    ]
-  },
-
-  {
-    path: '/tool/gen-edit',
-    component: Layout,
-    hidden: true,
-    permissions: ['tool:gen:edit'],
-    children: [
+        path: 'menu',
+        component: () => import('@/views/system/menu/index.vue'),
+        name: 'SystemMenu',
+        meta: {
+          title: '菜单管理',
+          icon: 'tree-table',
+          roles: ['admin']
+        }
+      },
       {
-        path: 'index/:tableId(\\d+)',
-        component: () => import('@/views/tool/gen/editTable'),
-        name: 'GenEdit',
-        meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
+        path: 'dept',
+        component: () => import('@/views/system/dept/index.vue'),
+        name: 'SystemDept',
+        meta: {
+          title: '部门管理',
+          icon: 'tree',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'user-auth/role/:userId',
+        component: () => import('@/views/system/user/authRole.vue'),
+        name: 'UserAuthRole',
+        meta: {
+          title: '分配角色',
+          icon: 'user',
+          roles: ['admin'],
+          hidden: true
+        }
+      },
+      {
+        path: 'role-auth/user/:roleId',
+        component: () => import('@/views/system/role/authUser.vue'),
+        name: 'RoleAuthUser',
+        meta: {
+          title: '分配用户',
+          icon: 'peoples',
+          roles: ['admin'],
+          hidden: true
+        }
       }
     ]
   }
 ]
 
-// 防止连续点击多次路由报错
-let routerPush = Router.prototype.push
-let routerReplace = Router.prototype.replace
-// push
-Router.prototype.push = function push(location) {
-  return routerPush.call(this, location).catch(err => err)
-}
-// replace
-Router.prototype.replace = function push(location) {
-  return routerReplace.call(this, location).catch(err => err)
-}
-
-export default new Router({
-  mode: 'history', // 去掉url中的#
-  scrollBehavior: () => ({ y: 0 }),
-  routes: constantRoutes
+const router = createRouter({
+  history: createWebHistory(),
+  routes: constantRoutes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
 })
 
+export function resetRouter() {
+  const newRouter = createRouter({
+    history: createWebHistory(),
+    routes: constantRoutes,
+    scrollBehavior(to, from, savedPosition) {
+      if (savedPosition) {
+        return savedPosition
+      } else {
+        return { top: 0 }
+      }
+    }
+  })
+  router.matcher = newRouter.matcher
+}
+
+export default router

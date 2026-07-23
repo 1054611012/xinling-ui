@@ -23,88 +23,87 @@
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
 
-      </template>
+        <el-tooltip content="布局设置" effect="dark" placement="bottom">
+          <button id="layout-settings-btn" class="right-menu-item hover-effect layout-settings-btn" @click="setLayout">
+            <svg viewBox="0 0 1024 1024" width="18" height="18" fill="#5a5e66">
+              <path d="M512 64C264.58 64 64 264.58 64 512s200.58 448 448 448 448-200.58 448-448S759.42 64 512 64zm0 832c-211.62 0-384-172.38-384-384s172.38-384 384-384 384 172.38 384 384-172.38 384-384 384zm188.2-484.84L652 568h-84.4l-44.2-80.84H460l-33.8 80.84H372l92.6-175.4h76.8L512 440l44.6-87.4h78.8l93.4 175.4h-73.6z"/>
+            </svg>
+          </button>
+        </el-tooltip>
+
 
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="hover">
         <div class="avatar-wrapper">
           <img :src="avatar" class="user-avatar">
           <span class="user-nickname"> {{ nickName }} </span>
         </div>
-        <el-dropdown-menu slot="dropdown">
+        <template #dropdown>
+      <el-dropdown-menu>
           <router-link to="/user/profile">
             <el-dropdown-item>个人中心</el-dropdown-item>
           </router-link>
-          <el-dropdown-item @click.native="setLayout" v-if="setting">
+          <el-dropdown-item @click.stop="setLayout" v-if="setting">
             <span>布局设置</span>
           </el-dropdown-item>
-          <el-dropdown-item divided @click.native="logout">
+          <el-dropdown-item divided @click="logout">
             <span>退出登录</span>
           </el-dropdown-item>
-        </el-dropdown-menu>
+          </el-dropdown-menu>
+        </template>
       </el-dropdown>
+    </template>
     </div>
   </div>
 </template>
 
-<script>
-import { mapGetters } from 'vuex'
-import Breadcrumb from '@/components/Breadcrumb'
-import TopNav from '@/components/TopNav'
-import Hamburger from '@/components/Hamburger'
-import Screenfull from '@/components/Screenfull'
-import SizeSelect from '@/components/SizeSelect'
-import Search from '@/components/HeaderSearch'
-import RuoYiGit from '@/components/RuoYi/Git'
-import RuoYiDoc from '@/components/RuoYi/Doc'
+<script setup>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useAppStore, useUserStore, useSettingsStore } from '@/store'
+import Breadcrumb from '@/components/Breadcrumb/index.vue'
+import TopNav from '@/components/TopNav/index.vue'
+import Hamburger from '@/components/Hamburger/index.vue'
+import Screenfull from '@/components/Screenfull/index.vue'
+import SizeSelect from '@/components/SizeSelect/index.vue'
+import Search from '@/components/HeaderSearch/index.vue'
+import RuoYiGit from '@/components/RuoYi/Git/index.vue'
+import RuoYiDoc from '@/components/RuoYi/Doc/index.vue'
 
-export default {
-  emits: ['setLayout'],
-  components: {
-    Breadcrumb,
-    TopNav,
-    Hamburger,
-    Screenfull,
-    SizeSelect,
-    Search,
-    RuoYiGit,
-    RuoYiDoc
-  },
-  computed: {
-    ...mapGetters([
-      'sidebar',
-      'avatar',
-      'device',
-      'nickName'
-    ]),
-    setting: {
-      get() {
-        return this.$store.state.settings.showSettings
-      }
-    },
-    topNav: {
-      get() {
-        return this.$store.state.settings.topNav
-      }
-    }
-  },
-  methods: {
-    toggleSideBar() {
-      this.$store.dispatch('app/toggleSideBar')
-    },
-    setLayout(event) {
-      this.$emit('setLayout')
-    },
-    logout() {
-      this.$confirm('确定注销并退出系统吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.$store.dispatch('LogOut').then(() => {
-          location.href = '/index'
-        })
-      }).catch(() => {})
-    }
+const router = useRouter()
+const appStore = useAppStore()
+const userStore = useUserStore()
+const settingsStore = useSettingsStore()
+
+const emit = defineEmits(['setLayout'])
+
+const sidebar = computed(() => appStore.sidebar)
+const avatar = computed(() => userStore.avatar)
+const device = computed(() => appStore.device)
+const nickName = computed(() => userStore.nickName)
+const setting = computed(() => settingsStore.showSettings)
+const topNav = computed(() => settingsStore.topNav)
+
+const toggleSideBar = () => {
+  appStore.toggleSideBar()
+}
+
+const setLayout = (event) => {
+  emit('setLayout')
+  settingsStore.openSettings()
+}
+
+const logout = async () => {
+  try {
+    await ElMessageBox.confirm('确定注销并退出系统吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await userStore.logOut()
+    window.location.href = '/index'
+  } catch (error) {
+    // 用户取消
   }
 }
 </script>
@@ -171,6 +170,14 @@ export default {
       }
     }
 
+    .layout-settings-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      outline: none;
+    }
+
     .avatar-container {
       margin-right: 0px;
       padding-right: 0px;
@@ -195,13 +202,6 @@ export default {
           font-weight: bold;
         }
 
-        .el-icon-caret-bottom {
-          cursor: pointer;
-          position: absolute;
-          right: -20px;
-          top: 25px;
-          font-size: 12px;
-        }
       }
     }
   }

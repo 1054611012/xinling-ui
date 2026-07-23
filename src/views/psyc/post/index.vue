@@ -6,7 +6,7 @@
           v-model="queryParams.userId"
           placeholder="请输入发布用户ID"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
 
@@ -28,74 +28,65 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <div class="mb8 button-bar">
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          :icon="Plus"
           size="mini"
           @click="handleAdd"
           v-hasPermi="['psyc:post:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="success"
           plain
-          icon="el-icon-edit"
+          :icon="Edit"
           size="mini"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['psyc:post:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
+          :icon="Delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['psyc:post:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
+          :icon="Download"
           size="mini"
           @click="handleExport"
           v-hasPermi="['psyc:post:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar v-model="showSearch" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="动态ID" align="center" prop="id" />
       <el-table-column label="发布用户" align="center" prop="userId" />
       <el-table-column label="文字内容" align="center" prop="content" width="300">
-        <template slot-scope="scope">
-          <!-- 安全渲染富文本 -->
+        <template #default="scope">
           <div class="post-content-preview" v-html="scope.row.content"></div>
         </template>
       </el-table-column>
       <el-table-column label="可见范围" align="center" prop="visible">
-        <template slot-scope="scope">
+        <template #default="scope">
           <dict-tag :options="dict.type.psyc_post_visible" :value="scope.row.visible"/>
         </template>
       </el-table-column>
       <el-table-column label="互动数据" align="center" width="200">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-row :gutter="10">
             <el-col :span="12">
               <div class="interaction-item">
@@ -125,35 +116,35 @@
         </template>
       </el-table-column>
       <el-table-column label="状态" align="center" prop="status">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag :type="statusTagType(scope.row.status)">
             {{ getStatusLabel(scope.row.status) }}
           </el-tag>
         </template>
       </el-table-column>
       <el-table-column label="发布时间" align="center" prop="createdAt" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="更新时间" align="center" prop="updatedAt" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.updatedAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" >
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['psyc:post:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['psyc:post:remove']"
           >删除</el-button>
@@ -164,15 +155,14 @@
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改动态管理对话框 -->
     <el-dialog
       :title="title"
-      :visible.sync="open"
+      v-model="open"
       width="950px"
       append-to-body
       v-dialog-drag
@@ -182,7 +172,7 @@
       top="6vh"
     >
       <div class="dialog-content-wrapper">
-        <el-form ref="form" :model="form" :rules="rules" label-width="110px" class="post-form">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" class="post-form">
           <el-tabs v-model="activeTab" class="post-tabs custom-tabs">
             <el-tab-pane label="基本信息" name="basic">
               <div class="form-section">
@@ -298,10 +288,10 @@
                     <el-tag type="info" size="mini" v-if="psycPostMediaList.length">共 {{ psycPostMediaList.length }} 条</el-tag>
                   </div>
                   <div class="section-actions">
-                    <el-button type="primary" icon="el-icon-plus" size="small" @click="handleAddPsycPostMedia">添加媒体</el-button>
+                    <el-button type="primary" :icon="Plus" size="small" @click="handleAddPsycPostMedia">添加媒体</el-button>
                     <el-button
                       type="danger"
-                      icon="el-icon-delete"
+                      :icon="Delete"
                       size="small"
                       @click="handleDeletePsycPostMedia"
                       :disabled="checkedPsycPostMedia.length === 0"
@@ -326,7 +316,7 @@
                       </div>
                       <el-button
                         type="danger"
-                        icon="el-icon-delete"
+                        :icon="Delete"
                         size="mini"
                         circle
                         @click="removeMedia(index)"
@@ -382,9 +372,9 @@
                               class="media-preview"
                               lazy
                             >
-                              <div slot="error" class="image-slot">
+                              <template #error>
                                 <i class="el-icon-picture-outline"></i>
-                              </div>
+                              </template>
                             </el-image>
                             <div v-else class="no-preview">无预览</div>
                           </div>
@@ -404,273 +394,274 @@
         </el-form>
       </div>
 
-      <div slot="footer" class="dialog-footer-custom">
-        <el-button @click="cancel" size="medium" icon="el-icon-close">取 消</el-button>
-        <el-button type="primary" @click="submitForm" size="medium" icon="el-icon-check">确 定</el-button>
-      </div>
+      <template #footer>
+        <el-button @click="cancel" size="medium" :icon="Close">取 消</el-button>
+        <el-button type="primary" @click="submitForm" size="medium" :icon="Check">确 定</el-button>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listPost, getPost, delPost, addPost, updatePost } from "@/api/psyc/post"
+import { Search, Refresh, Plus, Edit, Delete, Download, Close, Check } from "@element-plus/icons-vue"
+import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
 
-export default {
-  name: "Post",
-  dicts: ['psyc_post_visible'],
-  data() {
-    return {
-      postStatusTagList: [
-        { value: '1', label: '正常' },
-        { value: '0', label: '删除' },
-        { value: '2', label: '审核中' },
-        { value: '3', label: '审核失败' }
-      ],
+defineOptions({ name: "Post" })
 
-      // 日期范围
-      dateRange: [],
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 子表选中数据
-      checkedPsycPostMedia: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 动态管理表格数据
-      postList: [],
-      // 动态媒体资源表格数据
-      psycPostMediaList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        userId: null,
-        content: null,
-        visible: null,
-        likeCount: null,
-        commentCount: null,
-        favoriteCount: null,
-        shareCount: null,
-        status: null,
-        createdAt: null,
-        updatedAt: null
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        userId: [
-          { required: true, message: "发布用户ID不能为空", trigger: "blur" }
-        ],
-      },
-      // 控制标签页
-      activeTab: "basic"
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询动态管理列表 */
-    getList() {
-      this.loading = true
-      listPost(this.addDateRange(this.queryParams,this.dateRange)).then(response => {
-        this.postList = response.rows
-        this.total = response.total
-        this.loading = false
-      })
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        userId: null,
-        content: null,
-        visible: null,
-        status: '1',
-        likeCount: null,
-        commentCount: null,
-        favoriteCount: null,
-        shareCount: null,
-        createdAt: null,
-        updatedAt: null
+const postStatusTagList = ref([
+  { value: '1', label: '正常' },
+  { value: '0', label: '删除' },
+  { value: '2', label: '审核中' },
+  { value: '3', label: '审核失败' }
+])
+
+const dateRange = ref([])
+const loading = ref(true)
+const ids = ref([])
+const checkedPsycPostMedia = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const showSearch = ref(true)
+const total = ref(0)
+const postList = ref([])
+const psycPostMediaList = ref([])
+const title = ref("")
+const open = ref(false)
+const activeTab = ref("basic")
+
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  userId: null,
+  content: null,
+  visible: null,
+  likeCount: null,
+  commentCount: null,
+  favoriteCount: null,
+  shareCount: null,
+  status: null,
+  createdAt: null,
+  updatedAt: null
+})
+
+const form = reactive({
+  id: null,
+  userId: null,
+  content: null,
+  visible: null,
+  status: '1',
+  likeCount: null,
+  commentCount: null,
+  favoriteCount: null,
+  shareCount: null,
+  createdAt: null,
+  updatedAt: null
+})
+
+const rules = reactive({
+  userId: [
+    { required: true, message: "发布用户ID不能为空", trigger: "blur" }
+  ],
+})
+
+const formRef = ref(null)
+const queryForm = ref(null)
+
+function getList() {
+  loading.value = true
+  listPost(addDateRange(queryParams, dateRange.value)).then(response => {
+    postList.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
+}
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    id: null,
+    userId: null,
+    content: null,
+    visible: null,
+    status: '1',
+    likeCount: null,
+    commentCount: null,
+    favoriteCount: null,
+    shareCount: null,
+    createdAt: null,
+    updatedAt: null
+  })
+  psycPostMediaList.value = []
+  activeTab.value = "basic"
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  dateRange.value = []
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.id)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+}
+
+function handleAdd() {
+  reset()
+  open.value = true
+  title.value = "添加动态管理"
+}
+
+function handleUpdate(row) {
+  reset()
+  const rowId = row.id || ids.value
+  getPost(rowId).then(response => {
+    const data = response.data || {}
+    Object.assign(form, {
+      ...data,
+      status: data.status != null ? String(data.status) : null
+    })
+    psycPostMediaList.value = Array.isArray(data.psycPostMediaList)
+      ? data.psycPostMediaList.map(item => ({
+          ...item,
+          mediaType: String(item.mediaType)
+        }))
+      : []
+    open.value = true
+    title.value = "修改动态管理"
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      const payload = {
+        ...form,
+        status: form.status != null ? String(form.status) : null,
+        psycPostMediaList: psycPostMediaList.value
       }
-      this.psycPostMediaList = []
-      this.activeTab = "basic"
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.dateRange = []
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加动态管理"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getPost(id).then(response => {
-        const data = response.data || {}
-        this.form = {
-          ...data,
-          status: data.status != null ? String(data.status) : null
-        }
-        // 确保 mediaType 是字符串类型
-        this.psycPostMediaList = Array.isArray(data.psycPostMediaList)
-          ? data.psycPostMediaList.map(item => ({
-              ...item,
-              mediaType: String(item.mediaType)
-            }))
-          : []
-        this.open = true
-        this.title = "修改动态管理"
-      })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          const payload = {
-            ...this.form,
-            status: this.form.status != null ? String(this.form.status) : null,
-            psycPostMediaList: this.psycPostMediaList
-          }
-          if (payload.id != null) {
-            updatePost(payload).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addPost(payload).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除动态管理编号为"' + ids + '"的数据项？').then(function() {
-        return delPost(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 动态媒体资源序号 */
-    rowPsycPostMediaIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1
-    },
-    /** 动态媒体资源添加按钮操作 */
-    handleAddPsycPostMedia() {
-      let obj = {
-        mediaUrl: "",
-        mediaType: "1",
-        sortOrder: 0
-      }
-      this.psycPostMediaList.push(obj)
-    },
-    /** 动态媒体资源删除按钮操作 */
-    handleDeletePsycPostMedia() {
-      if (this.checkedPsycPostMedia.length == 0) {
-        this.$modal.msgError("请先选择要删除的动态媒体资源数据")
+      if (payload.id != null) {
+        updatePost(payload).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
       } else {
-        const psycPostMediaList = this.psycPostMediaList
-        const checkedPsycPostMedia = this.checkedPsycPostMedia
-        this.psycPostMediaList = psycPostMediaList.filter(function(item) {
-          return checkedPsycPostMedia.indexOf(item.index) == -1
+        addPost(payload).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
         })
       }
-    },
-    /** 删除单个媒体 */
-    removeMedia(index) {
-      this.$confirm('确定要删除这个媒体资源吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.psycPostMediaList.splice(index, 1)
-        this.$message.success('删除成功')
-      }).catch(() => {})
-    },
-    /** 复选框选中数据 */
-    handlePsycPostMediaSelectionChange(selection) {
-      this.checkedPsycPostMedia = selection.map(item => item.index)
-    },
-    getStatusLabel(status) {
-      const statusItem = this.postStatusTagList.find(item => String(item.value) === String(status))
-      return statusItem ? statusItem.label : status
-    },
-    statusTagType(status) {
-      const typeMap = {
-        '1': 'success',
-        '0': 'danger',
-        '2': 'warning',
-        '3': 'info'
-      }
-      return typeMap[String(status)] || 'info'
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('psyc/post/export', {
-        ...this.queryParams
-      }, `post_${new Date().getTime()}.xlsx`)
     }
+  })
+}
+
+function handleDelete(row) {
+  const idsVal = row.id || ids.value
+  ElMessageBox.confirm('是否确认删除动态管理编号为"' + idsVal + '"的数据项？').then(function() {
+    return delPost(idsVal)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function rowPsycPostMediaIndex({ row, rowIndex }) {
+  row.index = rowIndex + 1
+}
+
+function handleAddPsycPostMedia() {
+  const obj = {
+    mediaUrl: "",
+    mediaType: "1",
+    sortOrder: 0
+  }
+  psycPostMediaList.value.push(obj)
+}
+
+function handleDeletePsycPostMedia() {
+  if (checkedPsycPostMedia.value.length == 0) {
+    ElMessage.error("请先选择要删除的动态媒体资源数据")
+  } else {
+    const psycPostMediaListVal = psycPostMediaList.value
+    const checkedPsycPostMediaVal = checkedPsycPostMedia.value
+    psycPostMediaList.value = psycPostMediaListVal.filter(function(item) {
+      return checkedPsycPostMediaVal.indexOf(item.index) == -1
+    })
   }
 }
+
+function removeMedia(index) {
+  ElMessageBox.confirm('确定要删除这个媒体资源吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    psycPostMediaList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+function handlePsycPostMediaSelectionChange(selection) {
+  checkedPsycPostMedia.value = selection.map(item => item.index)
+}
+
+function getStatusLabel(status) {
+  const statusItem = postStatusTagList.value.find(item => String(item.value) === String(status))
+  return statusItem ? statusItem.label : status
+}
+
+function statusTagType(status) {
+  const typeMap = {
+    '1': 'success',
+    '0': 'danger',
+    '2': 'warning',
+    '3': 'info'
+  }
+  return typeMap[String(status)] || 'info'
+}
+
+function handleExport() {
+  download('psyc/post/export', {
+    ...queryParams
+  }, `post_${new Date().getTime()}.xlsx`)
+}
+
+onMounted(() => {
+  getList()
+})
 </script>
 
 <style scoped>
-.post-dialog ::v-deep .el-dialog__header {
+.post-dialog :deep() .el-dialog__header {
   background: linear-gradient(135deg, #42a5f5 0%, #478ed1 100%);
   padding: 20px 24px;
   border-radius: 4px 4px 0 0;
 }
 
-.post-dialog ::v-deep .el-dialog__title {
+.post-dialog :deep() .el-dialog__title {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.post-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close {
+.post-dialog :deep() .el-dialog__headerbtn .el-dialog__close {
   color: #fff;
   font-size: 20px;
 }
@@ -679,7 +670,7 @@ export default {
   padding: 20px 0;
 }
 
-.post-dialog ::v-deep .el-dialog__body {
+.post-dialog :deep() .el-dialog__body {
   padding: 0 20px 10px;
 }
 
@@ -687,11 +678,11 @@ export default {
   padding: 0 10px;
 }
 
-.custom-tabs ::v-deep .el-tabs__header {
+.custom-tabs :deep() .el-tabs__header {
   margin-bottom: 24px;
 }
 
-.custom-tabs ::v-deep .el-tabs__item {
+.custom-tabs :deep() .el-tabs__item {
   font-size: 15px;
   font-weight: 500;
   padding: 0 24px;
@@ -699,7 +690,7 @@ export default {
   line-height: 48px;
 }
 
-.custom-tabs ::v-deep .el-tabs__active-bar {
+.custom-tabs :deep() .el-tabs__active-bar {
   height: 3px;
 }
 
@@ -750,19 +741,19 @@ export default {
   box-shadow: 0 3px 6px rgba(64, 158, 255, 0.15);
 }
 
-.form-item-custom ::v-deep .el-form-item__label {
+.form-item-custom :deep() .el-form-item__label {
   font-weight: 500;
   color: #606266;
 }
 
-.form-item-custom ::v-deep .el-input__inner,
-.form-item-custom ::v-deep .el-textarea__inner {
+.form-item-custom :deep() .el-input__inner,
+.form-item-custom :deep() .el-textarea__inner {
   border-radius: 6px;
   transition: all 0.3s;
 }
 
-.form-item-custom ::v-deep .el-input__inner:focus,
-.form-item-custom ::v-deep .el-textarea__inner:focus {
+.form-item-custom :deep() .el-input__inner:focus,
+.form-item-custom :deep() .el-textarea__inner:focus {
   border-color: #409EFF;
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
 }
@@ -874,7 +865,7 @@ export default {
   overflow: hidden;
 }
 
-.media-preview ::v-deep img {
+.media-preview :deep() img {
   object-fit: cover;
 }
 
@@ -897,7 +888,6 @@ export default {
   font-size: 20px;
 }
 
-/* 空状态样式 */
 .empty-media {
   text-align: center;
   padding: 30px;
@@ -908,6 +898,4 @@ export default {
   font-size: 48px;
   margin-bottom: 10px;
 }
-
-/* 对话框样式 */
 </style>

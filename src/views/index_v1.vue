@@ -25,18 +25,22 @@
       </el-col>
     </el-row>
 
-    
+
   </div>
+
 </template>
 
-<script>
+<script setup>
+import { ref } from 'vue'
 import PanelGroup from './dashboard/PanelGroup'
 import LineChart from './dashboard/LineChart'
 import RaddarChart from './dashboard/RaddarChart'
 import PieChart from './dashboard/PieChart'
 import BarChart from './dashboard/BarChart'
 
-const lineChartData = {
+defineOptions({ name: 'Index' })
+
+const lineChartData = ref({
   newVisitis: {
     expectedData: [100, 120, 161, 134, 105, 160, 165],
     actualData: [120, 82, 91, 154, 162, 140, 145]
@@ -53,27 +57,12 @@ const lineChartData = {
     expectedData: [130, 140, 141, 142, 145, 150, 160],
     actualData: [120, 82, 91, 154, 162, 140, 130]
   }
-}
+})
 
-export default {
-  name: 'Index',
-  components: {
-    PanelGroup,
-    LineChart,
-    RaddarChart,
-    PieChart,
-    BarChart
-  },
-  data() {
-    return {
-      lineChartData: lineChartData.newVisitis
-    }
-  },
-  methods: {
-    handleSetLineChartData(type) {
-      this.lineChartData = lineChartData[type]
-    }
-  }
+const chartData = ref(lineChartData.value.newVisitis)
+
+function handleSetLineChartData(type) {
+  chartData.value = lineChartData.value[type]
 }
 </script>
 

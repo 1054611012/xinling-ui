@@ -5,7 +5,6 @@
       width="500px"
       :close-on-click-modal="false"
       :modal-append-to-body="false"
-      v-on="$listeners"
       @open="onOpen"
       @close="onClose"
     >
@@ -37,7 +36,9 @@
         </el-form>
       </el-row>
 
-      <div slot="footer">
+
+      <template #footer>
+      <div>
         <el-button @click="close">
           取消
         </el-button>
@@ -45,62 +46,61 @@
           确定
         </el-button>
       </div>
-    </el-dialog>
+    </template>
+  </el-dialog>
   </div>
 </template>
-<script>
-export default {
-  inheritAttrs: false,
-  props: ['showFileName'],
-  data() {
-    return {
-      formData: {
-        fileName: undefined,
-        type: 'file'
-      },
-      rules: {
-        fileName: [{
-          required: true,
-          message: '请输入文件名',
-          trigger: 'blur'
-        }],
-        type: [{
-          required: true,
-          message: '生成类型不能为空',
-          trigger: 'change'
-        }]
-      },
-      typeOptions: [{
-        label: '页面',
-        value: 'file'
-      }, {
-        label: '弹窗',
-        value: 'dialog'
-      }]
-    }
-  },
-  computed: {
-  },
-  watch: {},
-  mounted() {},
-  methods: {
-    onOpen() {
-      if (this.showFileName) {
-        this.formData.fileName = `${+new Date()}.vue`
-      }
-    },
-    onClose() {
-    },
-    close(e) {
-      this.$emit('update:visible', false)
-    },
-    handleConfirm() {
-      this.$refs.elForm.validate(valid => {
-        if (!valid) return
-        this.$emit('confirm', { ...this.formData })
-        this.close()
-      })
-    }
+
+<script setup>
+import { ref, reactive, computed, defineProps, defineEmits, defineExpose } from 'vue'
+
+defineOptions({ name: 'CodeTypeDialog' })
+
+const props = defineProps(['showFileName'])
+const emit = defineEmits(['update:visible', 'confirm'])
+
+const elForm = ref(null)
+const formData = reactive({
+  fileName: undefined,
+  type: 'file'
+})
+const rules = reactive({
+  fileName: [{
+    required: true,
+    message: '请输入文件名',
+    trigger: 'blur'
+  }],
+  type: [{
+    required: true,
+    message: '生成类型不能为空',
+    trigger: 'change'
+  }]
+})
+const typeOptions = ref([{
+  label: '页面',
+  value: 'file'
+}, {
+  label: '弹窗',
+  value: 'dialog'
+}])
+
+function onOpen() {
+  if (props.showFileName) {
+    formData.fileName = `${+new Date()}.vue`
   }
+}
+
+function onClose() {}
+
+function close(e) {
+  emit('update:visible', false)
+}
+
+function handleConfirm() {
+  elForm.value.validate(valid => {
+    if (!valid) return
+    emit('confirm', { ...formData })
+    close()
+  })
 }
 </script>

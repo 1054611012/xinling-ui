@@ -1,7 +1,9 @@
+import { useAppStore } from '@/store'
+
 export default {
   computed: {
     device() {
-      return this.$store.state.app.device
+      return useAppStore().device
     }
   },
   mounted() {

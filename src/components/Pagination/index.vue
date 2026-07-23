@@ -2,8 +2,8 @@
   <div :class="{'hidden':hidden}" class="pagination-container">
     <el-pagination
       :background="background"
-      :current-page.sync="currentPage"
-      :page-size.sync="pageSize"
+      :current-page="currentPage"
+      :page-size="pageSize"
       :layout="layout"
       :page-sizes="pageSizes"
       :pager-count="pagerCount"
@@ -11,95 +11,92 @@
       v-bind="$attrs"
       @size-change="handleSizeChange"
       @current-change="handleCurrentChange"
+      @update:current-page="handleCurrentPageChange"
+      @update:page-size="handlePageSizeChange"
     />
   </div>
+
 </template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
 import { scrollTo } from '@/utils/scroll-to'
 
-export default {
-  name: 'Pagination',
-  props: {
-    total: {
-      required: true,
-      type: Number
-    },
-    page: {
-      type: Number,
-      default: 1
-    },
-    limit: {
-      type: Number,
-      default: 20
-    },
-    pageSizes: {
-      type: Array,
-      default() {
-        return [10, 20, 30, 50]
-      }
-    },
-    // 移动端页码按钮的数量端默认值5
-    pagerCount: {
-      type: Number,
-      default: document.body.clientWidth < 992 ? 5 : 7
-    },
-    layout: {
-      type: String,
-      default: 'total, sizes, prev, pager, next, jumper'
-    },
-    background: {
-      type: Boolean,
-      default: true
-    },
-    autoScroll: {
-      type: Boolean,
-      default: true
-    },
-    hidden: {
-      type: Boolean,
-      default: false
-    }
+const props = defineProps({
+  total: {
+    required: true,
+    type: Number
   },
-  data() {
-    return {
-    }
+  page: {
+    type: Number,
+    default: 1
   },
-  computed: {
-    currentPage: {
-      get() {
-        return this.page
-      },
-      set(val) {
-        this.$emit('update:page', val)
-      }
-    },
-    pageSize: {
-      get() {
-        return this.limit
-      },
-      set(val) {
-        this.$emit('update:limit', val)
-      }
-    }
+  limit: {
+    type: Number,
+    default: 20
   },
-  methods: {
-    handleSizeChange(val) {
-      if (this.currentPage * val > this.total) {
-        this.currentPage = 1
-      }
-      this.$emit('pagination', { page: this.currentPage, limit: val })
-      if (this.autoScroll) {
-        scrollTo(0, 800)
-      }
-    },
-    handleCurrentChange(val) {
-      this.$emit('pagination', { page: val, limit: this.pageSize })
-      if (this.autoScroll) {
-        scrollTo(0, 800)
-      }
-    }
+  pageSizes: {
+    type: Array,
+    default: () => [10, 20, 30, 50]
+  },
+  // 移动端页码按钮的数量端默认值5
+  pagerCount: {
+    type: Number,
+    default: document.body.clientWidth < 992 ? 5 : 7
+  },
+  layout: {
+    type: String,
+    default: 'total, sizes, prev, pager, next, jumper'
+  },
+  background: {
+    type: Boolean,
+    default: true
+  },
+  autoScroll: {
+    type: Boolean,
+    default: true
+  },
+  hidden: {
+    type: Boolean,
+    default: false
   }
+})
+
+const emit = defineEmits(['update:page', 'update:limit', 'pagination'])
+
+const currentPage = computed({
+  get: () => props.page,
+  set: (val) => emit('update:page', val)
+})
+
+const pageSize = computed({
+  get: () => props.limit,
+  set: (val) => emit('update:limit', val)
+})
+
+function handleSizeChange(val) {
+  if (currentPage.value * val > props.total) {
+    currentPage.value = 1
+  }
+  emit('pagination', { page: currentPage.value, limit: val })
+  if (props.autoScroll) {
+    scrollTo(0, 800)
+  }
+}
+
+function handleCurrentChange(val) {
+  emit('pagination', { page: val, limit: pageSize.value })
+  if (props.autoScroll) {
+    scrollTo(0, 800)
+  }
+}
+
+function handleCurrentPageChange(val) {
+  currentPage.value = val
+}
+
+function handlePageSizeChange(val) {
+  pageSize.value = val
 }
 </script>
 

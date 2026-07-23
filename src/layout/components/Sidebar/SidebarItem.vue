@@ -8,9 +8,9 @@
       </app-link>
     </template>
 
-    <el-submenu v-else ref="subMenu" :index="resolvePath(item.path)" popper-append-to-body>
-      <template slot="title">
-        <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
+    <el-sub-menu v-else ref="subMenu" :index="resolvePath(item.path)" :teleported="false">
+      <template #title>
+      <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
       </template>
       <sidebar-item
         v-for="(child, index) in item.children"
@@ -20,16 +20,28 @@
         :base-path="resolvePath(child.path)"
         class="nest-menu"
       />
-    </el-submenu>
+    </el-sub-menu>
   </div>
 </template>
 
 <script>
-import path from 'path'
 import { isExternal } from '@/utils/validate'
-import Item from './Item'
-import AppLink from './Link'
-import FixiOSBug from './FixiOSBug'
+import Item from './Item.vue'
+import AppLink from './Link.vue'
+import FixiOSBug from './FixiOSBug.js'
+
+// 替换 path.resolve 的简易实现
+function pathResolve(basePath, routePath) {
+  if (routePath.startsWith('/')) return routePath
+  const base = basePath.endsWith('/') ? basePath : basePath + '/'
+  const parts = (base + routePath).split('/').filter(Boolean)
+  const result = []
+  for (const p of parts) {
+    if (p === '..') result.pop()
+    else if (p !== '.') result.push(p)
+  }
+  return '/' + result.join('/')
+}
 
 export default {
   name: 'SidebarItem',
@@ -90,9 +102,9 @@ export default {
       }
       if (routeQuery) {
         let query = JSON.parse(routeQuery)
-        return { path: path.resolve(this.basePath, routePath), query: query }
+        return { path: pathResolve(this.basePath, routePath), query: query }
       }
-      return path.resolve(this.basePath, routePath)
+      return pathResolve(this.basePath, routePath)
     }
   }
 }

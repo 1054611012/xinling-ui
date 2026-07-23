@@ -110,6 +110,7 @@
       </div>
     </div>
   </div>
+
 </template>
 
 <script>
@@ -182,7 +183,6 @@ export default {
       "updateCrontabValue", name, value, from
       this.crontabValueObj[name] = value
       if (from && from !== name) {
-        console.log(`来自组件 ${from} 改变了 ${name} ${value}`)
         this.changeRadio(name, value)
       }
     },

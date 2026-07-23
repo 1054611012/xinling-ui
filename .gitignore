@@ -21,3 +21,14 @@ selenium-debug.log
 
 package-lock.json
 yarn.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.claude
+.vscode
+*.swp
+*.swo

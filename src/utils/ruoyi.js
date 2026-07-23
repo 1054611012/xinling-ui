@@ -45,9 +45,14 @@ export function parseTime(time, pattern) {
 }
 
 // 表单重置
-export function resetForm(refName) {
-  if (this.$refs[refName]) {
-    this.$refs[refName].resetFields()
+export function resetForm(formRef) {
+  if (formRef) {
+    // Vue 3 Composition API: ref() 包装的对象需要解包 .value
+    if (formRef.value && typeof formRef.value.resetFields === 'function') {
+      formRef.value.resetFields()
+    } else if (typeof formRef.resetFields === 'function') {
+      formRef.resetFields()
+    }
   }
 }
 

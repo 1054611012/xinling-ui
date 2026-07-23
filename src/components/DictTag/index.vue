@@ -4,7 +4,6 @@
       <template v-if="values.includes(item.value)">
         <span
           v-if="(item.raw.listClass == 'default' || item.raw.listClass == '') && (item.raw.cssClass == '' || item.raw.cssClass == null)"
-          :key="item.value"
           :index="index"
           :class="item.raw.cssClass"
           >{{ item.label + ' ' }}</span
@@ -12,7 +11,6 @@
         <el-tag
           v-else
           :disable-transitions="true"
-          :key="item.value"
           :index="index"
           :type="item.raw.listClass == 'primary' ? '' : item.raw.listClass"
           :class="item.raw.cssClass"
@@ -22,7 +20,7 @@
       </template>
     </template>
     <template v-if="unmatch && showValue">
-      {{ unmatchArray | handleArray }}
+      {{ handleArray(unmatchArray) }}
     </template>
   </div>
 </template>
@@ -72,7 +70,7 @@ export default {
     },
 
   },
-  filters: {
+  methods: {
     handleArray(array) {
       if (array.length === 0) return ''
       return array.reduce((pre, cur) => {

@@ -7,6 +7,7 @@
     </div>
     <div :style="{backgroundImage: `url(${image})`}" class="pan-thumb"></div>
   </div>
+
 </template>
 
 <script>

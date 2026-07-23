@@ -17,21 +17,23 @@
       v-if="!disabled"
     >
       <!-- 上传按钮 -->
-      <el-button size="mini" type="primary">选取文件</el-button>
+      <el-button size="small" type="primary">选取文件</el-button>
       <!-- 上传提示 -->
-      <div class="el-upload__tip" slot="tip" v-if="showTip">
-        请上传
-        <template v-if="fileSize"> 大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b> </template>
-        <template v-if="fileType"> 格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> </template>
-        的文件
-      </div>
+      <template #tip>
+      <div class="el-upload__tip" v-if="showTip">
+          请上传
+          <template v-if="fileSize"> 大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b> </template>
+          <template v-if="fileType"> 格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> </template>
+          的文件
+        </div>
+      </template>
     </el-upload>
 
     <!-- 文件列表 -->
     <transition-group ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
       <li :key="file.url" class="el-upload-list__item ele-upload-list__item-content" v-for="(file, index) in fileList">
         <el-link :href="`${baseUrl}${file.url}`" :underline="false" target="_blank">
-          <span class="el-icon-document"> {{ getFileName(file.name) }} </span>
+          <el-icon><Document /></el-icon> {{ getFileName(file.name) }}
         </el-link>
         <div class="ele-upload-list__item-content-action">
           <el-link :underline="false" @click="handleDelete(index)" type="danger" v-if="!disabled">删除</el-link>
@@ -44,6 +46,8 @@
 <script>
 import { getToken } from "@/utils/auth"
 import Sortable from 'sortablejs'
+import { Document } from '@element-plus/icons-vue'
+import { ElMessage, ElLoading } from 'element-plus'
 
 export default {
   name: "FileUpload",
@@ -94,12 +98,13 @@ export default {
     return {
       number: 0,
       uploadList: [],
-      baseUrl: process.env.VUE_APP_BASE_API,
-      uploadFileUrl: process.env.VUE_APP_BASE_API + this.action, // 上传文件服务器地址
+      baseUrl: import.meta.env.VITE_APP_BASE_API,
+      uploadFileUrl: import.meta.env.VITE_APP_BASE_API + this.action, // 上传文件服务器地址
       headers: {
         Authorization: "Bearer " + getToken(),
       },
-      fileList: []
+      fileList: [],
+      loadingInstance: null
     }
   },
   mounted() {
@@ -156,35 +161,38 @@ export default {
         const fileExt = fileName[fileName.length - 1]
         const isTypeOk = this.fileType.indexOf(fileExt) >= 0
         if (!isTypeOk) {
-          this.$modal.msgError(`文件格式不正确，请上传${this.fileType.join("/")}格式文件!`)
+          ElMessage.error(`文件格式不正确，请上传${this.fileType.join("/")}格式文件!`)
           return false
         }
       }
       // 校检文件名是否包含特殊字符
       if (file.name.includes(',')) {
-        this.$modal.msgError('文件名不正确，不能包含英文逗号!')
+        ElMessage.error('文件名不正确，不能包含英文逗号!')
         return false
       }
       // 校检文件大小
       if (this.fileSize) {
         const isLt = file.size / 1024 / 1024 < this.fileSize
         if (!isLt) {
-          this.$modal.msgError(`上传文件大小不能超过 ${this.fileSize} MB!`)
+          ElMessage.error(`上传文件大小不能超过 ${this.fileSize} MB!`)
           return false
         }
       }
-      this.$modal.loading("正在上传文件，请稍候...")
+      this.loadingInstance = ElLoading.service({ text: "正在上传文件，请稍候..." })
       this.number++
       return true
     },
     // 文件个数超出
     handleExceed() {
-      this.$modal.msgError(`上传文件数量不能超过 ${this.limit} 个!`)
+      ElMessage.error(`上传文件数量不能超过 ${this.limit} 个!`)
     },
     // 上传失败
     handleUploadError(err) {
-      this.$modal.msgError("上传文件失败，请重试")
-      this.$modal.closeLoading()
+      ElMessage.error("上传文件失败，请重试")
+      if (this.loadingInstance) {
+        this.loadingInstance.close()
+        this.loadingInstance = null
+      }
     },
     // 上传成功回调
     handleUploadSuccess(res, file) {
@@ -193,8 +201,11 @@ export default {
         this.uploadedSuccessfully()
       } else {
         this.number--
-        this.$modal.closeLoading()
-        this.$modal.msgError(res.msg)
+        if (this.loadingInstance) {
+          this.loadingInstance.close()
+          this.loadingInstance = null
+        }
+        ElMessage.error(res.msg)
         this.$refs.fileUpload.handleRemove(file)
         this.uploadedSuccessfully()
       }
@@ -211,7 +222,10 @@ export default {
         this.uploadList = []
         this.number = 0
         this.$emit("input", this.listToString(this.fileList))
-        this.$modal.closeLoading()
+        if (this.loadingInstance) {
+          this.loadingInstance.close()
+          this.loadingInstance = null
+        }
       }
     },
     // 获取文件名称

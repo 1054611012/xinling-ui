@@ -6,7 +6,7 @@
           v-model="queryParams.testName"
           placeholder="请输入测评名称"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="题目数量" prop="totalQuestions">
@@ -14,7 +14,7 @@
           v-model="queryParams.totalQuestions"
           placeholder="请输入题目数量"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="测评时长" prop="duration">
@@ -22,60 +22,52 @@
           v-model="queryParams.duration"
           placeholder="请输入测评时长"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <div class="mb8 button-bar">
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          :icon="Plus"
           size="mini"
           @click="handleAdd"
           v-hasPermi="['psyc:test:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="success"
           plain
-          icon="el-icon-edit"
+          :icon="Edit"
           size="mini"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['psyc:test:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
+          :icon="Delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['psyc:test:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
+          :icon="Download"
           size="mini"
           @click="handleExport"
           v-hasPermi="['psyc:test:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table v-loading="loading" :data="testList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
@@ -83,7 +75,7 @@
       <el-table-column label="测评名称" align="center" prop="testName" />
       <el-table-column label="测评简介" align="center" prop="description" :show-overflow-tooltip="true" />
       <el-table-column label="状态" align="center" prop="status">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-tag :type="String(scope.row.status) === '1' ? 'success' : 'info'">
             {{ String(scope.row.status) === '1' ? '启用' : '停用' }}
           </el-tag>
@@ -92,11 +84,11 @@
       <el-table-column label="题目数量" align="center" prop="totalQuestions" />
       <el-table-column label="测评时长" align="center" prop="duration" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['psyc:test:edit']"
           >修改</el-button>
@@ -104,21 +96,21 @@
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-view"
+            :icon="View"
             @click="handleView(scope.row)"
             v-hasPermi="['psyc:test:query']"
           >详细</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-tickets"
+            :icon="Tickets"
             @click="handleToQuestions(scope.row)"
             v-hasPermi="['psyc:questions:query']"
           >题目管理</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['psyc:test:remove']"
           >删除</el-button>
@@ -126,19 +118,17 @@
       </el-table-column>
     </el-table>
 
-
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改心理测评对话框 -->
     <el-dialog 
       :title="title" 
-      :visible.sync="open" 
+      v-model="open" 
       width="950px" 
       append-to-body 
       :close-on-click-modal="false"
@@ -146,7 +136,7 @@
       :show-close="true"
     >
       <div class="dialog-content-wrapper">
-        <el-form ref="form" :model="form" :rules="rules" label-width="110px" class="test-form">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" class="test-form">
           <el-tabs v-model="activeTab" class="custom-tabs">
             <el-tab-pane label="基本信息" name="basic">
               <div class="form-section">
@@ -250,7 +240,7 @@
                   </div>
                   <el-button
                     type="primary"
-                    icon="el-icon-plus"
+                    :icon="Plus"
                     size="small"
                     @click="handleAddPsycAssessmentRule"
                     class="add-rule-btn"
@@ -273,7 +263,7 @@
                       </div>
                       <el-button
                         type="danger"
-                        icon="el-icon-delete"
+                        :icon="Delete"
                         size="mini"
                         circle
                         @click="removeRule(index)"
@@ -388,15 +378,13 @@
 
       <div slot="footer" class="dialog-footer-custom">
         <el-button @click="cancel" size="medium">取 消</el-button>
-        <el-button type="primary" @click="submitForm" size="medium" icon="el-icon-check">确 定</el-button>
+        <el-button type="primary" @click="submitForm" size="medium" :icon="Check">确 定</el-button>
       </div>
     </el-dialog>
 
-
-    <!-- 心理测评详细弹窗 -->
     <el-dialog 
       title="测评详细信息" 
-      :visible.sync="openView" 
+      v-model="openView" 
       width="950px" 
       append-to-body
       class="detail-dialog"
@@ -656,301 +644,278 @@
       </div>
 
       <div slot="footer" class="dialog-footer-custom">
-        <el-button type="primary" @click="openView = false" size="medium" icon="el-icon-close">关 闭</el-button>
+        <el-button type="primary" @click="openView = false" size="medium" :icon="Close">关 闭</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listTest, getTest, delTest, addTest, updateTest } from "@/api/psyc/test"
 import { listQuestions } from "@/api/psyc/questions"
+import { Search, Refresh, Plus, Edit, Delete, Download, View, Tickets, Check, Close } from "@element-plus/icons-vue"
+import { resetForm } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
 
-export default {
-  name: "Test",
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 子表选中数据
-      checkedPsycAssessmentRule: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 心理测评表格数据
-      testList: [],
-      // 测评动态评分区间规则表格数据
-      psycAssessmentRuleList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 控制详情弹窗
-      openView: false,
-      // 编辑对话框活动标签页
-      activeTab: "basic",
-      // 详情对话框活动标签页
-      detailActiveTab: "basic",
-      // 题目列表
-      questionsList: [],
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        testName: null,
-        description: null,
-        status: null,
-        totalQuestions: null,
-        duration: null,
-      },
-      // 表单参数
-      form: {
-        id: null,
-        testName: null,
-        description: null,
-        status: "1",
-        totalQuestions: null,
-        duration: null,
-        createTime: null,
-        updateTime: null
-      },
-      // 表单校验
-      rules: {
-        testName: [
-          { required: true, message: "测评名称不能为空", trigger: "blur" }
-        ],
-        totalQuestions: [
-          { required: true, message: "题目数量不能为空", trigger: "blur" }
-        ],
-        duration: [
-          { required: true, message: "测评时长不能为空", trigger: "blur" }
-        ]
-      }
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询心理测评列表 */
-    getList() {
-      this.loading = true
-      listTest(this.queryParams).then(response => {
-        this.testList = response.rows
-        // 处理列表数据，确保状态字段是字符串类型
-        this.testList = this.testList.map(item => {
-          return {
-            ...item,
-            status: String(item.status || "0")
-          }
-        })
+defineOptions({ name: "Test" })
 
-        this.total = response.total
-        this.loading = false
-      })
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        testName: null,
-        description: null,
-        status: "1",
-        totalQuestions: null,
-        duration: null,
-        createTime: null,
-        updateTime: null
-      }
-      this.psycAssessmentRuleList = []
-      this.activeTab = "basic"
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加心理测评"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getTest(id).then(response => {
-        this.form = response.data
-        this.psycAssessmentRuleList = response.data.psycAssessmentRuleList || []
-        // 确保状态字段是字符串类型
-        this.form.status = String(this.form.status || "0")
-        this.open = true
-        this.title = "修改心理测评"
-      })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.psycAssessmentRuleList = this.psycAssessmentRuleList
-          if (this.form.id != null) {
-            updateTest(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addTest(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 查看详情 */
-    handleView(row) {
-      const id = row.id
-      this.openView = true
-      this.loading = true
-      
-      // 获取测评详情
-      getTest(id).then(response => {
-        const data = response.data || {}
-        this.form = data
+const router = useRouter()
 
-        // 如果后端返回了 psycAssessmentRuleList，则直接用它作为 resultList
-        if (Array.isArray(data.psycAssessmentRuleList) && data.psycAssessmentRuleList.length) {
-          this.form.resultList = data.psycAssessmentRuleList
-        } else {
-          // 后端没返回数据时，提供空数组占位
-          this.form.resultList = []
-        }
+const loading = ref(true)
+const ids = ref([])
+const checkedPsycAssessmentRule = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const showSearch = ref(true)
+const total = ref(0)
+const testList = ref([])
+const psycAssessmentRuleList = ref([])
+const title = ref("")
+const open = ref(false)
+const openView = ref(false)
+const activeTab = ref("basic")
+const detailActiveTab = ref("basic")
+const questionsList = ref([])
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  testName: null,
+  description: null,
+  status: null,
+  totalQuestions: null,
+  duration: null,
+})
+const form = reactive({
+  id: null,
+  testName: null,
+  description: null,
+  status: "1",
+  totalQuestions: null,
+  duration: null,
+  createTime: null,
+  updateTime: null,
+  resultList: []
+})
+const rules = reactive({
+  testName: [
+    { required: true, message: "测评名称不能为空", trigger: "blur" }
+  ],
+  totalQuestions: [
+    { required: true, message: "题目数量不能为空", trigger: "blur" }
+  ],
+  duration: [
+    { required: true, message: "测评时长不能为空", trigger: "blur" }
+  ]
+})
 
-        // 如果后端返回了 psycQuestionsList，则直接用它作为 questionsList
-        if (Array.isArray(data.psycQuestionsList) && data.psycQuestionsList.length) {
-          this.questionsList = data.psycQuestionsList
-        } else {
-          // 后端没返回数据时，提供空数组占位
-          this.questionsList = []
-        }
+const formRef = ref(null)
+const queryForm = ref(null)
 
-        this.loading = false
-      })
-    },
-    // 添加跳转到题目管理的方法
-    handleToQuestions(row) {
-      const testId = row.id;
-      this.$router.push(`/psyc/test-questions/index/${testId}`);
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除心理测评编号为"' + ids + '"的数据项？').then(function() {
-        return delTest(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 测评动态评分区间规则序号 */
-    rowPsycAssessmentRuleIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1
-    },
-    /** 测评动态评分区间规则添加按钮操作 */
-    handleAddPsycAssessmentRule() {
-      let obj = {
-        minScore: 0,
-        maxScore: 0,
-        level: "",
-        suggestion: "",
-        referenceResult:"",
-        priority: 0
-      }
-      this.psycAssessmentRuleList.push(obj)
-    },
-    /** 删除单个规则 */
-    removeRule(index) {
-      this.$confirm('确定要删除这条评分规则吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.psycAssessmentRuleList.splice(index, 1)
-        this.$message.success('删除成功')
-      }).catch(() => {})
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('psyc/test/export', {
-        ...this.queryParams
-      }, `test_${new Date().getTime()}.xlsx`)
-    }
-  }
+function getList() {
+  loading.value = true
+  listTest(queryParams).then(response => {
+    testList.value = response.rows.map(item => ({
+      ...item,
+      status: String(item.status || "0")
+    }))
+    total.value = response.total
+    loading.value = false
+  })
 }
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    id: null,
+    testName: null,
+    description: null,
+    status: "1",
+    totalQuestions: null,
+    duration: null,
+    createTime: null,
+    updateTime: null,
+    resultList: []
+  })
+  psycAssessmentRuleList.value = []
+  activeTab.value = "basic"
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.id)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+}
+
+function handleAdd() {
+  reset()
+  open.value = true
+  title.value = "添加心理测评"
+}
+
+function handleUpdate(row) {
+  reset()
+  const id = row.id || ids.value
+  getTest(id).then(response => {
+    Object.assign(form, response.data)
+    psycAssessmentRuleList.value = response.data.psycAssessmentRuleList || []
+    form.status = String(form.status || "0")
+    open.value = true
+    title.value = "修改心理测评"
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      form.psycAssessmentRuleList = psycAssessmentRuleList.value
+      if (form.id != null) {
+        updateTest(form).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
+      } else {
+        addTest(form).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
+        })
+      }
+    }
+  })
+}
+
+function handleView(row) {
+  const id = row.id
+  openView.value = true
+  loading.value = true
+  
+  getTest(id).then(response => {
+    const data = response.data || {}
+    Object.assign(form, data)
+
+    if (Array.isArray(data.psycAssessmentRuleList) && data.psycAssessmentRuleList.length) {
+      form.resultList = data.psycAssessmentRuleList
+    } else {
+      form.resultList = []
+    }
+
+    if (Array.isArray(data.psycQuestionsList) && data.psycQuestionsList.length) {
+      questionsList.value = data.psycQuestionsList
+    } else {
+      questionsList.value = []
+    }
+
+    loading.value = false
+  })
+}
+
+function handleToQuestions(row) {
+  const testId = row.id
+  router.push(`/psyc/test-questions/index/${testId}`)
+}
+
+function handleDelete(row) {
+  const idsVal = row.id || ids.value
+  ElMessageBox.confirm('是否确认删除心理测评编号为"' + idsVal + '"的数据项？').then(function() {
+    return delTest(idsVal)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function rowPsycAssessmentRuleIndex({ row, rowIndex }) {
+  row.index = rowIndex + 1
+}
+
+function handleAddPsycAssessmentRule() {
+  let obj = {
+    minScore: 0,
+    maxScore: 0,
+    level: "",
+    suggestion: "",
+    referenceResult:"",
+    priority: 0
+  }
+  psycAssessmentRuleList.value.push(obj)
+}
+
+function removeRule(index) {
+  ElMessageBox.confirm('确定要删除这条评分规则吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    psycAssessmentRuleList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+function handleExport() {
+  download('psyc/test/export', {
+    ...queryParams
+  }, `test_${new Date().getTime()}.xlsx`)
+}
+
+onMounted(() => {
+  getList()
+})
 </script>
 
 <style scoped>
-/* ========== 弹窗通用样式 ========== */
-.test-dialog ::v-deep .el-dialog__header {
+.test-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px 24px;
   border-radius: 4px 4px 0 0;
 }
 
-.test-dialog ::v-deep .el-dialog__title {
+.test-dialog :deep(.el-dialog__title) {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.test-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close {
+.test-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
   color: #fff;
   font-size: 20px;
 }
 
-.test-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close:hover {
+.test-dialog :deep(.el-dialog__headerbtn .el-dialog__close:hover) {
   color: #f0f0f0;
 }
 
-.detail-dialog ::v-deep .el-dialog__header {
+.detail-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   padding: 20px 24px;
   border-radius: 4px 4px 0 0;
 }
 
-.detail-dialog ::v-deep .el-dialog__title {
+.detail-dialog :deep(.el-dialog__title) {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
 }
 
-.detail-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close {
+.detail-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
   color: #fff;
   font-size: 20px;
 }
@@ -960,16 +925,15 @@ export default {
   padding: 20px 0;
 }
 
-/* ========== 表单样式 ========== */
 .test-form {
   padding: 0 10px;
 }
 
-.custom-tabs ::v-deep .el-tabs__header {
+.custom-tabs :deep(.el-tabs__header) {
   margin-bottom: 24px;
 }
 
-.custom-tabs ::v-deep .el-tabs__item {
+.custom-tabs :deep(.el-tabs__item) {
   font-size: 15px;
   font-weight: 500;
   padding: 0 24px;
@@ -977,7 +941,7 @@ export default {
   line-height: 48px;
 }
 
-.custom-tabs ::v-deep .el-tabs__active-bar {
+.custom-tabs :deep(.el-tabs__active-bar) {
   height: 3px;
 }
 
@@ -1023,24 +987,24 @@ export default {
   margin-left: 10px;
 }
 
-.form-item-custom ::v-deep .el-form-item__label {
+.form-item-custom :deep(.el-form-item__label) {
   font-weight: 500;
   color: #606266;
 }
 
-.form-item-custom ::v-deep .el-input__inner,
-.form-item-custom ::v-deep .el-textarea__inner {
+.form-item-custom :deep(.el-input__inner),
+.form-item-custom :deep(.el-textarea__inner) {
   border-radius: 6px;
   transition: all 0.3s;
 }
 
-.form-item-custom ::v-deep .el-input__inner:focus,
-.form-item-custom ::v-deep .el-textarea__inner:focus {
+.form-item-custom :deep(.el-input__inner:focus),
+.form-item-custom :deep(.el-textarea__inner:focus) {
   border-color: #409EFF;
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
 }
 
-.textarea-custom ::v-deep .el-textarea__inner {
+.textarea-custom :deep(.el-textarea__inner) {
   resize: vertical;
 }
 
@@ -1052,7 +1016,6 @@ export default {
   line-height: 1.5;
 }
 
-/* ========== 评分规则样式 ========== */
 .rules-section {
   padding: 0 10px;
 }
@@ -1133,7 +1096,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.rule-card ::v-deep .el-card__header {
+.rule-card :deep(.el-card__header) {
   padding: 15px 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #e4e7ed;
@@ -1216,7 +1179,6 @@ export default {
   font-weight: 500;
 }
 
-/* ========== 详情页样式 ========== */
 .detail-section {
   padding: 0 10px;
 }
@@ -1226,7 +1188,7 @@ export default {
   border: 1px solid #e4e7ed;
 }
 
-.basic-info-card ::v-deep .el-card__body {
+.basic-info-card :deep(.el-card__body) {
   padding: 24px;
 }
 
@@ -1309,7 +1271,6 @@ export default {
   border: 1px solid #e4e7ed;
 }
 
-/* ========== 详情页评分规则样式 ========== */
 .rules-detail-container {
   max-height: 500px;
   overflow-y: auto;
@@ -1342,7 +1303,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.rule-detail-card ::v-deep .el-card__header {
+.rule-detail-card :deep(.el-card__header) {
   padding: 15px 20px;
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   border-bottom: none;
@@ -1352,12 +1313,6 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.rule-header-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .rule-detail-badge {
@@ -1438,7 +1393,6 @@ export default {
   white-space: pre-wrap;
 }
 
-/* ========== 题目选项样式 ========== */
 .questions-detail-container {
   max-height: 500px;
   overflow-y: auto;
@@ -1471,7 +1425,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.question-detail-card ::v-deep .el-card__header {
+.question-detail-card :deep(.el-card__header) {
   padding: 15px 20px;
   background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
   border-bottom: none;
@@ -1596,7 +1550,6 @@ export default {
   font-weight: 600;
 }
 
-/* ========== 空状态样式 ========== */
 .empty-rules {
   text-align: center;
   padding: 60px 20px;
@@ -1626,7 +1579,6 @@ export default {
   margin: 0;
 }
 
-/* ========== 底部按钮样式 ========== */
 .dialog-footer-custom {
   padding: 20px 24px;
   text-align: right;
@@ -1652,7 +1604,6 @@ export default {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* ========== 响应式设计 ========== */
 @media (max-width: 768px) {
   .basic-info-grid {
     grid-template-columns: 1fr;

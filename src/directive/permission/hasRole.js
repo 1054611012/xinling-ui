@@ -1,15 +1,11 @@
- /**
- * v-hasRole 角色权限处理
- * Copyright (c) 2019 xinling
- */
-
-import store from '@/store'
+import { useUserStore } from '@/store'
 
 export default {
-  inserted(el, binding, vnode) {
+  mounted(el, binding) {
     const { value } = binding
     const super_admin = "admin"
-    const roles = store.getters && store.getters.roles
+    const userStore = useUserStore()
+    const roles = userStore.roles
 
     if (value && value instanceof Array && value.length > 0) {
       const roleFlag = value
@@ -19,10 +15,10 @@ export default {
       })
 
       if (!hasRole) {
-        el.parentNode && el.parentNode.removeChild(el)
+        el.style.display = 'none'
       }
     } else {
-      throw new Error(`请设置角色权限标签值"`)
+      throw new Error(`请设置角色权限标签值`)
     }
   }
 }

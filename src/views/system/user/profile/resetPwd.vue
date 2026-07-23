@@ -1,5 +1,5 @@
 <template>
-  <el-form ref="form" :model="user" :rules="rules" label-width="80px">
+  <el-form ref="formRef" :model="user" :rules="rules" label-width="80px">
     <el-form-item label="旧密码" prop="oldPassword">
       <el-input v-model="user.oldPassword" placeholder="请输入旧密码" type="password" show-password/>
     </el-form-item>
@@ -10,60 +10,62 @@
       <el-input v-model="user.confirmPassword" placeholder="请确认新密码" type="password" show-password/>
     </el-form-item>
     <el-form-item>
-      <el-button type="primary" size="mini" @click="submit">保存</el-button>
-      <el-button type="danger" size="mini" @click="close">关闭</el-button>
-    </el-form-item>
+      <el-button type="primary" size="small" @click="submit">保存</el-button>
+      <el-button type="danger" size="small" @click="close">关闭</el-button>
+      </el-form-item>
   </el-form>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive } from 'vue'
+import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
 import { updateUserPwd } from "@/api/system/user"
 
-export default {
-  data() {
-    const equalToPassword = (rule, value, callback) => {
-      if (this.user.newPassword !== value) {
-        callback(new Error("两次输入的密码不一致"))
-      } else {
-        callback()
-      }
-    }
-    return {
-      user: {
-        oldPassword: undefined,
-        newPassword: undefined,
-        confirmPassword: undefined
-      },
-      // 表单校验
-      rules: {
-        oldPassword: [
-          { required: true, message: "旧密码不能为空", trigger: "blur" }
-        ],
-        newPassword: [
-          { required: true, message: "新密码不能为空", trigger: "blur" },
-          { min: 6, max: 20, message: "长度在 6 到 20 个字符", trigger: "blur" },
-          { pattern: /^[^<>"'|\\]+$/, message: "不能包含非法字符：< > \" ' \\\ |", trigger: "blur" }
-        ],
-        confirmPassword: [
-          { required: true, message: "确认密码不能为空", trigger: "blur" },
-          { required: true, validator: equalToPassword, trigger: "blur" }
-        ]
-      }
-    }
-  },
-  methods: {
-    submit() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          updateUserPwd(this.user.oldPassword, this.user.newPassword).then(response => {
-            this.$modal.msgSuccess("修改成功")
-          })
-        }
-      })
-    },
-    close() {
-      this.$tab.closePage()
-    }
+const router = useRouter()
+
+const user = reactive({
+  oldPassword: undefined,
+  newPassword: undefined,
+  confirmPassword: undefined
+})
+
+const equalToPassword = (rule, value, callback) => {
+  if (user.newPassword !== value) {
+    callback(new Error("两次输入的密码不一致"))
+  } else {
+    callback()
   }
+}
+
+const rules = reactive({
+  oldPassword: [
+    { required: true, message: "旧密码不能为空", trigger: "blur" }
+  ],
+  newPassword: [
+    { required: true, message: "新密码不能为空", trigger: "blur" },
+    { min: 6, max: 20, message: "长度在 6 到 20 个字符", trigger: "blur" },
+    { pattern: /^[^<>"'|\\]+$/, message: "不能包含非法字符：< > \" ' \\\ |", trigger: "blur" }
+  ],
+  confirmPassword: [
+    { required: true, message: "确认密码不能为空", trigger: "blur" },
+    { required: true, validator: equalToPassword, trigger: "blur" }
+  ]
+})
+
+const formRef = ref(null)
+
+function submit() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      updateUserPwd(user.oldPassword, user.newPassword).then(response => {
+        ElMessage.success("修改成功")
+      })
+    }
+  })
+}
+
+function close() {
+  router.back()
 }
 </script>

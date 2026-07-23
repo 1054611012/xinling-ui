@@ -15,6 +15,7 @@
     </el-upload>
     <div class="editor" ref="editor" :style="styles"></div>
   </div>
+
 </template>
 
 <script>
@@ -24,6 +25,7 @@ import "quill/dist/quill.core.css"
 import "quill/dist/quill.snow.css"
 import "quill/dist/quill.bubble.css"
 import { getToken } from "@/utils/auth"
+import { ElMessage } from "element-plus"
 
 export default {
   name: "Editor",
@@ -61,7 +63,7 @@ export default {
   },
   data() {
     return {
-      uploadUrl: process.env.VUE_APP_BASE_API + "/common/upload", // 上传的图片服务器地址
+      uploadUrl: import.meta.env.VITE_APP_BASE_API + "/common/upload", // 上传的图片服务器地址
       headers: {
         Authorization: "Bearer " + getToken()
       },
@@ -119,7 +121,7 @@ export default {
   mounted() {
     this.init()
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.Quill = null
   },
   methods: {
@@ -131,7 +133,7 @@ export default {
         let toolbar = this.Quill.getModule("toolbar")
         toolbar.addHandler("image", (value) => {
           if (value) {
-            this.$refs.upload.$children[0].$refs.input.click()
+            this.$refs.upload.$el.querySelector('input[type="file"]').click()
           } else {
             this.quill.format("image", false)
           }
@@ -163,14 +165,14 @@ export default {
       const isJPG = type.includes(file.type)
       // 检验文件格式
       if (!isJPG) {
-        this.$message.error(`图片格式错误!`)
+        ElMessage.error(`图片格式错误!`)
         return false
       }
       // 校检文件大小
       if (this.fileSize) {
         const isLt = file.size / 1024 / 1024 < this.fileSize
         if (!isLt) {
-          this.$message.error(`上传文件大小不能超过 ${this.fileSize} MB!`)
+          ElMessage.error(`上传文件大小不能超过 ${this.fileSize} MB!`)
           return false
         }
       }
@@ -184,15 +186,15 @@ export default {
         // 获取光标所在位置
         let length = quill.getSelection().index
         // 插入图片  res.url为服务器返回的图片地址
-        quill.insertEmbed(length, "image", process.env.VUE_APP_BASE_API + res.fileName)
+        quill.insertEmbed(length, "image", import.meta.env.VITE_APP_BASE_API + res.fileName)
         // 调整光标到最后
         quill.setSelection(length + 1)
       } else {
-        this.$message.error("图片插入失败")
+        ElMessage.error("图片插入失败")
       }
     },
     handleUploadError() {
-      this.$message.error("图片插入失败")
+      ElMessage.error("图片插入失败")
     },
     // 复制粘贴图片处理
     handlePasteCapture(e) {

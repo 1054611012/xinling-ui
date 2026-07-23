@@ -6,7 +6,7 @@
           v-model="queryParams.deptName"
           placeholder="请输入部门名称"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
@@ -20,33 +20,29 @@
         </el-select>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <div class="mb8 button-bar">
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
-          size="mini"
+          :icon="Plus"
+          size="small"
           @click="handleAdd"
           v-hasPermi="['system:dept:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="info"
           plain
-          icon="el-icon-sort"
-          size="mini"
+          :icon="Sort"
+          size="small"
           @click="toggleExpandAll"
         >展开/折叠</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar :show-search="showSearch" @update:show-search="showSearch = $event" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table
       v-if="refreshTable"
@@ -59,42 +55,42 @@
       class="dept-table"
     >
       <el-table-column prop="deptName" label="部门名称" min-width="260">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span class="dept-name">{{ scope.row.deptName }}</span>
         </template>
       </el-table-column>
       <el-table-column prop="orderNum" label="排序" width="120" align="center"></el-table-column>
       <el-table-column prop="status" label="状态" width="100" align="center">
-        <template slot-scope="scope">
+        <template #default="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" prop="createTime" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="200" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['system:dept:edit']"
           >修改</el-button>
           <el-button
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-plus"
+            :icon="Plus"
             @click="handleAdd(scope.row)"
             v-hasPermi="['system:dept:add']"
           >新增</el-button>
           <el-button
             v-if="scope.row.parentId != 0"
-            size="mini"
+            size="small"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['system:dept:remove']"
           >删除</el-button>
@@ -103,8 +99,8 @@
     </el-table>
 
     <!-- 添加或修改部门对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="600px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
+    <el-dialog :title="title" :model-value="open" @update:model-value="open = $event" width="600px" append-to-body>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-row>
           <el-col :span="24" v-if="form.parentId !== 0">
             <el-form-item label="上级部门" prop="parentId">
@@ -155,208 +151,216 @@
           </el-col>
         </el-row>
       </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button type="primary" @click="submitForm">确 定</el-button>
+          <el-button @click="cancel">取 消</el-button>
+        </div>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listDept, getDept, delDept, addDept, updateDept, listDeptExcludeChild } from "@/api/system/dept"
-import Treeselect from "@riophae/vue-treeselect"
-import "@riophae/vue-treeselect/dist/vue-treeselect.css"
+import { parseTime, resetForm, handleTree } from '@/utils/ruoyi'
+import { useDict } from '@/utils/dict/useDict'
+import Treeselect from "vue3-treeselect"
+import "vue3-treeselect/dist/vue3-treeselect.css"
+import { Delete, Edit, Plus, Refresh, Search, Sort } from '@element-plus/icons-vue'
 
-export default {
-  name: "Dept",
-  dicts: ['sys_normal_disable'],
-  components: { Treeselect },
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 表格树数据
-      deptList: [],
-      // 部门树选项
-      deptOptions: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 是否展开，默认全部展开
-      isExpandAll: true,
-      // 重新渲染表格状态
-      refreshTable: true,
-      // 查询参数
-      queryParams: {
-        deptName: undefined,
-        status: undefined
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        parentId: [
-          { required: true, message: "上级部门不能为空", trigger: "blur" }
-        ],
-        deptName: [
-          { required: true, message: "部门名称不能为空", trigger: "blur" }
-        ],
-        orderNum: [
-          { required: true, message: "显示排序不能为空", trigger: "blur" }
-        ],
-        email: [
-          {
-            type: "email",
-            message: "请输入正确的邮箱地址",
-            trigger: ["blur", "change"]
-          }
-        ],
-        phone: [
-          {
-            pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
-            message: "请输入正确的手机号码",
-            trigger: "blur"
-          }
-        ]
-      }
+defineOptions({ name: "Dept" })
+
+const dict = useDict('sys_normal_disable')
+
+const loading = ref(true)
+const showSearch = ref(true)
+const deptList = ref([])
+const deptOptions = ref([])
+const title = ref("")
+const open = ref(false)
+const isExpandAll = ref(true)
+const refreshTable = ref(true)
+const queryForm = ref(null)
+const formRef = ref(null)
+
+const queryParams = reactive({
+  deptName: undefined,
+  status: undefined
+})
+
+const form = reactive({
+  deptId: undefined,
+  parentId: undefined,
+  deptName: undefined,
+  orderNum: undefined,
+  leader: undefined,
+  phone: undefined,
+  email: undefined,
+  status: "0"
+})
+
+const rules = reactive({
+  parentId: [
+    { required: true, message: "上级部门不能为空", trigger: "blur" }
+  ],
+  deptName: [
+    { required: true, message: "部门名称不能为空", trigger: "blur" }
+  ],
+  orderNum: [
+    { required: true, message: "显示排序不能为空", trigger: "blur" }
+  ],
+  email: [
+    {
+      type: "email",
+      message: "请输入正确的邮箱地址",
+      trigger: ["blur", "change"]
     }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询部门列表 */
-    getList() {
-      this.loading = true
-      listDept(this.queryParams).then(response => {
-        this.deptList = this.handleTree(response.data, "deptId")
-        this.loading = false
-      })
-    },
-    /** 转换部门数据结构 */
-    normalizer(node) {
-      if (node.children && !node.children.length) {
-        delete node.children
-      }
-      return {
-        id: node.deptId,
-        label: node.deptName,
-        children: node.children
-      }
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        deptId: undefined,
-        parentId: undefined,
-        deptName: undefined,
-        orderNum: undefined,
-        leader: undefined,
-        phone: undefined,
-        email: undefined,
-        status: "0"
-      }
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    /** 新增按钮操作 */
-    handleAdd(row) {
-      this.reset()
-      if (row != undefined) {
-        this.form.parentId = row.deptId
-      }
-      this.open = true
-      this.title = "添加部门"
-      listDept().then(response => {
-        this.deptOptions = this.handleTree(response.data, "deptId")
-      })
-    },
-    /** 展开/折叠操作 */
-    toggleExpandAll() {
-      this.refreshTable = false
-      this.isExpandAll = !this.isExpandAll
-      this.$nextTick(() => {
-        this.refreshTable = true
-      })
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      getDept(row.deptId).then(response => {
-        this.form = response.data
-        this.open = true
-        this.title = "修改部门"
-        listDeptExcludeChild(row.deptId).then(response => {
-          this.deptOptions = this.handleTree(response.data, "deptId")
-          if (this.deptOptions.length == 0) {
-            const noResultsOptions = { deptId: this.form.parentId, deptName: this.form.parentName, children: [] }
-            this.deptOptions.push(noResultsOptions)
-          }
-        })
-      })
-    },
-    /** 提交按钮 */
-    submitForm: function() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          if (this.form.deptId != undefined) {
-            updateDept(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addDept(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      this.$modal.confirm('是否确认删除名称为"' + row.deptName + '"的数据项？').then(function() {
-        return delDept(row.deptId)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 设置行样式 */
-    tableRowClassName({ row, rowIndex }) {
-      if (row.parentId === 0) {
-        return 'root-dept-row'
-      }
-      return ''
+  ],
+  phone: [
+    {
+      pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
+      message: "请输入正确的手机号码",
+      trigger: "blur"
     }
+  ]
+})
+
+function getList() {
+  loading.value = true
+  listDept(queryParams).then(response => {
+    deptList.value = handleTree(response.data, "deptId")
+    loading.value = false
+  })
+}
+
+function normalizer(node) {
+  if (node.children && !node.children.length) {
+    delete node.children
+  }
+  return {
+    id: node.deptId,
+    label: node.deptName,
+    children: node.children
   }
 }
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    deptId: undefined,
+    parentId: undefined,
+    deptName: undefined,
+    orderNum: undefined,
+    leader: undefined,
+    phone: undefined,
+    email: undefined,
+    status: "0"
+  })
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  getList()
+}
+
+function resetQuery() {
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleAdd(row) {
+  reset()
+  if (row != undefined) {
+    form.parentId = row.deptId
+  }
+  open.value = true
+  title.value = "添加部门"
+  listDept().then(response => {
+    deptOptions.value = handleTree(response.data, "deptId")
+  })
+}
+
+function toggleExpandAll() {
+  refreshTable.value = false
+  isExpandAll.value = !isExpandAll.value
+  nextTick(() => {
+    refreshTable.value = true
+  })
+}
+
+function handleUpdate(row) {
+  reset()
+  getDept(row.deptId).then(response => {
+    Object.assign(form, response.data)
+    open.value = true
+    title.value = "修改部门"
+    listDeptExcludeChild(row.deptId).then(response => {
+      deptOptions.value = handleTree(response.data, "deptId")
+      if (deptOptions.value.length == 0) {
+        const noResultsOptions = { deptId: form.parentId, deptName: form.parentName, children: [] }
+        deptOptions.value.push(noResultsOptions)
+      }
+    })
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      if (form.deptId != undefined) {
+        updateDept(form).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
+      } else {
+        addDept(form).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
+        })
+      }
+    }
+  })
+}
+
+function handleDelete(row) {
+  ElMessageBox.confirm('是否确认删除名称为"' + row.deptName + '"的数据项？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return delDept(row.deptId)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function tableRowClassName({ row, rowIndex }) {
+  if (row.parentId === 0) {
+    return 'root-dept-row'
+  }
+  return ''
+}
+
+onMounted(() => {
+  getList()
+})
 </script>
 
 <style lang="scss" scoped>
 .dept-table {
   margin-top: 20px;
   
-  ::v-deep .el-table__body {
+  :deep() .el-table__body {
     tr.root-dept-row {
       background-color: #f5f7fa;
       font-weight: bold;
@@ -377,17 +381,17 @@ export default {
     margin-left: 5px;
     
     &::before {
-      content: "\25B8"; /* 小三角形 */
+      content: "\25B8";
       margin-right: 8px;
       color: #909399;
       font-size: 12px;
     }
   }
   
-  ::v-deep .el-table__row {
+  :deep() .el-table__row {
     .dept-name {
       &::before {
-        content: "\25A0"; /* 小方块 */
+        content: "\25A0";
         color: #c0c4cc;
       }
     }
@@ -395,7 +399,7 @@ export default {
     &.root-dept-row {
       .dept-name {
         &::before {
-          content: "\25A0"; /* 小方块 */
+          content: "\25A0";
           color: #409EFF;
           font-weight: bold;
         }

@@ -3,9 +3,11 @@
     <el-row :gutter="20">
       <el-col :span="6" :xs="24">
         <el-card class="box-card">
-          <div slot="header" class="clearfix">
-            <span>个人信息</span>
-          </div>
+          <template #header>
+      <div class="clearfix">
+              <span>个人信息</span>
+            </div>
+          </template>
           <div>
             <div class="text-center">
               <userAvatar />
@@ -41,9 +43,11 @@
       </el-col>
       <el-col :span="18" :xs="24">
         <el-card>
-          <div slot="header" class="clearfix">
-            <span>基本资料</span>
-          </div>
+          <template #header>
+      <div class="clearfix">
+              <span>基本资料</span>
+            </div>
+          </template>
           <el-tabs v-model="selectedTab">
             <el-tab-pane label="基本资料" name="userinfo">
               <userInfo :user="user" />
@@ -58,38 +62,36 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { getUserProfile } from "@/api/system/user"
 import userAvatar from "./userAvatar"
 import userInfo from "./userInfo"
 import resetPwd from "./resetPwd"
-import { getUserProfile } from "@/api/system/user"
 
-export default {
-  name: "Profile",
-  components: { userAvatar, userInfo, resetPwd },
-  data() {
-    return {
-      user: {},
-      roleGroup: {},
-      postGroup: {},
-      selectedTab: "userinfo"
-    }
-  },
-  created() {
-    const activeTab = this.$route.params && this.$route.params.activeTab
-    if (activeTab) {
-      this.selectedTab = activeTab
-    }
-    this.getUser()
-  },
-  methods: {
-    getUser() {
-      getUserProfile().then(response => {
-        this.user = response.data
-        this.roleGroup = response.roleGroup
-        this.postGroup = response.postGroup
-      })
-    }
-  }
+defineOptions({ name: "Profile" })
+
+const route = useRoute()
+
+const user = reactive({})
+const roleGroup = ref({})
+const postGroup = ref({})
+const selectedTab = ref("userinfo")
+
+function getUser() {
+  getUserProfile().then(response => {
+    Object.assign(user, response.data)
+    roleGroup.value = response.roleGroup
+    postGroup.value = response.postGroup
+  })
 }
+
+onMounted(() => {
+  const activeTab = route.params && route.params.activeTab
+  if (activeTab) {
+    selectedTab.value = activeTab
+  }
+  getUser()
+})
 </script>

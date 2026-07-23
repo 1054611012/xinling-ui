@@ -7,7 +7,7 @@
           placeholder="请输入登录地址"
           clearable
           style="width: 240px;"
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="用户名称" prop="userName">
@@ -16,7 +16,7 @@
           placeholder="请输入用户名称"
           clearable
           style="width: 240px;"
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="状态" prop="status">
@@ -47,58 +47,50 @@
         ></el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="small" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="small" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
+    <div class="mb8 button-bar">
+      <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
-          size="mini"
+          :icon="Delete"
+          size="small"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['monitor:logininfor:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
-          size="mini"
+          :icon="Delete"
+          size="small"
           @click="handleClean"
           v-hasPermi="['monitor:logininfor:remove']"
         >清空</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="primary"
           plain
-          icon="el-icon-unlock"
-          size="mini"
+          :icon="Unlock"
+          size="small"
           :disabled="single"
           @click="handleUnlock"
           v-hasPermi="['monitor:logininfor:unlock']"
         >解锁</el-button>
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
+      <el-button
           type="warning"
           plain
-          icon="el-icon-download"
-          size="mini"
+          :icon="Download"
+          size="small"
           @click="handleExport"
           v-hasPermi="['monitor:logininfor:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar :show-search="showSearch" @update:show-search="showSearch = $event" @queryTable="getList"></right-toolbar>
+    </div>
 
-    <el-table ref="tables" v-loading="loading" :data="list" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
+    <el-table ref="tables" v-loading="loading" :data="listData" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="访问编号" align="center" prop="infoId" />
       <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" />
@@ -107,13 +99,13 @@
       <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" />
       <el-table-column label="操作系统" align="center" prop="os" />
       <el-table-column label="登录状态" align="center" prop="status">
-        <template slot-scope="scope">
+        <template #default="scope">
           <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="操作信息" align="center" prop="msg" :show-overflow-tooltip="true" />
       <el-table-column label="登录日期" align="center" prop="loginTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.loginTime) }}</span>
         </template>
       </el-table-column>
@@ -122,125 +114,128 @@
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      :page="queryParams.pageNum"
+      :limit="queryParams.pageSize"
+      @update:page="queryParams.pageNum = $event"
+      @update:limit="queryParams.pageSize = $event"
       @pagination="getList"
     />
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { list, delLogininfor, cleanLogininfor, unlockLogininfor } from "@/api/monitor/logininfor"
+import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
+import { useDict } from '@/utils/dict/useDict'
+import { Delete, Download, Refresh, Search, Unlock } from '@element-plus/icons-vue'
 
-export default {
-  name: "Logininfor",
-  dicts: ['sys_common_status'],
-  data() {
-    return {
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 选择用户名
-      selectName: "",
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 表格数据
-      list: [],
-      // 日期范围
-      dateRange: [],
-      // 默认排序
-      defaultSort: { prop: "loginTime", order: "descending" },
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        ipaddr: undefined,
-        userName: undefined,
-        status: undefined
-      }
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询登录日志列表 */
-    getList() {
-      this.loading = true
-      list(this.addDateRange(this.queryParams, this.dateRange)).then(response => {
-          this.list = response.rows
-          this.total = response.total
-          this.loading = false
-        }
-      )
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.dateRange = []
-      this.resetForm("queryForm")
-      this.queryParams.pageNum = 1
-      this.$refs.tables.sort(this.defaultSort.prop, this.defaultSort.order)
-    },
-    /** 多选框选中数据 */
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.infoId)
-      this.single = selection.length!=1
-      this.multiple = !selection.length
-      this.selectName = selection.map(item => item.userName)
-    },
-    /** 排序触发事件 */
-    handleSortChange(column, prop, order) {
-      this.queryParams.orderByColumn = column.prop
-      this.queryParams.isAsc = column.order
-      this.getList()
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const infoIds = row.infoId || this.ids
-      this.$modal.confirm('是否确认删除访问编号为"' + infoIds + '"的数据项？').then(function() {
-        return delLogininfor(infoIds)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-    /** 清空按钮操作 */
-    handleClean() {
-      this.$modal.confirm('是否确认清空所有登录日志数据项？').then(function() {
-        return cleanLogininfor()
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("清空成功")
-      }).catch(() => {})
-    },
-    /** 解锁按钮操作 */
-    handleUnlock() {
-      const username = this.selectName
-      this.$modal.confirm('是否确认解锁用户"' + username + '"数据项?').then(function() {
-        return unlockLogininfor(username)
-      }).then(() => {
-        this.$modal.msgSuccess("用户" + username + "解锁成功")
-      }).catch(() => {})
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('monitor/logininfor/export', {
-        ...this.queryParams
-      }, `logininfor_${new Date().getTime()}.xlsx`)
-    }
-  }
+defineOptions({ name: "Logininfor" })
+
+const dict = useDict('sys_common_status')
+
+const loading = ref(true)
+const ids = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const selectName = ref("")
+const showSearch = ref(true)
+const total = ref(0)
+const listData = ref([])
+const dateRange = ref([])
+const defaultSort = ref({ prop: "loginTime", order: "descending" })
+const queryForm = ref(null)
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  ipaddr: undefined,
+  userName: undefined,
+  status: undefined
+})
+
+function getList() {
+  loading.value = true
+  list(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+    listData.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
 }
-</script>
 
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  dateRange.value = []
+  resetForm(queryForm)
+  queryParams.pageNum = 1
+  // $refs.tables sort...
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.infoId)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+  selectName.value = selection.map(item => item.userName)
+}
+
+function handleSortChange(column, prop, order) {
+  queryParams.orderByColumn = column.prop
+  queryParams.isAsc = column.order
+  getList()
+}
+
+function handleDelete(row) {
+  const infoIds = row.infoId || ids.value
+  ElMessageBox.confirm('是否确认删除访问编号为"' + infoIds + '"的数据项？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return delLogininfor(infoIds)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function handleClean() {
+  ElMessageBox.confirm('是否确认清空所有登录日志数据项？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return cleanLogininfor()
+  }).then(() => {
+    getList()
+    ElMessage.success("清空成功")
+  }).catch(() => {})
+}
+
+function handleUnlock() {
+  const username = selectName.value
+  ElMessageBox.confirm('是否确认解锁用户"' + username + '"数据项?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    return unlockLogininfor(username)
+  }).then(() => {
+    ElMessage.success("用户" + username + "解锁成功")
+  }).catch(() => {})
+}
+
+function handleExport() {
+  download('monitor/logininfor/export', {
+    ...queryParams
+  }, `logininfor_${new Date().getTime()}.xlsx`)
+}
+
+onMounted(() => {
+  getList()
+})
+</script>

@@ -4,7 +4,6 @@
       v-bind="$attrs"
       :close-on-click-modal="false"
       :modal-append-to-body="false"
-      v-on="$listeners"
       @open="onOpen"
       @close="onClose"
     >
@@ -38,11 +37,8 @@
                 placeholder="请输入选项值"
                 clearable
               >
-                <el-select
-                  slot="append"
-                  v-model="dataType"
-                  :style="{width: '100px'}"
-                >
+                <template #append>
+      <el-select v-model="dataType" :style="{width: '100px'}">
                   <el-option
                     v-for="(item, index) in dataTypeOptions"
                     :key="index"
@@ -51,12 +47,15 @@
                     :disabled="item.disabled"
                   />
                 </el-select>
-              </el-input>
+        </template>
+      </el-input>
             </el-form-item>
           </el-col>
         </el-form>
       </el-row>
-      <div slot="footer">
+
+      <template #footer>
+      <div>
         <el-button
           type="primary"
           @click="handleConfirm"
@@ -67,82 +66,63 @@
           取消
         </el-button>
       </div>
-    </el-dialog>
+    </template>
+  </el-dialog>
   </div>
 </template>
-<script>
+
+<script setup>
+import { ref, reactive, watch } from 'vue'
 import { isNumberStr } from '@/utils/index'
 
-export default {
-  components: {},
-  inheritAttrs: false,
-  props: [],
-  data() {
-    return {
-      id: 100,
-      formData: {
-        label: undefined,
-        value: undefined
-      },
-      rules: {
-        label: [
-          {
-            required: true,
-            message: '请输入选项名',
-            trigger: 'blur'
-          }
-        ],
-        value: [
-          {
-            required: true,
-            message: '请输入选项值',
-            trigger: 'blur'
-          }
-        ]
-      },
-      dataType: 'string',
-      dataTypeOptions: [
-        {
-          label: '字符串',
-          value: 'string'
-        },
-        {
-          label: '数字',
-          value: 'number'
-        }
-      ]
+defineOptions({ name: 'TreeNodeDialog' })
+
+const emit = defineEmits(['update:visible', 'commit'])
+
+const elForm = ref(null)
+const id = ref(100)
+const formData = reactive({
+  label: undefined,
+  value: undefined
+})
+const rules = reactive({
+  label: [
+    { required: true, message: '请输入选项名', trigger: 'blur' }
+  ],
+  value: [
+    { required: true, message: '请输入选项值', trigger: 'blur' }
+  ]
+})
+const dataType = ref('string')
+const dataTypeOptions = ref([
+  { label: '字符串', value: 'string' },
+  { label: '数字', value: 'number' }
+])
+
+watch(() => formData.value, (val) => {
+  dataType.value = isNumberStr(val) ? 'number' : 'string'
+})
+
+function onOpen() {
+  formData.label = undefined
+  formData.value = undefined
+}
+
+function onClose() {}
+
+function close() {
+  emit('update:visible', false)
+}
+
+function handleConfirm() {
+  elForm.value.validate(valid => {
+    if (!valid) return
+    if (dataType.value === 'number') {
+      formData.value = parseFloat(formData.value)
     }
-  },
-  computed: {},
-  watch: {
-    'formData.value': function (val) {
-      this.dataType = isNumberStr(val) ? 'number' : 'string'
-    }
-  },
-  created() {},
-  mounted() {},
-  methods: {
-    onOpen() {
-      this.formData = {
-        label: undefined,
-        value: undefined
-      }
-    },
-    onClose() {},
-    close() {
-      this.$emit('update:visible', false)
-    },
-    handleConfirm() {
-      this.$refs.elForm.validate(valid => {
-        if (!valid) return
-        if (this.dataType === 'number') {
-          this.formData.value = parseFloat(this.formData.value)
-        }
-        this.formData.id = this.id++
-        this.$emit('commit', this.formData)
-        this.close()
-      })
-    }
-  }
+    formData.id = id.value++
+    emit('commit', { ...formData })
+    close()
+  })
 }
 </script>

@@ -1,7 +1,8 @@
 <template>
-  <el-scrollbar ref="scrollContainer" :vertical="false" class="scroll-container" @wheel.native.prevent="handleScroll">
+  <el-scrollbar ref="scrollContainer" :vertical="false" class="scroll-container" @wheel.prevent="handleScroll">
     <slot />
   </el-scrollbar>
+
 </template>
 
 <script>
@@ -20,10 +21,14 @@ export default {
     }
   },
   mounted() {
-    this.scrollWrapper.addEventListener('scroll', this.emitScroll, true)
+    if (this.scrollWrapper) {
+      this.scrollWrapper.addEventListener('scroll', this.emitScroll, true)
+    }
   },
-  beforeDestroy() {
-    this.scrollWrapper.removeEventListener('scroll', this.emitScroll)
+  beforeUnmount() {
+    if (this.scrollWrapper) {
+      this.scrollWrapper.removeEventListener('scroll', this.emitScroll)
+    }
   },
   methods: {
     handleScroll(e) {
@@ -82,13 +87,11 @@ export default {
   position: relative;
   overflow: hidden;
   width: 100%;
-  ::v-deep {
-    .el-scrollbar__bar {
-      bottom: 0px;
-    }
-    .el-scrollbar__wrap {
-      height: 49px;
-    }
+  :deep(.el-scrollbar__bar) {
+    bottom: 0px;
+  }
+  :deep(.el-scrollbar__wrap) {
+    height: 49px;
   }
 }
 </style>

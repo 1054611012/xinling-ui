@@ -1,33 +1,31 @@
-<script>
-export default {
-  name: 'MenuItem',
-  functional: true,
-  props: {
-    icon: {
-      type: String,
-      default: ''
-    },
-    title: {
-      type: String,
-      default: ''
-    }
+<template>
+  <span class="menu-item">
+    <svg-icon v-if="icon" :icon-class="icon" />
+    <span v-if="title" :title="title.length > 5 ? title : ''">{{ title }}</span>
+  </span>
+
+</template>
+
+<script setup>
+import { defineProps } from 'vue'
+import SvgIcon from '@/components/SvgIcon/index.vue'
+
+defineProps({
+  icon: {
+    type: String,
+    default: ''
   },
-  render(h, context) {
-    const { icon, title } = context.props
-    const vnodes = []
-
-    if (icon) {
-      vnodes.push(<svg-icon icon-class={icon}/>)
-    }
-
-    if (title) {
-      if (title.length > 5) {
-        vnodes.push(<span slot='title' title={(title)}>{(title)}</span>)
-      } else {
-        vnodes.push(<span slot='title'>{(title)}</span>)
-      }
-    }
-    return vnodes
+  title: {
+    type: String,
+    default: ''
   }
-}
+})
 </script>
+
+<style scoped>
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+</style>

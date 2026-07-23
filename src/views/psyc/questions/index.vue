@@ -6,7 +6,7 @@
           v-model="queryParams.testId"
           placeholder="请输入测试ID"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="题目来源" prop="source">
@@ -14,7 +14,7 @@
           v-model="queryParams.source"
           placeholder="请输入题目来源"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="创建人ID" prop="createdBy">
@@ -22,7 +22,7 @@
           v-model="queryParams.createdBy"
           placeholder="请输入创建人ID"
           clearable
-          @keyup.enter.native="handleQuery"
+          @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="创建时间" prop="createdAt">
@@ -50,56 +50,48 @@
         </el-date-picker>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" icon="el-icon-search" size="mini" @click="handleQuery">搜索</el-button>
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery">重置</el-button>
+        <el-button type="primary" :icon="Search" size="mini" @click="handleQuery">搜索</el-button>
+        <el-button :icon="Refresh" size="mini" @click="resetQuery">重置</el-button>
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
+    <div class="mb8 button-bar">
         <el-button
           type="primary"
           plain
-          icon="el-icon-plus"
+          :icon="Plus"
           size="mini"
           @click="handleAdd"
           v-hasPermi="['psyc:questions:add']"
         >新增</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="success"
           plain
-          icon="el-icon-edit"
+          :icon="Edit"
           size="mini"
           :disabled="single"
           @click="handleUpdate"
           v-hasPermi="['psyc:questions:edit']"
         >修改</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="danger"
           plain
-          icon="el-icon-delete"
+          :icon="Delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
           v-hasPermi="['psyc:questions:remove']"
         >删除</el-button>
-      </el-col>
-      <el-col :span="1.5">
         <el-button
           type="warning"
           plain
-          icon="el-icon-download"
+          :icon="Download"
           size="mini"
           @click="handleExport"
           v-hasPermi="['psyc:questions:export']"
         >导出</el-button>
-      </el-col>
-      <right-toolbar :showSearch.sync="showSearch" @queryTable="getList"></right-toolbar>
-    </el-row>
+      <right-toolbar v-model:showSearch="showSearch" @queryTable="getList"></right-toolbar>
+    </div>
 
     <el-table v-loading="loading" :data="questionsList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
@@ -112,33 +104,33 @@
       <el-table-column label="题目来源" align="center" prop="source" />
       <el-table-column label="创建人ID" align="center" prop="createdBy" />
       <el-table-column label="创建时间" align="center" prop="createdAt" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="更新时间" align="center" prop="updatedAt" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.updatedAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="删除时间" align="center" prop="deletedAt" width="180">
-        <template slot-scope="scope">
+        <template #default="scope">
           <span>{{ parseTime(scope.row.deletedAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-        <template slot-scope="scope">
+        <template #default="scope">
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
+            :icon="Edit"
             @click="handleUpdate(scope.row)"
             v-hasPermi="['psyc:questions:edit']"
           >修改</el-button>
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-delete"
+            :icon="Delete"
             @click="handleDelete(scope.row)"
             v-hasPermi="['psyc:questions:remove']"
           >删除</el-button>
@@ -149,15 +141,14 @@
     <pagination
       v-show="total>0"
       :total="total"
-      :page.sync="queryParams.pageNum"
-      :limit.sync="queryParams.pageSize"
+      v-model:page="queryParams.pageNum"
+      v-model:limit="queryParams.pageSize"
       @pagination="getList"
     />
 
-    <!-- 添加或修改题目对话框 -->
     <el-dialog 
       :title="title" 
-      :visible.sync="open" 
+      v-model="open" 
       width="950px" 
       append-to-body 
       :close-on-click-modal="false"
@@ -165,7 +156,7 @@
       :show-close="true"
     >
       <div class="dialog-content-wrapper">
-        <el-form ref="form" :model="form" :rules="rules" label-width="110px" class="test-form">
+        <el-form ref="formRef" :model="form" :rules="rules" label-width="110px" class="test-form">
           <el-tabs v-model="activeTab" class="custom-tabs">
             <el-tab-pane label="基本信息" name="basic">
               <div class="form-section">
@@ -246,7 +237,7 @@
                   </div>
                   <el-button 
                     type="primary" 
-                    icon="el-icon-plus" 
+                    :icon="Plus" 
                     size="small"
                     @click="handleAddPsycOptions"
                     class="add-rule-btn"
@@ -270,7 +261,7 @@
                         </div>
                         <el-button 
                           type="danger" 
-                          icon="el-icon-delete" 
+                          :icon="Delete" 
                           size="mini" 
                           circle
                           @click="removeOption(index)"
@@ -350,263 +341,261 @@
 
       <div slot="footer" class="dialog-footer-custom">
         <el-button @click="cancel" size="medium">取 消</el-button>
-        <el-button type="primary" @click="submitForm" size="medium" icon="el-icon-check">确 定</el-button>
+        <el-button type="primary" @click="submitForm" size="medium" :icon="Check">确 定</el-button>
       </div>
     </el-dialog>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { listQuestions, getQuestions, delQuestions, addQuestions, updateQuestions } from "@/api/psyc/questions"
+import { Search, Refresh, Plus, Edit, Delete, Download, Check } from "@element-plus/icons-vue"
+import { parseTime, resetForm } from '@/utils/ruoyi'
+import { download } from '@/utils/request'
 
-export default {
-  name: "Questions",
-  data() {
-    return {
-      // 活动标签页
-      activeTab: "basic",
-      // 遮罩层
-      loading: true,
-      // 选中数组
-      ids: [],
-      // 子表选中数据
-      checkedPsycOptions: [],
-      // 非单个禁用
-      single: true,
-      // 非多个禁用
-      multiple: true,
-      // 显示搜索条件
-      showSearch: true,
-      // 总条数
-      total: 0,
-      // 题目表格数据
-      questionsList: [],
-      // 题目选项表格数据
-      psycOptionsList: [],
-      // 弹出层标题
-      title: "",
-      // 是否显示弹出层
-      open: false,
-      // 查询参数
-      queryParams: {
-        pageNum: 1,
-        pageSize: 10,
-        content: null,
-        type: null,
-        testId: null,
-        difficulty: null,
-        analysis: null,
-        source: null,
-        createdBy: null,
-        createdAt: null,
-        updatedAt: null,
-        deletedAt: null
-      },
-      // 表单参数
-      form: {},
-      // 表单校验
-      rules: {
-        content: [
-          { required: true, message: "题目内容不能为空", trigger: "blur" }
-        ],
-        type: [
-          { required: true, message: "题目类型不能为空", trigger: "change" }
-        ],
-        testId: [
-          { required: true, message: "测试ID不能为空", trigger: "blur" }
-        ],
-        difficulty: [
-          { required: true, message: "难度不能为空", trigger: "blur" }
-        ],
-        createdBy: [
-          { required: true, message: "创建人ID不能为空", trigger: "blur" }
-        ],
-      }
-    }
-  },
-  created() {
-    this.getList()
-  },
-  methods: {
-    /** 查询题目列表 */
-    getList() {
-      this.loading = true
-      listQuestions(this.queryParams).then(response => {
-        this.questionsList = response.rows
-        this.total = response.total
-        this.loading = false
-      })
-    },
-    // 取消按钮
-    cancel() {
-      this.open = false
-      this.reset()
-    },
-    // 表单重置
-    reset() {
-      this.form = {
-        id: null,
-        content: null,
-        type: null,
-        testId: null,
-        difficulty: null,
-        analysis: null,
-        source: null,
-        createdBy: null,
-        createdAt: null,
-        updatedAt: null,
-        deletedAt: null
-      }
-      this.psycOptionsList = []
-      this.resetForm("form")
-    },
-    /** 搜索按钮操作 */
-    handleQuery() {
-      this.queryParams.pageNum = 1
-      this.getList()
-    },
-    /** 重置按钮操作 */
-    resetQuery() {
-      this.resetForm("queryForm")
-      this.handleQuery()
-    },
-    // 多选框选中数据
-    handleSelectionChange(selection) {
-      this.ids = selection.map(item => item.id)
-      this.single = selection.length!==1
-      this.multiple = !selection.length
-    },
-    /** 新增按钮操作 */
-    handleAdd() {
-      this.reset()
-      this.open = true
-      this.title = "添加题目11"
-    },
-    /** 修改按钮操作 */
-    handleUpdate(row) {
-      this.reset()
-      const id = row.id || this.ids
-      getQuestions(id).then(response => {
-        this.form = response.data
-        this.psycOptionsList = response.data.psycOptionsList
-        this.open = true
-        this.title = "修改题目111"
-      })
-    },
-    /** 提交按钮 */
-    submitForm() {
-      this.$refs["form"].validate(valid => {
-        if (valid) {
-          this.form.psycOptionsList = this.psycOptionsList
-          if (this.form.id != null) {
-            updateQuestions(this.form).then(response => {
-              this.$modal.msgSuccess("修改成功")
-              this.open = false
-              this.getList()
-            })
-          } else {
-            addQuestions(this.form).then(response => {
-              this.$modal.msgSuccess("新增成功")
-              this.open = false
-              this.getList()
-            })
-          }
-        }
-      })
-    },
-    /** 删除按钮操作 */
-    handleDelete(row) {
-      const ids = row.id || this.ids
-      this.$modal.confirm('是否确认删除题目编号为"' + ids + '"的数据项？').then(function() {
-        return delQuestions(ids)
-      }).then(() => {
-        this.getList()
-        this.$modal.msgSuccess("删除成功")
-      }).catch(() => {})
-    },
-	  /** 题目选项序号 */
-    rowPsycOptionsIndex({ row, rowIndex }) {
-      row.index = rowIndex + 1
-    },
-    /** 题目选项添加按钮操作 */
-    handleAddPsycOptions() {
-      let obj = {}
-      obj.content = ""
-      obj.sortOrder = ""
-      obj.createdAt = ""
-      obj.updatedAt = ""
-      this.psycOptionsList.push(obj)
-    },
-    /** 题目选项删除按钮操作 */
-    handleDeletePsycOptions() {
-      if (this.checkedPsycOptions.length == 0) {
-        this.$modal.msgError("请先选择要删除的题目选项数据")
+defineOptions({ name: "Questions" })
+
+const activeTab = ref("basic")
+const loading = ref(true)
+const ids = ref([])
+const checkedPsycOptions = ref([])
+const single = ref(true)
+const multiple = ref(true)
+const showSearch = ref(true)
+const total = ref(0)
+const questionsList = ref([])
+const psycOptionsList = ref([])
+const title = ref("")
+const open = ref(false)
+const queryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  content: null,
+  type: null,
+  testId: null,
+  difficulty: null,
+  analysis: null,
+  source: null,
+  createdBy: null,
+  createdAt: null,
+  updatedAt: null,
+  deletedAt: null
+})
+const form = reactive({
+  id: null,
+  content: null,
+  type: null,
+  testId: null,
+  difficulty: null,
+  analysis: null,
+  source: null,
+  createdBy: null,
+  createdAt: null,
+  updatedAt: null,
+  deletedAt: null
+})
+const rules = reactive({
+  content: [
+    { required: true, message: "题目内容不能为空", trigger: "blur" }
+  ],
+  type: [
+    { required: true, message: "题目类型不能为空", trigger: "change" }
+  ],
+  testId: [
+    { required: true, message: "测试ID不能为空", trigger: "blur" }
+  ],
+  difficulty: [
+    { required: true, message: "难度不能为空", trigger: "blur" }
+  ],
+  createdBy: [
+    { required: true, message: "创建人ID不能为空", trigger: "blur" }
+  ],
+})
+
+const formRef = ref(null)
+const queryForm = ref(null)
+
+function getList() {
+  loading.value = true
+  listQuestions(queryParams).then(response => {
+    questionsList.value = response.rows
+    total.value = response.total
+    loading.value = false
+  })
+}
+
+function cancel() {
+  open.value = false
+  reset()
+}
+
+function reset() {
+  Object.assign(form, {
+    id: null,
+    content: null,
+    type: null,
+    testId: null,
+    difficulty: null,
+    analysis: null,
+    source: null,
+    createdBy: null,
+    createdAt: null,
+    updatedAt: null,
+    deletedAt: null
+  })
+  psycOptionsList.value = []
+  resetForm(formRef)
+}
+
+function handleQuery() {
+  queryParams.pageNum = 1
+  getList()
+}
+
+function resetQuery() {
+  resetForm(queryForm)
+  handleQuery()
+}
+
+function handleSelectionChange(selection) {
+  ids.value = selection.map(item => item.id)
+  single.value = selection.length !== 1
+  multiple.value = !selection.length
+}
+
+function handleAdd() {
+  reset()
+  open.value = true
+  title.value = "添加题目"
+}
+
+function handleUpdate(row) {
+  reset()
+  const id = row.id || ids.value
+  getQuestions(id).then(response => {
+    Object.assign(form, response.data)
+    psycOptionsList.value = response.data.psycOptionsList || []
+    open.value = true
+    title.value = "修改题目"
+  })
+}
+
+function submitForm() {
+  formRef.value.validate(valid => {
+    if (valid) {
+      form.psycOptionsList = psycOptionsList.value
+      if (form.id != null) {
+        updateQuestions(form).then(response => {
+          ElMessage.success("修改成功")
+          open.value = false
+          getList()
+        })
       } else {
-        const psycOptionsList = this.psycOptionsList
-        const checkedPsycOptions = this.checkedPsycOptions
-        this.psycOptionsList = psycOptionsList.filter(function(item) {
-          return checkedPsycOptions.indexOf(item.index) == -1
+        addQuestions(form).then(response => {
+          ElMessage.success("新增成功")
+          open.value = false
+          getList()
         })
       }
-    },
-    /** 复选框选中数据 */
-    handlePsycOptionsSelectionChange(selection) {
-      this.checkedPsycOptions = selection.map(item => item.index)
-    },
-    /** 删除单个选项 */
-    removeOption(index) {
-      this.$confirm('确定要删除这个选项吗?', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        this.psycOptionsList.splice(index, 1)
-        this.$message.success('删除成功')
-      }).catch(() => {})
-    },
-    /** 导出按钮操作 */
-    handleExport() {
-      this.download('psyc/questions/export', {
-        ...this.queryParams
-      }, `questions_${new Date().getTime()}.xlsx`)
-    },
-    /** 获取题目类型标签 */
-    getQuestionTypeLabel(type) {
-      const typeMap = {
-        'single': '单选题',
-        'multiple': '多选题',
-        'judgment': '判断题',
-        'fill': '填空题',
-        'essay': '简答题'
-      }
-      return typeMap[type] || type
     }
+  })
+}
+
+function handleDelete(row) {
+  const idsVal = row.id || ids.value
+  ElMessageBox.confirm('是否确认删除题目编号为"' + idsVal + '"的数据项？').then(function() {
+    return delQuestions(idsVal)
+  }).then(() => {
+    getList()
+    ElMessage.success("删除成功")
+  }).catch(() => {})
+}
+
+function rowPsycOptionsIndex({ row, rowIndex }) {
+  row.index = rowIndex + 1
+}
+
+function handleAddPsycOptions() {
+  let obj = {}
+  obj.content = ""
+  obj.sortOrder = ""
+  obj.createdAt = ""
+  obj.updatedAt = ""
+  psycOptionsList.value.push(obj)
+}
+
+function handleDeletePsycOptions() {
+  if (checkedPsycOptions.value.length == 0) {
+    ElMessage.error("请先选择要删除的题目选项数据")
+  } else {
+    const psycOptionsListVal = psycOptionsList.value
+    const checkedPsycOptionsVal = checkedPsycOptions.value
+    psycOptionsList.value = psycOptionsListVal.filter(function(item) {
+      return checkedPsycOptionsVal.indexOf(item.index) == -1
+    })
   }
 }
+
+function handlePsycOptionsSelectionChange(selection) {
+  checkedPsycOptions.value = selection.map(item => item.index)
+}
+
+function removeOption(index) {
+  ElMessageBox.confirm('确定要删除这个选项吗?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    psycOptionsList.value.splice(index, 1)
+    ElMessage.success('删除成功')
+  }).catch(() => {})
+}
+
+function handleExport() {
+  download('psyc/questions/export', {
+    ...queryParams
+  }, `questions_${new Date().getTime()}.xlsx`)
+}
+
+function getQuestionTypeLabel(type) {
+  const typeMap = {
+    'single': '单选题',
+    'multiple': '多选题',
+    'judgment': '判断题',
+    'fill': '填空题',
+    'essay': '简答题'
+  }
+  return typeMap[type] || type
+}
+
+onMounted(() => {
+  getList()
+})
 </script>
 <style scoped>
-/* ========== 弹窗通用样式 ========== */
-.test-dialog ::v-deep .el-dialog__header {
+.test-dialog :deep(.el-dialog__header) {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px 24px;
   border-radius: 8px 8px 0 0;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
 }
 
-.test-dialog ::v-deep .el-dialog__title {
+.test-dialog :deep(.el-dialog__title) {
   color: #fff;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
 
-.test-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close {
+.test-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
   color: rgba(255, 255, 255, 0.9);
   font-size: 22px;
   transition: all 0.3s ease;
 }
 
-.test-dialog ::v-deep .el-dialog__headerbtn .el-dialog__close:hover {
+.test-dialog :deep(.el-dialog__headerbtn .el-dialog__close:hover) {
   color: #fff;
   transform: rotate(90deg);
 }
@@ -615,17 +604,16 @@ export default {
   padding: 20px 0;
 }
 
-/* ========== 表单样式 ========== */
 .test-form {
   padding: 0 15px;
 }
 
-.custom-tabs ::v-deep .el-tabs__header {
+.custom-tabs :deep(.el-tabs__header) {
   margin-bottom: 24px;
   padding: 0 10px;
 }
 
-.custom-tabs ::v-deep .el-tabs__item {
+.custom-tabs :deep(.el-tabs__item) {
   font-size: 15px;
   font-weight: 500;
   padding: 0 24px;
@@ -635,12 +623,12 @@ export default {
   transition: all 0.3s ease;
 }
 
-.custom-tabs ::v-deep .el-tabs__item:hover {
+.custom-tabs :deep(.el-tabs__item:hover) {
   color: #409EFF;
   background-color: rgba(64, 158, 255, 0.05);
 }
 
-.custom-tabs ::v-deep .el-tabs__active-bar {
+.custom-tabs :deep(.el-tabs__active-bar) {
   height: 3px;
   border-radius: 2px;
 }
@@ -684,31 +672,31 @@ export default {
   border-radius: 8px;
 }
 
-.form-item-custom ::v-deep .el-form-item__label {
+.form-item-custom :deep(.el-form-item__label) {
   font-weight: 500;
   color: #606266;
   font-size: 14px;
 }
 
-.form-item-custom ::v-deep .el-input__inner,
-.form-item-custom ::v-deep .el-textarea__inner {
+.form-item-custom :deep(.el-input__inner),
+.form-item-custom :deep(.el-textarea__inner) {
   border-radius: 8px;
   transition: all 0.3s ease;
   border: 1px solid #dcdfe6;
 }
 
-.form-item-custom ::v-deep .el-input__inner:focus,
-.form-item-custom ::v-deep .el-textarea__inner:focus {
+.form-item-custom :deep(.el-input__inner:focus),
+.form-item-custom :deep(.el-textarea__inner:focus) {
   border-color: #409EFF;
   box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
-.form-item-custom ::v-deep .el-input__prefix {
+.form-item-custom :deep(.el-input__prefix) {
   left: 12px;
   color: #909399;
 }
 
-.textarea-custom ::v-deep .el-textarea__inner {
+.textarea-custom :deep(.el-textarea__inner) {
   resize: vertical;
   min-height: 120px;
   line-height: 1.6;
@@ -722,7 +710,6 @@ export default {
   line-height: 1.5;
 }
 
-/* ========== 评分规则样式 ========== */
 .rules-section {
   padding: 0 10px;
 }
@@ -803,7 +790,7 @@ export default {
   transform: translateY(-2px);
 }
 
-.rule-card ::v-deep .el-card__header {
+.rule-card :deep(.el-card__header) {
   padding: 15px 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #e4e7ed;
@@ -886,7 +873,6 @@ export default {
   font-weight: 500;
 }
 
-/* ========== 空状态样式 ========== */
 .empty-rules {
   text-align: center;
   padding: 60px 20px;
@@ -916,7 +902,6 @@ export default {
   margin: 0;
 }
 
-/* ========== 底部按钮样式 ========== */
 .dialog-footer-custom {
   padding: 20px 24px;
   text-align: right;
@@ -942,7 +927,6 @@ export default {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* ========== 响应式设计 ========== */
 @media (max-width: 768px) {
   .rules-header {
     flex-direction: column;

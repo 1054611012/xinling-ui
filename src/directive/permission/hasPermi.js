@@ -1,15 +1,11 @@
- /**
- * v-hasPermi 操作权限处理
- * Copyright (c) 2019 xinling
- */
-
-import store from '@/store'
+import { useUserStore } from '@/store'
 
 export default {
-  inserted(el, binding, vnode) {
+  mounted(el, binding) {
     const { value } = binding
     const all_permission = "*:*:*"
-    const permissions = store.getters && store.getters.permissions
+    const userStore = useUserStore()
+    const permissions = userStore.permissions
 
     if (value && value instanceof Array && value.length > 0) {
       const permissionFlag = value
@@ -19,7 +15,7 @@ export default {
       })
 
       if (!hasPermissions) {
-        el.parentNode && el.parentNode.removeChild(el)
+        el.style.display = 'none'
       }
     } else {
       throw new Error(`请设置操作权限标签值`)

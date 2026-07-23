@@ -1,69 +1,101 @@
 <template>
   <div :class="classObj" class="app-wrapper" :style="{'--current-color': theme}">
     <div v-if="device==='mobile'&&sidebar.opened" class="drawer-bg" @click="handleClickOutside"/>
-    <sidebar v-if="!sidebar.hide" class="sidebar-container"/>
+    <Sidebar v-if="!sidebar.hide" class="sidebar-container"/>
     <div :class="{hasTagsView:needTagsView,sidebarHide:sidebar.hide}" class="main-container">
       <div :class="{'fixed-header':fixedHeader}">
-        <navbar @setLayout="setLayout"/>
-        <tags-view v-if="needTagsView"/>
+        <Navbar @setLayout="setLayout"/>
+        <TagsView v-if="needTagsView"/>
       </div>
-      <app-main/>
-      <settings ref="settingRef"/>
+      <AppMain/>
+      <Settings ref="settingRef"/>
     </div>
+    <!-- AI助手全局漂浮窗 -->
+    <OllamaChat />
   </div>
+
 </template>
 
-<script>
+<script setup>
+import { computed, ref, onBeforeMount, onBeforeUnmount, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAppStore, useSettingsStore } from '@/store'
 import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
-import ResizeMixin from './mixin/ResizeHandler'
-import { mapState } from 'vuex'
-import variables from '@/assets/styles/variables.scss'
+import OllamaChat from '@/components/AiChat/index.vue'
 
-export default {
-  name: 'Layout',
-  components: {
-    AppMain,
-    Navbar,
-    Settings,
-    Sidebar,
-    TagsView
-  },
-  mixins: [ResizeMixin],
-  computed: {
-    ...mapState({
-      theme: state => state.settings.theme,
-      sideTheme: state => state.settings.sideTheme,
-      sidebar: state => state.app.sidebar,
-      device: state => state.app.device,
-      needTagsView: state => state.settings.tagsView,
-      fixedHeader: state => state.settings.fixedHeader
-    }),
-    classObj() {
-      return {
-        hideSidebar: !this.sidebar.opened,
-        openSidebar: this.sidebar.opened,
-        withoutAnimation: this.sidebar.withoutAnimation,
-        mobile: this.device === 'mobile'
+const route = useRoute()
+const appStore = useAppStore()
+const settingsStore = useSettingsStore()
+const settingRef = ref(null)
+
+const WIDTH = 992
+const body = document.body
+const lastDevice = ref('')
+
+const isMobile = () => {
+  const rect = body.getBoundingClientRect()
+  return rect.width - 1 < WIDTH
+}
+
+const resizeHandler = () => {
+  if (!document.hidden) {
+    const mobile = isMobile()
+    const device = mobile ? 'mobile' : 'desktop'
+    if (device !== lastDevice.value) {
+      lastDevice.value = device
+      appStore.toggleDevice(device)
+      if (mobile) {
+        appStore.closeSideBar({ withoutAnimation: true })
       }
-    },
-    variables() {
-      return variables
-    }
-  },
-  methods: {
-    handleClickOutside() {
-      this.$store.dispatch('app/closeSideBar', { withoutAnimation: false })
-    },
-    setLayout() {
-      this.$refs.settingRef.openSetting()
     }
   }
+}
+
+onBeforeMount(() => {
+  window.addEventListener('resize', resizeHandler)
+  const initialMobile = isMobile()
+  lastDevice.value = initialMobile ? 'mobile' : 'desktop'
+  if (initialMobile) {
+    appStore.toggleDevice('mobile')
+    appStore.closeSideBar({ withoutAnimation: true })
+  }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeHandler)
+})
+
+watch(() => route.path, () => {
+  if (device.value === 'mobile' && sidebar.value.opened) {
+    appStore.closeSideBar({ withoutAnimation: false })
+  }
+})
+
+const theme = computed(() => settingsStore.theme)
+const sidebar = computed(() => appStore.sidebar)
+const device = computed(() => appStore.device)
+const needTagsView = computed(() => settingsStore.tagsView)
+const fixedHeader = computed(() => settingsStore.fixedHeader)
+
+const classObj = computed(() => ({
+  hideSidebar: !sidebar.value.opened,
+  openSidebar: sidebar.value.opened,
+  withoutAnimation: sidebar.value.withoutAnimation,
+  mobile: device.value === 'mobile'
+}))
+
+const handleClickOutside = () => {
+  appStore.closeSideBar({ withoutAnimation: false })
+}
+
+const setLayout = () => {
+  settingRef.value?.openSetting()
 }
 </script>
 
 <style lang="scss" scoped>
-  @import "~@/assets/styles/mixin.scss";
-  @import "~@/assets/styles/variables.scss";
+  @import "@/assets/styles/mixin.scss";
+  @import "@/assets/styles/variables.scss";
 
   .app-wrapper {
     @include clearfix;
