@@ -5,8 +5,11 @@ import InnerLink from '@/layout/components/InnerLink/index.vue'
 const modules = import.meta.glob('/src/views/**/*.vue')
 
 export function loadView(view) {
-  const path = '/src/views/' + view.replace(/:\w+/g, '') + '.vue'
-  const component = modules[path]
+  let viewPath = view.replace(/:\w+/g, '').replace(/\/index$/, '')
+  const directPath = '/src/views/' + viewPath + '.vue'
+  const indexPath = '/src/views/' + viewPath + '/index.vue'
+
+  const component = modules[directPath] || modules[indexPath]
   if (!component) {
     return modules['/src/views/error/404.vue'] || (() => import('@/views/error/404.vue'))
   }
@@ -25,7 +28,11 @@ export function mapComponent(component) {
   const componentMap = {
     Layout,
     ParentView,
-    InnerLink
+    InnerLink,
+    layout: Layout,
+    parent: ParentView,
+    innerLink: InnerLink,
+    innerlink: InnerLink
   }
   return componentMap[component] || loadView(component)
 }

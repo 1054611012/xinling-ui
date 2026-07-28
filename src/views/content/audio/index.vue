@@ -187,8 +187,8 @@
 
 <script setup>
 import { listAudioItem, getAudioItem, addAudioItem, updateAudioItem, delAudioItem, onlineAudioItem, offlineAudioItem } from '@/api/content/audio'
-import { getToken } from '@/utils/auth'
 import { resetForm } from '@/utils/ruoyi'
+import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { Search, Refresh, Plus, View, Edit, Delete, Top, Bottom, Upload, Headset, SuccessFilled } from '@element-plus/icons-vue'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -204,8 +204,7 @@ const open = ref(false)
 const detailOpen = ref(false)
 
 const uploadFileUrl = import.meta.env.VITE_APP_BASE_API + '/file/record/upload?businessType=audio'
-const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
-const baseUrl = import.meta.env.VITE_APP_BASE_API
+const uploadHeaders = getUploadHeaders()
 
 const queryParams = reactive({
   pageNum: 1,
@@ -422,13 +421,6 @@ function stringifyTags(tagsList) {
 function parseTagsDisplay(tags) {
   const list = parseTags(tags)
   return list.length > 0 ? list.join('、') : '-'
-}
-
-// ================== URL 解析工具 ==================
-function resolveFileUrl(url) {
-  if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return baseUrl + '/' + url.replace(/^\/+/, '')
 }
 
 // ================== 格式化工具 ==================

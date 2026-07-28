@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
-import auth from '@/plugins/auth'
-import router, { constantRoutes, dynamicRoutes, resetRouter } from '@/router'
+import router, { constantRoutes, resetRouter } from '@/router'
 import { getRouters } from '@/api/menu'
 import { filterAsyncRouter, addRouteNames, flatMultiLevelRoutes } from '@/utils/route'
 
@@ -9,26 +8,30 @@ export const usePermissionStore = defineStore('permission', {
     routes: [],
     addRoutes: [],
     defaultRoutes: [],
-    sidebarRouters: [],
-    topbarRouters: []
+    sidebarRouters: []
   }),
+  getters: {
+    topbarRouters: (state) => state.sidebarRouters
+  },
   actions: {
     async generateRoutes() {
       this.removeDynamicRoutes()
 
+      // 移除临时兜底路由，避免阻止动态路由的 404 匹配
+      if (router.hasRoute('TempCatchAll')) {
+        router.removeRoute('TempCatchAll')
+      }
+
       const res = await getRouters()
-      const sdata = JSON.parse(JSON.stringify(res.data))
-      const rdata = JSON.parse(JSON.stringify(res.data))
+      const sidebarData = JSON.parse(JSON.stringify(res.data))
+      const flatData = JSON.parse(JSON.stringify(res.data))
 
-      const sidebarRoutes = filterAsyncRouter(sdata)
-      const rewriteRoutes = filterAsyncRouter(rdata)
-      const asyncRoutes = filterDynamicRoutes(dynamicRoutes)
-
+      const sidebarRoutes = filterAsyncRouter(sidebarData)
+      const flatRoutesRaw = filterAsyncRouter(flatData)
       addRouteNames(sidebarRoutes)
-      addRouteNames(rewriteRoutes)
+      addRouteNames(flatRoutesRaw)
 
-      const flatRoutes = flatMultiLevelRoutes(rewriteRoutes)
-
+      const flatRoutes = flatMultiLevelRoutes(flatRoutesRaw)
       flatRoutes.push({
         path: '/:pathMatch(.*)*',
         redirect: '/404',
@@ -37,9 +40,8 @@ export const usePermissionStore = defineStore('permission', {
 
       this.addRoutes = flatRoutes
       this.routes = constantRoutes.concat(flatRoutes)
-      this.sidebarRouters = constantRoutes.concat(sidebarRoutes)
       this.defaultRoutes = sidebarRoutes
-      this.topbarRouters = sidebarRoutes
+      this.sidebarRouters = constantRoutes.concat(sidebarRoutes)
 
       flatRoutes.forEach(route => {
         if (route.name && !router.hasRoute(route.name)) {
@@ -47,11 +49,30 @@ export const usePermissionStore = defineStore('permission', {
         }
       })
 
-      asyncRoutes.forEach(route => {
-        if (route.name && !router.hasRoute(route.name)) {
-          router.addRoute(route)
+      // 补充本体子路由（后端尚未配置子菜单，前端临时注册以便页面可访问）
+      // TODO: 等后端菜单配好子菜单后可以移除这部分
+      const ontologyChildRoutes = [
+        {
+          path: 'ontology/concept',
+          component: () => import('@/views/ai/ontology/concept/index.vue'),
+          name: 'OntologyConcept',
+          meta: { title: '概念管理' }
+        },
+        {
+          path: 'ontology/relation',
+          component: () => import('@/views/ai/ontology/relation/index.vue'),
+          name: 'OntologyRelation',
+          meta: { title: '关系管理' }
         }
-      })
+      ]
+      if (router.hasRoute('ai')) {
+        ontologyChildRoutes.forEach(route => {
+          if (!router.hasRoute(route.name)) {
+            router.addRoute('ai', route)
+            this.addRoutes.push(route)
+          }
+        })
+      }
 
       return flatRoutes
     },
@@ -69,25 +90,9 @@ export const usePermissionStore = defineStore('permission', {
       this.addRoutes = []
       this.defaultRoutes = []
       this.sidebarRouters = []
-      this.topbarRouters = []
+    },
+    setSidebarRouters(routes) {
+      this.sidebarRouters = routes
     }
   }
 })
-
-function filterDynamicRoutes(routes) {
-  const res = []
-  routes.forEach(route => {
-    if (route.permissions) {
-      if (auth.hasPermiOr(route.permissions)) {
-        res.push(route)
-      }
-    } else if (route.roles) {
-      if (auth.hasRoleOr(route.roles)) {
-        res.push(route)
-      }
-    } else {
-      res.push(route)
-    }
-  })
-  return res
-}

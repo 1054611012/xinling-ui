@@ -197,7 +197,7 @@
                   <el-card v-for="item in relationList" :key="'r-'+item.relationId" class="relation-card" shadow="hover">
                     <div class="relation-card-header">
                       <span class="relation-name">{{ item.relationName }}</span>
-                      <span class="relation-type">{{ item.relationType }}</span>
+                      <span class="relation-type">{{ getRelationTypeLabel(item.relationType) }}</span>
                     </div>
                     <div class="relation-path">
                       <span class="relation-source">{{ item.sourceConceptName }}</span>
@@ -252,6 +252,7 @@
 import { defineOptions, ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
+import 'echarts-wordcloud'
 import { Folder, Connection, Document, Refresh, Loading, Key, User, DataAnalysis, Setting, VideoPlay, MapLocation, ArrowRight, CircleCheck } from '@element-plus/icons-vue'
 import { listConcept, listRelation, getOntologyKnowledge } from "@/api/ai/ontology"
 
@@ -294,6 +295,22 @@ const treeData = computed(() => {
   
   return roots.length > 0 ? roots : conceptList.value.map(item => ({ ...item, children: [] }))
 })
+
+const relationTypeMap = {
+  'part-of': '组成',
+  'is-a': '属于',
+  'related-to': '关联',
+  'status-of': '状态',
+  'role-of': '角色'
+}
+
+function getRelationTypeLabel(type) {
+  if (!type) return ''
+  if (relationTypeMap[type]) {
+    return `${type}(${relationTypeMap[type]})`
+  }
+  return type
+}
 
 onMounted(() => {
   loadStats()
@@ -347,12 +364,12 @@ function loadKnowledge() {
     knowledgeText.value = ''
   })
   
-  listConcept({ pageNum: 1, pageSize: 50 }).then(response => {
+  listConcept({ pageNum: 1, pageSize: 1000 }).then(response => {
     conceptList.value = response.rows || []
     conceptCount.value = response.total || 0
   })
   
-  listRelation({ pageNum: 1, pageSize: 50 }).then(response => {
+  listRelation({ pageNum: 1, pageSize: 1000 }).then(response => {
     relationList.value = response.rows || []
     relationCount.value = response.total || 0
   })
@@ -372,6 +389,7 @@ function renderCloudChart() {
   if (!cloudChartRef.value) return
   
   if (cloudChart) {
+    window.removeEventListener('resize', handleCloudResize)
     cloudChart.dispose()
   }
   
@@ -427,69 +445,184 @@ function handleCloudResize() {
   cloudChart?.resize()
 }
 
+const categoryColors = [
+  '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', 
+  '#00f2fe', '#43e97b', '#38f9d7', '#fa709a', '#fee140'
+]
+
+function getRelationStyle(relationType) {
+  const styleMap = {
+    'is-a': { color: '#667eea', width: 3, type: 'solid' },
+    'part-of': { color: '#f5576c', width: 3, type: 'solid' },
+    'related-to': { color: '#4facfe', width: 2, type: 'dashed' },
+    'status-of': { color: '#43e97b', width: 2, type: 'dotted' },
+    'role-of': { color: '#fa709a', width: 2, type: 'dashed' }
+  }
+  return styleMap[relationType] || { color: '#909399', width: 2, type: 'solid' }
+}
+
 function renderGraphChart() {
   if (!graphChartRef.value) return
   
   if (graphChart) {
+    window.removeEventListener('resize', handleGraphResize)
+    graphChart.off('click')
     graphChart.dispose()
   }
   
   graphChart = echarts.init(graphChartRef.value)
   
-  const conceptSet = new Set()
+  const conceptMap = new Map()
   conceptList.value.forEach(item => {
-    conceptSet.add(item.conceptName)
+    conceptMap.set(item.conceptId, item)
+  })
+  
+  const allConcepts = new Map()
+  conceptList.value.forEach(item => {
+    allConcepts.set(item.conceptId, item)
   })
   
   relationList.value.forEach(item => {
-    conceptSet.add(item.sourceConceptName)
-    conceptSet.add(item.targetConceptName)
+    if (item.sourceConceptName && !allConcepts.has(item.sourceConceptName)) {
+      allConcepts.set(item.sourceConceptName, { conceptId: item.sourceConceptName, conceptName: item.sourceConceptName, parentId: null })
+    }
+    if (item.targetConceptName && !allConcepts.has(item.targetConceptName)) {
+      allConcepts.set(item.targetConceptName, { conceptId: item.targetConceptName, conceptName: item.targetConceptName, parentId: null })
+    }
   })
   
-  const conceptArray = Array.from(conceptSet)
-  const nodes = conceptArray.map((name, index) => ({
-    id: name,
-    name: name,
-    symbolSize: 30 + Math.random() * 20,
-    category: index % 3,
-    itemStyle: {
-      color: ['#667eea', '#f093fb', '#4facfe'][index % 3]
+  const parentMap = new Map()
+  allConcepts.forEach(item => {
+    const parentId = item.parentId || 'root'
+    if (!parentMap.has(parentId)) {
+      parentMap.set(parentId, [])
     }
-  }))
+    parentMap.get(parentId).push(item)
+  })
   
-  const links = relationList.value.map(item => ({
-    source: item.sourceConceptName,
-    target: item.targetConceptName,
-    label: {
-      show: true,
-      formatter: item.relationName || item.relationType
-    },
-    lineStyle: {
-      width: 2,
-      curveness: 0.2
+  const categories = []
+  const categoryIndexMap = new Map()
+  parentMap.forEach((items, parentId) => {
+    const categoryName = parentId === 'root' ? '根概念' : (conceptMap.get(parentId)?.conceptName || parentId)
+    if (!categoryIndexMap.has(parentId)) {
+      const index = categories.length
+      categories.push({ 
+        name: categoryName,
+        itemStyle: {
+          color: categoryColors[index % categoryColors.length]
+        }
+      })
+      categoryIndexMap.set(parentId, index)
     }
-  }))
+  })
   
-  const categories = [
-    { name: '概念A' },
-    { name: '概念B' },
-    { name: '概念C' }
-  ]
+  const degreeMap = new Map()
+  relationList.value.forEach(item => {
+    degreeMap.set(item.sourceConceptId || item.sourceConceptName, (degreeMap.get(item.sourceConceptId || item.sourceConceptName) || 0) + 1)
+    degreeMap.set(item.targetConceptId || item.targetConceptName, (degreeMap.get(item.targetConceptId || item.targetConceptName) || 0) + 1)
+  })
+  
+  const nodes = Array.from(allConcepts.values()).map(item => {
+    const parentId = item.parentId || 'root'
+    const categoryIndex = categoryIndexMap.get(parentId) || 0
+    const degree = degreeMap.get(item.conceptId) || 0
+    return {
+      id: item.conceptId,
+      name: item.conceptName,
+      symbolSize: Math.max(25, Math.min(50, 25 + degree * 6)),
+      category: categoryIndex,
+      itemStyle: {
+        color: categoryColors[categoryIndex % categoryColors.length],
+        borderColor: '#fff',
+        borderWidth: 2,
+        shadowBlur: 10,
+        shadowColor: 'rgba(0, 0, 0, 0.15)'
+      },
+      label: {
+        show: true,
+        position: 'bottom',
+        fontSize: 12,
+        fontWeight: '500'
+      }
+    }
+  })
+  
+  const getRelationLabel = (item) => {
+    if (item.relationName) {
+      return item.relationName
+    }
+    if (item.relationType) {
+      return getRelationTypeLabel(item.relationType)
+    }
+    return '关系'
+  }
+  
+  const links = relationList.value.map(item => {
+    const style = getRelationStyle(item.relationType)
+    return {
+      source: item.sourceConceptId || item.sourceConceptName,
+      target: item.targetConceptId || item.targetConceptName,
+      label: {
+        show: true,
+        formatter: getRelationLabel(item),
+        fontSize: 11,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderColor: style.color,
+        borderWidth: 1,
+        borderRadius: 4,
+        padding: [2, 6]
+      },
+      lineStyle: {
+        color: style.color,
+        width: style.width,
+        type: style.type,
+        curveness: 0.25,
+        opacity: 0.7
+      }
+    }
+  })
   
   const option = {
     tooltip: {
       trigger: 'item',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderColor: '#e4e7ed',
+      borderWidth: 1,
+      textStyle: {
+        color: '#303133'
+      },
       formatter: (params) => {
         if (params.dataType === 'node') {
-          return `<strong>${params.name}</strong>`
+          const degree = degreeMap.get(params.data.id) || 0
+          return `<div style="padding: 4px 0;">
+            <strong style="font-size: 14px;">${params.name}</strong>
+            <br/>
+            <span style="color: #909399; font-size: 12px;">连接度: ${degree}</span>
+          </div>`
         } else if (params.dataType === 'edge') {
-          return `${params.data.source} → ${params.data.target}<br/>关系: ${params.data.label.formatter}`
+          const sourceName = nodes.find(n => n.id === params.data.source)?.name || params.data.source
+          const targetName = nodes.find(n => n.id === params.data.target)?.name || params.data.target
+          return `<div style="padding: 4px 0;">
+            <span style="color: #667eea;">${sourceName}</span>
+            <span style="margin: 0 8px;">→</span>
+            <span style="color: #f5576c;">${targetName}</span>
+            <br/>
+            <span style="color: #909399; font-size: 12px;">关系: ${params.data.label.formatter}</span>
+          </div>`
         }
         return ''
       }
     },
     legend: [{
-      data: categories.map(c => c.name)
+      data: categories.map(c => c.name),
+      bottom: 10,
+      left: 'center',
+      itemWidth: 16,
+      itemHeight: 16,
+      textStyle: {
+        fontSize: 12,
+        color: '#606266'
+      }
     }],
     series: [{
       type: 'graph',
@@ -503,30 +636,79 @@ function renderGraphChart() {
       roam: true,
       draggable: true,
       force: {
-        repulsion: 500,
-        gravity: 0.1,
-        edgeLength: [100, 200]
+        repulsion: 600,
+        gravity: 0.15,
+        edgeLength: [120, 250],
+        friction: 0.6
       },
       emphasis: {
         focus: 'adjacency',
+        scale: true,
+        scaleSize: 8,
         lineStyle: {
-          width: 4
+          width: 5
+        },
+        itemStyle: {
+          shadowBlur: 20,
+          shadowColor: 'rgba(0, 0, 0, 0.3)'
+        }
+      },
+      select: {
+        itemStyle: {
+          borderColor: '#1890ff',
+          borderWidth: 3,
+          shadowBlur: 15,
+          shadowColor: 'rgba(24, 144, 255, 0.5)'
         }
       },
       lineStyle: {
-        color: 'source',
-        curveness: 0.3,
-        opacity: 0.6
+        curveness: 0.3
       },
       label: {
         show: true,
         position: 'bottom',
-        fontSize: 12
+        fontSize: 12,
+        fontWeight: '500',
+        color: '#303133'
       }
     }]
   }
   
   graphChart.setOption(option)
+  
+  graphChart.on('click', (params) => {
+    if (params.dataType === 'node') {
+      const nodeId = params.data.id
+      const relatedNodeIds = new Set([nodeId])
+      
+      links.forEach(link => {
+        if (link.source === nodeId || link.target === nodeId) {
+          relatedNodeIds.add(link.source)
+          relatedNodeIds.add(link.target)
+        }
+      })
+      
+      graphChart.setOption({
+        series: [{
+          data: nodes.map(node => ({
+            ...node,
+            opacity: relatedNodeIds.has(node.id) ? 1 : 0.2,
+            itemStyle: {
+              ...node.itemStyle,
+              shadowBlur: relatedNodeIds.has(node.id) ? 10 : 0
+            }
+          })),
+          links: links.map(link => ({
+            ...link,
+            lineStyle: {
+              ...link.lineStyle,
+              opacity: (link.source === nodeId || link.target === nodeId) ? 0.7 : 0.1
+            }
+          }))
+        }]
+      })
+    }
+  })
   
   window.addEventListener('resize', handleGraphResize)
 }

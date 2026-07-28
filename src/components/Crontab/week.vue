@@ -64,140 +64,124 @@
 				</el-select>
 			</el-radio>
 		</el-form-item>
-
 	</el-form>
-
 </template>
 
-<script>
-export default {
-	data() {
-		return {
-			radioValue: 2,
-			weekday: 2,
-			cycle01: 2,
-			cycle02: 3,
-			average01: 1,
-			average02: 2,
-			checkboxList: [],
-			weekList: [
-				{
-					key: 2,
-					value: '星期一'
-				},
-				{
-					key: 3,
-					value: '星期二'
-				},
-				{
-					key: 4,
-					value: '星期三'
-				},
-				{
-					key: 5,
-					value: '星期四'
-				},
-				{
-					key: 6,
-					value: '星期五'
-				},
-				{
-					key: 7,
-					value: '星期六'
-				},
-				{
-					key: 1,
-					value: '星期日'
-				}
-			],
-			checkNum: this.$options.propsData.check
-		}
-	},
-	name: 'crontab-week',
-	props: ['check', 'cron'],
-	methods: {
-		// 单选按钮值变化时
-		radioChange() {
-			if (this.radioValue !== 2 && this.cron.day !== '?') {
-				this.$emit('update', 'day', '?', 'week')
-			}
-			switch (this.radioValue) {
-				case 1:
-					this.$emit('update', 'week', '*')
-					break
-				case 2:
-					this.$emit('update', 'week', '?')
-					break
-				case 3:
-					this.$emit('update', 'week', this.cycleTotal)
-					break
-				case 4:
-					this.$emit('update', 'week', this.averageTotal)
-					break
-				case 5:
-					this.$emit('update', 'week', this.weekdayCheck + 'L')
-					break
-				case 6:
-					this.$emit('update', 'week', this.checkboxString)
-					break
-			}
-		},
+<script setup>
+import { ref, computed, watch } from 'vue'
 
-		// 周期两个值变化时
-		cycleChange() {
-			if (this.radioValue == '3') {
-				this.$emit('update', 'week', this.cycleTotal)
-			}
-		},
-		// 平均两个值变化时
-		averageChange() {
-			if (this.radioValue == '4') {
-				this.$emit('update', 'week', this.averageTotal)
-			}
-		},
-		// 最近工作日值变化时
-		weekdayChange() {
-			if (this.radioValue == '5') {
-				this.$emit('update', 'week', this.weekday + 'L')
-			}
-		},
-		// checkbox值变化时
-		checkboxChange() {
-			if (this.radioValue == '6') {
-				this.$emit('update', 'week', this.checkboxString)
-			}
-		},
-	},
-	watch: {
-		'radioValue': 'radioChange',
-		'cycleTotal': 'cycleChange',
-		'averageTotal': 'averageChange',
-		'weekdayCheck': 'weekdayChange',
-		'checkboxString': 'checkboxChange',
-	},
-	computed: {
-		// 计算两个周期值
-		cycleTotal: function () {
-			this.cycle01 = this.checkNum(this.cycle01, 1, 7)
-			this.cycle02 = this.checkNum(this.cycle02, 1, 7)
-			return this.cycle01 + '-' + this.cycle02
-		},
-		// 计算平均用到的值
-		averageTotal: function () {
-			this.average01 = this.checkNum(this.average01, 1, 4)
-			this.average02 = this.checkNum(this.average02, 1, 7)
-			return this.average02 + '#' + this.average01
-		},
-		// 最近的工作日（格式）
-		weekdayCheck: function () {
-			this.weekday = this.checkNum(this.weekday, 1, 7)
-			return this.weekday
-		},
-		// 计算勾选的checkbox值合集
-		checkboxString: function () {
-			let str = this.checkboxList.join()
-			return str == '' ? '*' : str
-		}
-	}
+const props = defineProps(['check', 'cron'])
+const emit = defineEmits(['update'])
+
+const radioValue = ref(2)
+const weekday = ref(2)
+const cycle01 = ref(2)
+const cycle02 = ref(3)
+const average01 = ref(1)
+const average02 = ref(2)
+const checkboxList = ref([])
+
+const weekList = [
+  { key: 2, value: '星期一' },
+  { key: 3, value: '星期二' },
+  { key: 4, value: '星期三' },
+  { key: 5, value: '星期四' },
+  { key: 6, value: '星期五' },
+  { key: 7, value: '星期六' },
+  { key: 1, value: '星期日' }
+]
+
+const checkNum = (value, min, max) => {
+  value = Math.floor(value)
+  if (value < min) value = min
+  if (value > max) value = max
+  return value
 }
+
+const cycleTotal = computed(() => {
+  const c01 = checkNum(cycle01.value, 1, 7)
+  const c02 = checkNum(cycle02.value, 1, 7)
+  return c01 + '-' + c02
+})
+
+const averageTotal = computed(() => {
+  const a01 = checkNum(average01.value, 1, 4)
+  const a02 = checkNum(average02.value, 1, 7)
+  return a02 + '#' + a01
+})
+
+const weekdayCheck = computed(() => {
+  return checkNum(weekday.value, 1, 7)
+})
+
+const checkboxString = computed(() => {
+  const str = checkboxList.value.join()
+  return str === '' ? '*' : str
+})
+
+function radioChange() {
+  if (radioValue.value !== 2 && props.cron && props.cron.day !== '?') {
+    emit('update', 'day', '?', 'week')
+  }
+  switch (radioValue.value) {
+    case 1:
+      emit('update', 'week', '*')
+      break
+    case 2:
+      emit('update', 'week', '?')
+      break
+    case 3:
+      emit('update', 'week', cycleTotal.value)
+      break
+    case 4:
+      emit('update', 'week', averageTotal.value)
+      break
+    case 5:
+      emit('update', 'week', weekdayCheck.value + 'L')
+      break
+    case 6:
+      emit('update', 'week', checkboxString.value)
+      break
+  }
+}
+
+function cycleChange() {
+  if (radioValue.value === 3) {
+    emit('update', 'week', cycleTotal.value)
+  }
+}
+
+function averageChange() {
+  if (radioValue.value === 4) {
+    emit('update', 'week', averageTotal.value)
+  }
+}
+
+function weekdayChange() {
+  if (radioValue.value === 5) {
+    emit('update', 'week', weekday.value + 'L')
+  }
+}
+
+function checkboxChange() {
+  if (radioValue.value === 6) {
+    emit('update', 'week', checkboxString.value)
+  }
+}
+
+watch(radioValue, radioChange)
+watch(cycleTotal, cycleChange)
+watch(averageTotal, averageChange)
+watch(weekdayCheck, weekdayChange)
+watch(checkboxString, checkboxChange)
+
+defineExpose({
+  radioValue,
+  weekday,
+  cycle01,
+  cycle02,
+  average01,
+  average02,
+  checkboxList
+})
 </script>

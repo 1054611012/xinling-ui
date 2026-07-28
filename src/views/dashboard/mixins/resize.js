@@ -1,56 +1,62 @@
+import { ref, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
 import { debounce } from '@/utils'
 
-export default {
-  data() {
-    return {
-      $_sidebarElm: null,
-      $_resizeHandler: null
-    }
-  },
-  mounted() {
-    this.initListener()
-  },
-  activated() {
-    if (!this.$_resizeHandler) {
-      // avoid duplication init
-      this.initListener()
-    }
+export function useResize(chartRef) {
+  const $_sidebarElm = ref(null)
+  const $_resizeHandler = ref(null)
 
-    // when keep-alive chart activated, auto resize
-    this.resize()
-  },
-  beforeUnmount() {
-    this.destroyListener()
-  },
-  deactivated() {
-    this.destroyListener()
-  },
-  methods: {
-    // use $_ for mixins properties
-    // https://vuejs.org/v2/style-guide/index.html#Private-property-names-essential
-    $_sidebarResizeHandler(e) {
-      if (e.propertyName === 'width') {
-        this.$_resizeHandler()
-      }
-    },
-    initListener() {
-      this.$_resizeHandler = debounce(() => {
-        this.resize()
-      }, 100)
-      window.addEventListener('resize', this.$_resizeHandler)
-
-      this.$_sidebarElm = document.getElementsByClassName('sidebar-container')[0]
-      this.$_sidebarElm && this.$_sidebarElm.addEventListener('transitionend', this.$_sidebarResizeHandler)
-    },
-    destroyListener() {
-      window.removeEventListener('resize', this.$_resizeHandler)
-      this.$_resizeHandler = null
-
-      this.$_sidebarElm && this.$_sidebarElm.removeEventListener('transitionend', this.$_sidebarResizeHandler)
-    },
-    resize() {
-      const { chart } = this
-      chart && chart.resize()
+  function $_sidebarResizeHandler(e) {
+    if (e.propertyName === 'width') {
+      $_resizeHandler.value()
     }
   }
+
+  function initListener() {
+    $_resizeHandler.value = debounce(() => {
+      resize()
+    }, 100)
+    window.addEventListener('resize', $_resizeHandler.value)
+
+    $_sidebarElm.value = document.getElementsByClassName('sidebar-container')[0]
+    $_sidebarElm.value && $_sidebarElm.value.addEventListener('transitionend', $_sidebarResizeHandler)
+  }
+
+  function destroyListener() {
+    if ($_resizeHandler.value) {
+      window.removeEventListener('resize', $_resizeHandler.value)
+      $_resizeHandler.value = null
+    }
+
+    $_sidebarElm.value && $_sidebarElm.value.removeEventListener('transitionend', $_sidebarResizeHandler)
+  }
+
+  function resize() {
+    const chart = chartRef.value
+    chart && chart.resize()
+  }
+
+  onMounted(() => {
+    initListener()
+  })
+
+  onActivated(() => {
+    if (!$_resizeHandler.value) {
+      initListener()
+    }
+    resize()
+  })
+
+  onUnmounted(() => {
+    destroyListener()
+  })
+
+  onDeactivated(() => {
+    destroyListener()
+  })
+
+  return {
+    resize
+  }
 }
+
+export default useResize

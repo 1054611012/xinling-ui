@@ -7,42 +7,37 @@
       frameborder="no"
     ></iframe>
   </div>
-
 </template>
 
-<script>
-export default {
-  props: {
-    src: {
-      type: String,
-      default: "/"
-    },
-    iframeId: {
-      type: String
-    }
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const props = defineProps({
+  src: {
+    type: String,
+    default: "/"
   },
-  data() {
-    return {
-      loading: false,
-      height: document.documentElement.clientHeight - 94.5 + "px;"
-    }
-  },
-  mounted() {
-    var _this = this
-    const iframeId = ("#" + this.iframeId).replace(/\//g, "\\/")
-    const iframe = document.querySelector(iframeId)
-    // iframe页面loading控制
-    if (iframe.attachEvent) {
-      this.loading = true
-      iframe.attachEvent("onload", function () {
-        _this.loading = false
-      })
-    } else {
-      this.loading = true
-      iframe.onload = function () {
-        _this.loading = false
-      }
+  iframeId: {
+    type: String
+  }
+})
+
+const loading = ref(false)
+const height = ref(document.documentElement.clientHeight - 94.5 + "px;")
+
+onMounted(() => {
+  const iframeId = ("#" + props.iframeId).replace(/\//g, "\\/")
+  const iframe = document.querySelector(iframeId)
+  if (iframe.attachEvent) {
+    loading.value = true
+    iframe.attachEvent("onload", function () {
+      loading.value = false
+    })
+  } else {
+    loading.value = true
+    iframe.onload = function () {
+      loading.value = false
     }
   }
-}
+})
 </script>

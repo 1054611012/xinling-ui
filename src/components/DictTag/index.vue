@@ -25,61 +25,55 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "DictTag",
-  props: {
-    options: {
-      type: Array,
-      default: null,
-    },
-    value: [Number, String, Array],
-    // 当未找到匹配的数据时，显示value
-    showValue: {
-      type: Boolean,
-      default: true,
-    },
-    separator: {
-      type: String,
-      default: ","
-    }
-  },
-  data() {
-    return {
-      unmatchArray: [], // 记录未匹配的项
-    }
-  },
-  computed: {
-    values() {
-      if (this.value === null || typeof this.value === 'undefined' || this.value === '') return []
-      return Array.isArray(this.value) ? this.value.map(item => '' + item) : String(this.value).split(this.separator)
-    },
-    unmatch() {
-      this.unmatchArray = []
-      // 没有value不显示
-      if (this.value === null || typeof this.value === 'undefined' || this.value === '' || this.options.length === 0) return false
-      // 传入值为数组
-      let unmatch = false // 添加一个标志来判断是否有未匹配项
-      this.values.forEach(item => {
-        if (!this.options.some(v => v.value === item)) {
-          this.unmatchArray.push(item)
-          unmatch = true // 如果有未匹配项，将标志设置为true
-        }
-      })
-      return unmatch // 返回标志的值
-    },
+<script setup>
+import { ref, computed, watch } from 'vue'
 
+const props = defineProps({
+  options: {
+    type: Array,
+    default: null,
   },
-  methods: {
-    handleArray(array) {
-      if (array.length === 0) return ''
-      return array.reduce((pre, cur) => {
-        return pre + ' ' + cur
-      })
-    },
+  value: [Number, String, Array],
+  showValue: {
+    type: Boolean,
+    default: true,
+  },
+  separator: {
+    type: String,
+    default: ","
   }
+})
+
+const unmatchArray = ref([])
+
+const values = computed(() => {
+  if (props.value === null || typeof props.value === 'undefined' || props.value === '') return []
+  return Array.isArray(props.value) ? props.value.map(item => '' + item) : String(props.value).split(props.separator)
+})
+
+const unmatch = computed(() => {
+  if (props.value === null || typeof props.value === 'undefined' || props.value === '' || !props.options || props.options.length === 0) return false
+  return values.value.some(item => !props.options.some(v => v.value === item))
+})
+
+function handleArray(array) {
+  if (array.length === 0) return ''
+  return array.reduce((pre, cur) => {
+    return pre + ' ' + cur
+  })
 }
+
+watch([() => props.value, () => props.options], () => {
+  unmatchArray.value = []
+  if (props.value === null || typeof props.value === 'undefined' || props.value === '' || !props.options || props.options.length === 0) return
+  values.value.forEach(item => {
+    if (!props.options.some(v => v.value === item)) {
+      unmatchArray.value.push(item)
+    }
+  })
+}, { immediate: true })
 </script>
+
 <style scoped>
 .el-tag + .el-tag {
   margin-left: 10px;

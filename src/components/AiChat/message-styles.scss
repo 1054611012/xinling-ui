@@ -1,72 +1,396 @@
+// ===== 代码块样式 =====
 .code-block-wrapper {
-  border: 1px solid #eaeaea;
-  border-radius: 6px;
-  margin: 8px 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin: 12px 0;
   background-color: #1e1e1e;
   color: #fff;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .code-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 8px;
+  padding: 6px 12px;
   background-color: #2d2d2d;
   border-bottom: 1px solid #444;
   font-size: 12px;
 }
 
 .code-language-tag {
-  font-weight: bold;
+  font-weight: 600;
+  color: #9cdcfe;
+  font-size: 12px;
 }
 
 .code-buttons {
   display: flex;
-  gap: 4px;
-  flex-direction: row-reverse;
+  gap: 8px;
 }
 
 .code-buttons button {
   background: none;
   border: none;
-  color: #676767;
+  color: #858585;
   cursor: pointer;
-  font-size: 13px;
-  padding: 2px 6px;
-  border-radius: 4px;  // 添加圆角
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .code-buttons button:hover {
-  color: #f0f0f0;
-  background-color: rgba(0, 0, 0, 0.1);  // 添加悬停背景色
+  color: #fff;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .sql-execute-btn {
   background: none;
   border: none;
-  color: #676767;
+  color: #858585;
   cursor: pointer;
-  font-size: 13px;
-  padding: 2px 6px;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .sql-execute-btn:hover {
-  color: #f0f0f0;
-}
-
-/* 深色主题下的样式 */
-html.dark .sql-execute-btn {
-  color: #f0f0f0;
-}
-
-html.dark .sql-execute-btn:hover {
-  color: #fff;
+  color: #64b5f6;
+  background-color: rgba(100, 181, 246, 0.1);
 }
 
 pre {
   margin: 0;
-  padding: 8px;
+  padding: 12px;
   overflow-x: auto;
   background-color: #1e1e1e;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.inline-code {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #c792ea;
+}
+
+// ===== 表格样式 =====
+.markdown-table-wrapper {
+  margin: 12px 0;
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.markdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: #fff;
+}
+
+.markdown-table th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.markdown-table th:first-child {
+  border-radius: 8px 0 0 0;
+}
+
+.markdown-table th:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.markdown-table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.markdown-table tr:last-child td:first-child {
+  border-radius: 0 0 0 8px;
+}
+
+.markdown-table tr:last-child td:last-child {
+  border-radius: 0 0 8px 0;
+}
+
+.markdown-table tr:hover td {
+  background-color: #f5f7fa;
+}
+
+// ===== 列表样式 =====
+.unordered-list {
+  margin: 8px 0;
+  padding-left: 24px;
+  list-style: none;
+}
+
+.unordered-list .list-item {
+  position: relative;
+  padding: 4px 0;
+  padding-left: 20px;
+  line-height: 1.6;
+}
+
+.unordered-list .list-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+}
+
+.unordered-list .list-item.level-1 {
+  padding-left: 36px;
+}
+
+.unordered-list .list-item.level-1::before {
+  left: 16px;
+  width: 4px;
+  height: 4px;
+  background: #90caf9;
+}
+
+.unordered-list .list-item.level-2 {
+  padding-left: 52px;
+}
+
+.unordered-list .list-item.level-2::before {
+  left: 32px;
+  width: 4px;
+  height: 4px;
+  background: #b39ddb;
+}
+
+// ===== 有序列表样式 =====
+.ordered-list {
+  margin: 8px 0;
+  padding-left: 28px;
+  list-style: decimal;
+}
+
+.ordered-list .list-item {
+  padding: 4px 0;
+  line-height: 1.6;
+}
+
+// ===== 引用样式 =====
+.markdown-quote {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-left: 4px solid #667eea;
+  background-color: rgba(102, 126, 234, 0.05);
+  border-radius: 0 8px 8px 0;
+  color: #666;
+  font-style: italic;
+}
+
+.markdown-quote p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+// ===== 标题样式 =====
+.markdown-h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 20px 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #667eea;
+}
+
+.markdown-h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #2b2b2b;
+  margin: 16px 0 10px 0;
+  padding-left: 12px;
+  border-left: 4px solid #667eea;
+}
+
+.markdown-h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 14px 0 8px 0;
+}
+
+.markdown-h4 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #444;
+  margin: 12px 0 6px 0;
+}
+
+.markdown-h5,
+.markdown-h6 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin: 10px 0 6px 0;
+}
+
+// ===== 分隔线样式 =====
+.markdown-hr {
+  margin: 20px 0;
+  border: none;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+}
+
+// ===== 链接样式 =====
+.markdown-link {
+  color: #667eea;
+  text-decoration: none;
+  border-bottom: 1px dashed #667eea;
+  transition: all 0.2s ease;
+}
+
+.markdown-link:hover {
+  color: #764ba2;
+  border-bottom-color: #764ba2;
+}
+
+// ===== 粗体和斜体样式 =====
+.markdown-text strong {
+  font-weight: 700;
+  color: #2b2b2b;
+}
+
+.markdown-text em {
+  font-style: italic;
+  color: #555;
+}
+
+// ===== 深色主题样式 =====
+.dark-theme {
+  .code-block-wrapper {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .code-language-tag {
+    color: #9cdcfe;
+  }
+
+  .inline-code {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #c792ea;
+  }
+
+  .markdown-table-wrapper {
+    border-color: #333;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .markdown-table {
+    background: #1a1a1a;
+  }
+
+  .markdown-table th {
+    background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    color: #e0e0e0;
+  }
+
+  .markdown-table td {
+    border-bottom-color: #333;
+    color: #e0e0e0;
+  }
+
+  .markdown-table tr:hover td {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .unordered-list .list-item::before {
+    background: linear-gradient(135deg, #64b5f6 0%, #7e57c2 100%);
+  }
+
+  .unordered-list .list-item.level-1::before {
+    background: #90caf9;
+  }
+
+  .unordered-list .list-item.level-2::before {
+    background: #b39ddb;
+  }
+
+  .markdown-quote {
+    background-color: rgba(100, 181, 246, 0.1);
+    border-left-color: #64b5f6;
+    color: #b0bec5;
+  }
+
+  .markdown-h1 {
+    color: #fff;
+    border-bottom-color: #64b5f6;
+  }
+
+  .markdown-h2 {
+    color: #e0e0e0;
+    border-left-color: #64b5f6;
+  }
+
+  .markdown-h3 {
+    color: #d0d0d0;
+  }
+
+  .markdown-h4 {
+    color: #c0c0c0;
+  }
+
+  .markdown-h5,
+  .markdown-h6 {
+    color: #b0b0b0;
+  }
+
+  .markdown-hr {
+    background: linear-gradient(90deg, transparent, #64b5f6, transparent);
+  }
+
+  .markdown-link {
+    color: #64b5f6;
+    border-bottom-color: #64b5f6;
+  }
+
+  .markdown-link:hover {
+    color: #90caf9;
+    border-bottom-color: #90caf9;
+  }
+
+  .markdown-text strong {
+    color: #fff;
+  }
+
+  .markdown-text em {
+    color: #b0bec5;
+  }
+
+  .sql-execute-btn {
+    color: #858585;
+  }
+
+  .sql-execute-btn:hover {
+    color: #64b5f6;
+  }
 }

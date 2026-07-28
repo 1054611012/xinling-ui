@@ -2,83 +2,80 @@
   <el-scrollbar ref="scrollContainer" :vertical="false" class="scroll-container" @wheel.prevent="handleScroll">
     <slot />
   </el-scrollbar>
-
 </template>
 
-<script>
-const tagAndTagSpacing = 4 // tagAndTagSpacing
+<script setup>
+import { ref, computed, onMounted, onBeforeUnmount, getCurrentInstance } from 'vue'
 
-export default {
-  name: 'ScrollPane',
-  data() {
-    return {
-      left: 0
-    }
-  },
-  computed: {
-    scrollWrapper() {
-      return this.$refs.scrollContainer.$refs.wrap
-    }
-  },
-  mounted() {
-    if (this.scrollWrapper) {
-      this.scrollWrapper.addEventListener('scroll', this.emitScroll, true)
-    }
-  },
-  beforeUnmount() {
-    if (this.scrollWrapper) {
-      this.scrollWrapper.removeEventListener('scroll', this.emitScroll)
-    }
-  },
-  methods: {
-    handleScroll(e) {
-      const eventDelta = e.wheelDelta || -e.deltaY * 40
-      const $scrollWrapper = this.scrollWrapper
-      $scrollWrapper.scrollLeft = $scrollWrapper.scrollLeft + eventDelta / 4
-    },
-    emitScroll() {
-      this.$emit('scroll')
-    },
-    moveToTarget(currentTag) {
-      const $container = this.$refs.scrollContainer.$el
-      const $containerWidth = $container.offsetWidth
-      const $scrollWrapper = this.scrollWrapper
-      const tagList = this.$parent.$refs.tag
+const tagAndTagSpacing = 4
 
-      let firstTag = null
-      let lastTag = null
+const scrollContainer = ref(null)
+const parentInstance = getCurrentInstance()
 
-      // find first tag and last tag
-      if (tagList.length > 0) {
-        firstTag = tagList[0]
-        lastTag = tagList[tagList.length - 1]
-      }
+const scrollWrapper = computed(() => {
+  return scrollContainer.value?.$refs.wrap
+})
 
-      if (firstTag === currentTag) {
-        $scrollWrapper.scrollLeft = 0
-      } else if (lastTag === currentTag) {
-        $scrollWrapper.scrollLeft = $scrollWrapper.scrollWidth - $containerWidth
-      } else {
-        // find preTag and nextTag
-        const currentIndex = tagList.findIndex(item => item === currentTag)
-        const prevTag = tagList[currentIndex - 1]
-        const nextTag = tagList[currentIndex + 1]
+function handleScroll(e) {
+  const eventDelta = e.wheelDelta || -e.deltaY * 40
+  const $scrollWrapper = scrollWrapper.value
+  $scrollWrapper.scrollLeft = $scrollWrapper.scrollLeft + eventDelta / 4
+}
 
-        // the tag's offsetLeft after of nextTag
-        const afterNextTagOffsetLeft = nextTag.$el.offsetLeft + nextTag.$el.offsetWidth + tagAndTagSpacing
+function emitScroll() {
+  parentInstance.emit('scroll')
+}
 
-        // the tag's offsetLeft before of prevTag
-        const beforePrevTagOffsetLeft = prevTag.$el.offsetLeft - tagAndTagSpacing
+function moveToTarget(currentTag) {
+  if (!scrollContainer.value || !scrollWrapper.value) return
 
-        if (afterNextTagOffsetLeft > $scrollWrapper.scrollLeft + $containerWidth) {
-          $scrollWrapper.scrollLeft = afterNextTagOffsetLeft - $containerWidth
-        } else if (beforePrevTagOffsetLeft < $scrollWrapper.scrollLeft) {
-          $scrollWrapper.scrollLeft = beforePrevTagOffsetLeft
-        }
-      }
+  const $container = scrollContainer.value.$el
+  const $containerWidth = $container?.offsetWidth || 0
+  const $scrollWrapper = scrollWrapper.value
+  const tagList = parentInstance.parent?.refs?.tag
+
+  if (!tagList || tagList.length === 0) return
+
+  let firstTag = tagList[0]
+  let lastTag = tagList[tagList.length - 1]
+
+  if (firstTag === currentTag) {
+    $scrollWrapper.scrollLeft = 0
+  } else if (lastTag === currentTag) {
+    $scrollWrapper.scrollLeft = $scrollWrapper.scrollWidth - $containerWidth
+  } else {
+    const currentIndex = tagList.findIndex(item => item === currentTag)
+    if (currentIndex === -1) return
+
+    const prevTag = tagList[currentIndex - 1]
+    const nextTag = tagList[currentIndex + 1]
+
+    const afterNextTagOffsetLeft = nextTag?.$el?.offsetLeft + (nextTag?.$el?.offsetWidth || 0) + tagAndTagSpacing
+    const beforePrevTagOffsetLeft = prevTag?.$el?.offsetLeft - tagAndTagSpacing
+
+    if (afterNextTagOffsetLeft > $scrollWrapper.scrollLeft + $containerWidth) {
+      $scrollWrapper.scrollLeft = afterNextTagOffsetLeft - $containerWidth
+    } else if (beforePrevTagOffsetLeft < $scrollWrapper.scrollLeft) {
+      $scrollWrapper.scrollLeft = beforePrevTagOffsetLeft
     }
   }
 }
+
+onMounted(() => {
+  if (scrollWrapper.value) {
+    scrollWrapper.value.addEventListener('scroll', emitScroll, true)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (scrollWrapper.value) {
+    scrollWrapper.value.removeEventListener('scroll', emitScroll)
+  }
+})
+
+defineExpose({
+  moveToTarget
+})
 </script>
 
 <style lang="scss" scoped>

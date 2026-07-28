@@ -467,17 +467,40 @@ function formatMessage(content, formatMessageCache = new Map(), cacheSizeLimit =
 
   // 处理Markdown标题（###### ~ #）
   formatted = formatted
-    .replace(/^######\s*(.+)$/gm, '<h6><strong>$1</strong></h6>')
-    .replace(/^#####\s*(.+)$/gm, '<h5><strong>$1</strong></h5>')
-    .replace(/^####\s*(.+)$/gm, '<h4><strong>$1</strong></h4>')
-    .replace(/^###\s+(.+)$/gm, '<h3><strong>$1</strong></h3>')
-    .replace(/^##\s+(.+)$/gm, '<h2><strong>$1</strong></h2>')
-    .replace(/^#\s+(.+)$/gm, '<h1><strong>$1</strong></h1>')
+    .replace(/^######\s*(.+)$/gm, '<h6 class="markdown-h6">$1</h6>')
+    .replace(/^#####\s*(.+)$/gm, '<h5 class="markdown-h5">$1</h5>')
+    .replace(/^####\s+(.+)$/gm, '<h4 class="markdown-h4">$1</h4>')
+    .replace(/^###\s+(.+)$/gm, '<h3 class="markdown-h3">$1</h3>')
+    .replace(/^##\s+(.+)$/gm, '<h2 class="markdown-h2">$1</h2>')
+    .replace(/^#\s+(.+)$/gm, '<h1 class="markdown-h1">$1</h1>')
 
   // 处理粗体和斜体
   formatted = formatted
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
+
+  // 处理引用 > 内容
+  formatted = formatted.replace(/^(>\s*.+)$/gm, '<div class="markdown-quote">$1</div>')
+  formatted = formatted.replace(/<div class="markdown-quote">>\s*/g, '<div class="markdown-quote">')
+
+  // 处理有序列表 1. 内容
+  formatted = formatted.replace(/^(\s*)\d+\.\s+(.*?)$/gm, (match, spaces, content) => {
+    const level = Math.floor(spaces.length / 2)
+    return `<li class="list-item level-${level}">${content}</li>`
+  })
+  formatted = formatted.replace(/(<li class="list-item.*?<\/li>\s*)+/g, (match) => {
+    const items = match.match(/<li class="list-item.*?<\/li>/g)
+    if (items) {
+      return `<ol class="ordered-list">${items.join('')}</ol>`
+    }
+    return match
+  })
+
+  // 处理分隔线 --- / *** / ___
+  formatted = formatted.replace(/^(?:-{3,}|\*{3,}|_{3,})$/gm, '<hr class="markdown-hr" />')
+
+  // 处理链接 [文本](链接)
+  formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="markdown-link" target="_blank" rel="noopener noreferrer">$1</a>')
 
   // ========== 修复核心：生成标准多级嵌套列表HTML结构 ==========
   // 1. 匹配带缩进的列表项，生成带级别类的<li>标签（每2个空格为1级）

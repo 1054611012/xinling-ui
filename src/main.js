@@ -22,6 +22,7 @@ import { getDicts } from '@/api/system/dict/data'
 import { getConfigKey } from '@/api/system/config'
 import { parseTime, resetForm, addDateRange, selectDictLabel, selectDictLabels, handleTree } from '@/utils/ruoyi'
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
+import { getToken } from '@/utils/auth'
 
 // 全局组件
 import Pagination from '@/components/Pagination/index.vue'
@@ -36,6 +37,17 @@ import ImagePreview from '@/components/ImagePreview/index.vue'
 // SVG 图标
 import 'virtual:svg-icons-register'
 import SvgIcon from '@/components/SvgIcon/index.vue'
+
+// 在路由初始化前检查 token 状态，防止直接访问受保护路由时产生 "No match found" 警告
+const publicPaths = ['/login', '/register', '/website', '/404', '/401']
+const currentPath = window.location.pathname
+const isPublicPath = publicPaths.some(p => currentPath === p || currentPath.startsWith(p))
+
+if (!getToken() && !isPublicPath && currentPath !== '/') {
+  // 未登录且访问的是受保护路由，重定向到登录页
+  const redirectPath = currentPath + window.location.search + window.location.hash
+  window.location.replace('/login?redirect=' + encodeURIComponent(redirectPath))
+}
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -187,6 +199,7 @@ globalProperties.$store = {
 }
 
 app.config.errorHandler = (err, vm, info) => {
+  console.error('[Vue Error]', err, info)
 }
 
 // DictData 初始化

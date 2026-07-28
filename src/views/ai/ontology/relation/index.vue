@@ -2,12 +2,13 @@
   <div class="app-container">
     <el-form :model="queryParams" ref="queryFormRef" size="small" :inline="true" v-show="showSearch" label-width="88px">
       <el-form-item label="关系类型" prop="relationType">
-        <el-input
-          v-model="queryParams.relationType"
-          placeholder="请输入关系类型"
-          clearable
-          @keyup.enter="handleQuery"
-        style="width: 240px" />
+        <el-select v-model="queryParams.relationType" placeholder="请选择关系类型" clearable style="width: 240px">
+          <el-option label="属于 (is-a)" value="is-a" />
+          <el-option label="组成 (part-of)" value="part-of" />
+          <el-option label="关联 (related-to)" value="related-to" />
+          <el-option label="状态 (status-of)" value="status-of" />
+          <el-option label="角色 (role-of)" value="role-of" />
+        </el-select>
       </el-form-item>
       <el-form-item label="源概念" prop="sourceConceptId">
         <el-select v-model="queryParams.sourceConceptId" placeholder="请选择源概念" clearable style="width: 240px">
@@ -106,7 +107,16 @@
     <el-dialog :title="title" :model-value="open" @update:model-value="open = $event" width="600px" append-to-body>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="关系类型" prop="relationType">
-          <el-input v-model="form.relationType" placeholder="请输入关系类型" />
+          <el-select v-model="form.relationType" placeholder="请选择关系类型" style="width: 100%">
+            <el-option label="属于 (is-a)" value="is-a" />
+            <el-option label="组成 (part-of)" value="part-of" />
+            <el-option label="关联 (related-to)" value="related-to" />
+            <el-option label="状态 (status-of)" value="status-of" />
+            <el-option label="角色 (role-of)" value="role-of" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="关系名称" prop="relationName">
+          <el-input v-model="form.relationName" placeholder="请输入关系名称（图谱显示用）" />
         </el-form-item>
         <el-form-item label="源概念" prop="sourceConceptId">
           <el-select v-model="form.sourceConceptId" placeholder="请选择源概念" style="width: 100%">
@@ -173,6 +183,7 @@ const queryParams = reactive({
 const form = reactive({
   relationId: undefined,
   relationType: undefined,
+  relationName: undefined,
   sourceConceptId: undefined,
   targetConceptId: undefined,
   description: undefined
@@ -217,6 +228,7 @@ function cancel() {
 function reset() {
   form.relationId = undefined
   form.relationType = undefined
+  form.relationName = undefined
   form.sourceConceptId = undefined
   form.targetConceptId = undefined
   form.description = undefined

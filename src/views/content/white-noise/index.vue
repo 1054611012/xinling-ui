@@ -369,7 +369,7 @@
 <script setup>
 import { listWhiteNoise, getWhiteNoise, addWhiteNoise, updateWhiteNoise, delWhiteNoise, onlineWhiteNoise, offlineWhiteNoise, batchWhiteNoiseBg } from '@/api/content/white-noise'
 import { listAudioItem } from '@/api/content/audio'
-import { getToken } from '@/utils/auth'
+import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, View, Edit, Picture, Top, Bottom, Delete, Headset, SuccessFilled, Sort, VideoPlay, Calendar, Document, UserFilled, Timer, Check } from '@element-plus/icons-vue'
@@ -389,8 +389,7 @@ const title = ref('')
 const open = ref(false)
 const detailOpen = ref(false)
 const uploadImageUrl = import.meta.env.VITE_APP_BASE_API + '/file/record/upload?businessType=image'
-const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
-const baseUrl = import.meta.env.VITE_APP_BASE_API
+const uploadHeaders = getUploadHeaders()
 
 const queryParams = reactive({
   pageNum: 1,
@@ -682,13 +681,6 @@ function parseTags(tags) {
   } catch {
     return tags.split(/[,，]/).map(t => t.trim()).filter(Boolean)
   }
-}
-
-// ================== URL 解析工具 ==================
-function resolveFileUrl(url) {
-  if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return baseUrl + '/' + url.replace(/^\/+/, '')
 }
 
 // ================== 格式化工具 ==================

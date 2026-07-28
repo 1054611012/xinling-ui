@@ -31,91 +31,97 @@
 			</el-radio>
 		</el-form-item>
 	</el-form>
-
 </template>
 
-<script>
-export default {
-	data() {
-		return {
-			radioValue: 1,
-			cycle01: 0,
-			cycle02: 1,
-			average01: 0,
-			average02: 1,
-			checkboxList: [],
-			checkNum: this.$options.propsData.check
-		}
-	},
-	name: 'crontab-hour',
-	props: ['check', 'cron'],
-	methods: {
-		// 单选按钮值变化时
-		radioChange() {
-			if (this.cron.min === '*') {
-			    this.$emit('update', 'min', '0', 'hour')
-			}
-			if (this.cron.second === '*') {
-			    this.$emit('update', 'second', '0', 'hour')
-			}
-			switch (this.radioValue) {
-				case 1:
-					this.$emit('update', 'hour', '*')
-					break
-				case 2:
-					this.$emit('update', 'hour', this.cycleTotal)
-					break
-				case 3:
-					this.$emit('update', 'hour', this.averageTotal)
-					break
-				case 4:
-					this.$emit('update', 'hour', this.checkboxString)
-					break
-			}
-		},
-		// 周期两个值变化时
-		cycleChange() {
-			if (this.radioValue == '2') {
-				this.$emit('update', 'hour', this.cycleTotal)
-			}
-		},
-		// 平均两个值变化时
-		averageChange() {
-			if (this.radioValue == '3') {
-				this.$emit('update', 'hour', this.averageTotal)
-			}
-		},
-		// checkbox值变化时
-		checkboxChange() {
-			if (this.radioValue == '4') {
-				this.$emit('update', 'hour', this.checkboxString)
-			}
-		}
-	},
-	watch: {
-		'radioValue': 'radioChange',
-		'cycleTotal': 'cycleChange',
-		'averageTotal': 'averageChange',
-		'checkboxString': 'checkboxChange'
-	},
-	computed: {
-		// 计算两个周期值
-		cycleTotal: function () {
-			const cycle01 = this.checkNum(this.cycle01, 0, 22)
-			const cycle02 = this.checkNum(this.cycle02, cycle01 ? cycle01 + 1 : 1, 23)
-			return cycle01 + '-' + cycle02
-		},
-		// 计算平均用到的值
-		averageTotal: function () {
-			const average01 = this.checkNum(this.average01, 0, 22)
-			const average02 = this.checkNum(this.average02, 1, 23 - average01 || 0)
-			return average01 + '/' + average02
-		},
-		// 计算勾选的checkbox值合集
-		checkboxString: function () {
-			let str = this.checkboxList.join()
-			return str == '' ? '*' : str
-		}
-	}
+<script setup>
+import { ref, computed, watch } from 'vue'
+
+const props = defineProps(['check', 'cron'])
+const emit = defineEmits(['update'])
+
+const radioValue = ref(1)
+const cycle01 = ref(0)
+const cycle02 = ref(1)
+const average01 = ref(0)
+const average02 = ref(1)
+const checkboxList = ref([])
+
+const checkNum = (value, min, max) => {
+  value = Math.floor(value)
+  if (value < min) value = min
+  if (value > max) value = max
+  return value
 }
+
+const cycleTotal = computed(() => {
+  const c01 = checkNum(cycle01.value, 0, 22)
+  const c02 = checkNum(cycle02.value, c01 ? c01 + 1 : 1, 23)
+  return c01 + '-' + c02
+})
+
+const averageTotal = computed(() => {
+  const a01 = checkNum(average01.value, 0, 22)
+  const a02 = checkNum(average02.value, 1, 23 - a01 || 0)
+  return a01 + '/' + a02
+})
+
+const checkboxString = computed(() => {
+  const str = checkboxList.value.join()
+  return str === '' ? '*' : str
+})
+
+function radioChange() {
+  if (props.cron && props.cron.min === '*') {
+    emit('update', 'min', '0', 'hour')
+  }
+  if (props.cron && props.cron.second === '*') {
+    emit('update', 'second', '0', 'hour')
+  }
+  switch (radioValue.value) {
+    case 1:
+      emit('update', 'hour', '*')
+      break
+    case 2:
+      emit('update', 'hour', cycleTotal.value)
+      break
+    case 3:
+      emit('update', 'hour', averageTotal.value)
+      break
+    case 4:
+      emit('update', 'hour', checkboxString.value)
+      break
+  }
+}
+
+function cycleChange() {
+  if (radioValue.value === 2) {
+    emit('update', 'hour', cycleTotal.value)
+  }
+}
+
+function averageChange() {
+  if (radioValue.value === 3) {
+    emit('update', 'hour', averageTotal.value)
+  }
+}
+
+function checkboxChange() {
+  if (radioValue.value === 4) {
+    emit('update', 'hour', checkboxString.value)
+  }
+}
+
+watch(radioValue, radioChange)
+watch(cycleTotal, cycleChange)
+watch(averageTotal, averageChange)
+watch(checkboxString, checkboxChange)
+
+defineExpose({
+  radioValue,
+  cycle01,
+  cycle02,
+  average01,
+  average02,
+  checkboxList
+})
 </script>

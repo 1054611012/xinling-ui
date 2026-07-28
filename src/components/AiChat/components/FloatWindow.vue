@@ -40,6 +40,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import aiLogo from '@/assets/icons/ai-logo.png'
 
 const props = defineProps({
   isLogoMode: {
@@ -112,7 +113,7 @@ const startResize = (event) => {
 }
 
 const handleImageError = (event) => {
-  event.target.src = require('@/assets/icons/ai-logo.png')
+  event.target.src = aiLogo
 }
 </script>
 

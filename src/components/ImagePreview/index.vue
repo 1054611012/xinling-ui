@@ -1,6 +1,6 @@
 <template>
  <el-image
- :src="`${realSrc}`"
+ :src="realSrc"
  fit="cover"
  :style="`width:${realWidth};height:${realHeight};`"
  :preview-src-list="realSrcList"
@@ -11,15 +11,14 @@
   </div>
  </template>
  </el-image>
-   </template>
+</template>
 
-<script>
+<script setup>
+import { computed } from 'vue'
 import { isExternal } from "@/utils/validate"
 import { PictureFilled } from '@element-plus/icons-vue'
 
-export default {
- name: "ImagePreview",
- props: {
+const props = defineProps({
  src: {
   type: String,
   default: ""
@@ -32,40 +31,41 @@ export default {
   type: [Number, String],
   default: ""
  }
- },
- computed: {
- realSrc() {
-  if (!this.src) {
-  return
-  }
-  let real_src = this.src.split(",")[0]
-  if (isExternal(real_src)) {
+})
+
+const realSrc = computed(() => {
+ if (!props.src) {
+  return ''
+ }
+ let real_src = props.src.split(",")[0]
+ if (isExternal(real_src)) {
   return real_src
-  }
-  return import.meta.env.VITE_APP_BASE_API + real_src
- },
- realSrcList() {
-  if (!this.src) {
-  return
-  }
-  let real_src_list = this.src.split(",")
-  let srcList = []
-  real_src_list.forEach(item => {
+ }
+ return import.meta.env.VITE_APP_BASE_API + real_src
+})
+
+const realSrcList = computed(() => {
+ if (!props.src) {
+  return []
+ }
+ let real_src_list = props.src.split(",")
+ let srcList = []
+ real_src_list.forEach(item => {
   if (isExternal(item)) {
    return srcList.push(item)
   }
   return srcList.push(import.meta.env.VITE_APP_BASE_API + item)
-  })
-  return srcList
- },
- realWidth() {
-  return typeof this.width == "string" ? this.width : `${this.width}px`
- },
- realHeight() {
-  return typeof this.height == "string" ? this.height : `${this.height}px`
- }
- }
-}
+ })
+ return srcList
+})
+
+const realWidth = computed(() => {
+ return typeof props.width == "string" ? props.width : `${props.width}px`
+})
+
+const realHeight = computed(() => {
+ return typeof props.height == "string" ? props.height : `${props.height}px`
+})
 </script>
 
 <style lang="scss" scoped>

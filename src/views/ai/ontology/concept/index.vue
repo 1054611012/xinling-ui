@@ -35,7 +35,7 @@
           plain
           :icon="Edit"
           size="small"
-          :disabled="single"
+          :disabled="disableEdit"
           @click="handleUpdate"
           v-hasPermi="['ai:ontology:edit']"
         >修改</el-button>
@@ -44,7 +44,7 @@
           plain
           :icon="Delete"
           size="small"
-          :disabled="multiple"
+          :disabled="disableDelete"
           @click="handleDelete"
           v-hasPermi="['ai:ontology:remove']"
         >删除</el-button>
@@ -108,14 +108,13 @@
           <el-input v-model="form.conceptCode" placeholder="请输入概念编码" />
         </el-form-item>
         <el-form-item label="父概念" prop="parentId">
-          <el-select v-model="form.parentId" placeholder="请选择父概念" clearable style="width: 100%">
-            <el-option
-              v-for="item in parentOptions"
-              :key="item.conceptId"
-              :label="item.conceptName"
-              :value="item.conceptId"
-            />
-          </el-select>
+          <TreeSelect
+            v-model="form.parentId"
+            :options="parentTreeOptions"
+            placeholder="请选择父概念"
+            clearable
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="概念描述" prop="description">
           <el-input v-model="form.description" type="textarea" placeholder="请输入概念描述" :rows="3" />
@@ -136,10 +135,28 @@
 </template>
 
 <script setup>
-import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
+import TreeSelect from 'vue3-treeselect'
+import 'vue3-treeselect/dist/vue3-treeselect.css'
 import { listConcept, getConcept, delConcept, addConcept, updateConcept, listEnabledConcept } from "@/api/ai/ontology"
+
+// 状态常量
+const STATUS = {
+  ENABLED: '0',
+  DISABLED: '1'
+}
+
+// defaultForm 必须在 reactive 引用之前声明，否则会导致 TDZ(暂时性死区) 错误
+const defaultForm = {
+  conceptId: undefined,
+  conceptName: undefined,
+  conceptCode: undefined,
+  parentId: undefined,
+  description: undefined,
+  status: STATUS.ENABLED
+}
 
 defineOptions({ name: 'OntologyConcept' })
 
@@ -148,8 +165,8 @@ const formRef = ref(null)
 
 const loading = ref(true)
 const ids = ref([])
-const single = ref(true)
-const multiple = ref(true)
+const disableEdit = ref(true)
+const disableDelete = ref(true)
 const showSearch = ref(true)
 const total = ref(0)
 const conceptList = ref([])
@@ -164,14 +181,25 @@ const queryParams = reactive({
   status: undefined
 })
 
-const form = reactive({
-  conceptId: undefined,
-  conceptName: undefined,
-  conceptCode: undefined,
-  parentId: undefined,
-  description: undefined,
-  status: '0'
+const parentTreeOptions = computed(() => {
+  const map = new Map()
+  const roots = []
+
+  parentOptions.value.forEach(item => {
+    const node = { ...item, label: item.conceptName, value: item.conceptId, children: [] }
+    map.set(item.conceptId, node)
+
+    if (item.parentId && map.has(item.parentId)) {
+      map.get(item.parentId).children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+
+  return roots
 })
+
+const form = reactive({ ...defaultForm })
 
 const rules = reactive({
   conceptName: [
@@ -187,19 +215,20 @@ onMounted(() => {
   loadParentOptions()
 })
 
-function getList() {
+async function getList() {
   loading.value = true
-  listConcept(queryParams).then(response => {
+  try {
+    const response = await listConcept(queryParams)
     conceptList.value = response.rows
     total.value = response.total
+  } finally {
     loading.value = false
-  })
+  }
 }
 
-function loadParentOptions() {
-  listEnabledConcept().then(response => {
-    parentOptions.value = response.data || []
-  })
+async function loadParentOptions() {
+  const response = await listEnabledConcept()
+  parentOptions.value = response.data || []
 }
 
 function cancel() {
@@ -207,12 +236,7 @@ function cancel() {
 }
 
 function reset() {
-  form.conceptId = undefined
-  form.conceptName = undefined
-  form.conceptCode = undefined
-  form.parentId = undefined
-  form.description = undefined
-  form.status = '0'
+  Object.assign(form, defaultForm)
   nextTick(() => {
     formRef.value?.resetFields()
   })
@@ -230,62 +254,74 @@ function resetQuery() {
 
 function handleSelectionChange(selection) {
   ids.value = selection.map(item => item.conceptId)
-  single.value = selection.length !== 1
-  multiple.value = !selection.length
+  disableEdit.value = selection.length !== 1
+  disableDelete.value = !selection.length
 }
 
-function handleAdd() {
+async function handleAdd() {
   reset()
-  loadParentOptions()
+  await loadParentOptions()
   open.value = true
   title.value = "新增概念"
-  nextTick(() => {
-    formRef.value?.resetFields()
-  })
 }
 
-function handleUpdate(row) {
+async function handleUpdate(row) {
   const conceptId = row.conceptId || ids.value
-  getConcept(conceptId).then(response => {
-    reset()
-    Object.assign(form, response.data)
-    loadParentOptions()
-    open.value = true
-    title.value = "修改概念"
-  })
+  const response = await getConcept(conceptId)
+  Object.assign(form, response.data)
+  await loadParentOptions()
+  open.value = true
+  title.value = "修改概念"
 }
 
-function submitForm() {
-  formRef.value.validate(valid => {
-    if (valid) {
-      if (form.conceptId != undefined) {
-        updateConcept(form).then(response => {
-          ElMessage.success("修改成功")
-          open.value = false
-          getList()
-        })
-      } else {
-        addConcept(form).then(response => {
-          ElMessage.success("新增成功")
-          open.value = false
-          getList()
-        })
-      }
+async function submitForm() {
+  const valid = await formRef.value.validate()
+  if (!valid) return
+  
+  try {
+    if (form.conceptId != undefined) {
+      await updateConcept(form)
+      ElMessage.success("修改成功")
+    } else {
+      await addConcept(form)
+      ElMessage.success("新增成功")
     }
-  })
-}
-
-function handleDelete(row) {
-  const conceptIds = row.conceptId || ids.value
-  ElMessageBox.confirm('是否确认删除概念编号为"' + conceptIds + '"的数据项？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }).then(() => {
-    return delConcept(conceptIds)
-  }).then(() => {
+    open.value = false
     getList()
-    ElMessage.success("删除成功")
-  }).catch((error) => {
+  } catch {
+    ElMessage.error("操作失败")
+  }
+}
+
+async function handleDelete(row) {
+  // 处理顶部工具栏点击（无参数）和表格行点击（有参数）两种情况
+  const conceptIds = row?.conceptId || ids.value
+  
+  // 防御性检查：确保有有效的ID才能进行删除
+  if (!conceptIds || (Array.isArray(conceptIds) && conceptIds.length === 0)) {
+    ElMessage.warning("请选择要删除的数据")
+    return
+  }
+  
+  const isBatch = Array.isArray(conceptIds)
+  const title = isBatch ? '确认批量删除' : '确认删除'
+  const message = isBatch 
+    ? `是否确认删除选中的 ${conceptIds.length} 条概念数据？`
+    : `是否确认删除概念编号为"${conceptIds}"的数据项？`
+  
+  try {
+    await ElMessageBox.confirm(message, title, { 
+      confirmButtonText: '确定', 
+      cancelButtonText: '取消', 
+      type: 'warning' 
+    })
+    await delConcept(conceptIds)
+    getList()
+    ElMessage.success(isBatch ? "批量删除成功" : "删除成功")
+  } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error("删除失败")
+      ElMessage.error(isBatch ? "批量删除失败" : "删除失败")
     }
-  })
+  }
 }
 </script>

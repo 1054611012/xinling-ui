@@ -5,8 +5,8 @@
       :action="uploadFileUrl"
       :before-upload="handleBeforeUpload"
       :file-list="fileList"
-      :data="data"
-      :limit="limit"
+      :data="props.data"
+      :limit="props.limit"
       :on-error="handleUploadError"
       :on-exceed="handleExceed"
       :on-success="handleUploadSuccess"
@@ -14,240 +14,213 @@
       :headers="headers"
       class="upload-file-uploader"
       ref="fileUpload"
-      v-if="!disabled"
+      v-if="!props.disabled"
     >
-      <!-- 上传按钮 -->
       <el-button size="small" type="primary">选取文件</el-button>
-      <!-- 上传提示 -->
       <template #tip>
       <div class="el-upload__tip" v-if="showTip">
           请上传
-          <template v-if="fileSize"> 大小不超过 <b style="color: #f56c6c">{{ fileSize }}MB</b> </template>
-          <template v-if="fileType"> 格式为 <b style="color: #f56c6c">{{ fileType.join("/") }}</b> </template>
+          <template v-if="props.fileSize"> 大小不超过 <b style="color: #f56c6c">{{ props.fileSize }}MB</b> </template>
+          <template v-if="props.fileType"> 格式为 <b style="color: #f56c6c">{{ props.fileType.join("/") }}</b> </template>
           的文件
         </div>
       </template>
     </el-upload>
 
-    <!-- 文件列表 -->
     <transition-group ref="uploadFileList" class="upload-file-list el-upload-list el-upload-list--text" name="el-fade-in-linear" tag="ul">
       <li :key="file.url" class="el-upload-list__item ele-upload-list__item-content" v-for="(file, index) in fileList">
         <el-link :href="`${baseUrl}${file.url}`" :underline="false" target="_blank">
           <el-icon><Document /></el-icon> {{ getFileName(file.name) }}
         </el-link>
         <div class="ele-upload-list__item-content-action">
-          <el-link :underline="false" @click="handleDelete(index)" type="danger" v-if="!disabled">删除</el-link>
+          <el-link :underline="false" @click="handleDelete(index)" type="danger" v-if="!props.disabled">删除</el-link>
         </div>
       </li>
     </transition-group>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { getToken } from "@/utils/auth"
 import Sortable from 'sortablejs'
 import { Document } from '@element-plus/icons-vue'
 import { ElMessage, ElLoading } from 'element-plus'
 
-export default {
-  name: "FileUpload",
-  props: {
-    // 值
-    value: [String, Object, Array],
-    // 上传接口地址
-    action: {
-      type: String,
-      default: "/common/upload"
-    },
-    // 上传携带的参数
-    data: {
-      type: Object
-    },
-    // 数量限制
-    limit: {
-      type: Number,
-      default: 5
-    },
-    // 大小限制(MB)
-    fileSize: {
-      type: Number,
-      default: 5
-    },
-    // 文件类型, 例如['png', 'jpg', 'jpeg']
-    fileType: {
-      type: Array,
-      default: () => ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "pdf"]
-    },
-    // 是否显示提示
-    isShowTip: {
-      type: Boolean,
-      default: true
-    },
-    // 禁用组件（仅查看文件）
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    // 拖动排序
-    drag: {
-      type: Boolean,
-      default: true
+const props = defineProps({
+  value: [String, Object, Array],
+  action: {
+    type: String,
+    default: "/common/upload"
+  },
+  data: {
+    type: Object
+  },
+  limit: {
+    type: Number,
+    default: 5
+  },
+  fileSize: {
+    type: Number,
+    default: 5
+  },
+  fileType: {
+    type: Array,
+    default: () => ["doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "pdf"]
+  },
+  isShowTip: {
+    type: Boolean,
+    default: true
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  drag: {
+    type: Boolean,
+    default: true
+  }
+})
+
+const emit = defineEmits(['input'])
+
+const fileUpload = ref(null)
+const uploadFileList = ref(null)
+
+const number = ref(0)
+const uploadList = ref([])
+const baseUrl = import.meta.env.VITE_APP_BASE_API
+const uploadFileUrl = import.meta.env.VITE_APP_BASE_API + props.action
+const headers = ref({
+  Authorization: "Bearer " + getToken(),
+})
+const fileList = ref([])
+let loadingInstance = null
+
+const showTip = computed(() => {
+  return props.isShowTip && (props.fileType || props.fileSize)
+})
+
+function handleBeforeUpload(file) {
+  if (props.fileType) {
+    const fileName = file.name.split('.')
+    const fileExt = fileName[fileName.length - 1]
+    const isTypeOk = props.fileType.indexOf(fileExt) >= 0
+    if (!isTypeOk) {
+      ElMessage.error(`文件格式不正确，请上传${props.fileType.join("/")}格式文件!`)
+      return false
     }
-  },
-  data() {
-    return {
-      number: 0,
-      uploadList: [],
-      baseUrl: import.meta.env.VITE_APP_BASE_API,
-      uploadFileUrl: import.meta.env.VITE_APP_BASE_API + this.action, // 上传文件服务器地址
-      headers: {
-        Authorization: "Bearer " + getToken(),
-      },
-      fileList: [],
-      loadingInstance: null
+  }
+  if (file.name.includes(',')) {
+    ElMessage.error('文件名不正确，不能包含英文逗号!')
+    return false
+  }
+  if (props.fileSize) {
+    const isLt = file.size / 1024 / 1024 < props.fileSize
+    if (!isLt) {
+      ElMessage.error(`上传文件大小不能超过 ${props.fileSize} MB!`)
+      return false
     }
-  },
-  mounted() {
-    if (this.drag && !this.disabled) {
-      this.$nextTick(() => {
-        const element = this.$refs.uploadFileList?.$el || this.$refs.uploadFileList
-        Sortable.create(element, {
-          ghostClass: 'file-upload-darg',
-          onEnd: (evt) => {
-            const movedItem = this.fileList.splice(evt.oldIndex, 1)[0]
-            this.fileList.splice(evt.newIndex, 0, movedItem)
-            this.$emit("input", this.listToString(this.fileList))
-          }
-        })
-      })
+  }
+  loadingInstance = ElLoading.service({ text: "正在上传文件，请稍候..." })
+  number.value++
+  return true
+}
+
+function handleExceed() {
+  ElMessage.error(`上传文件数量不能超过 ${props.limit} 个!`)
+}
+
+function handleUploadError(err) {
+  ElMessage.error("上传文件失败，请重试")
+  if (loadingInstance) {
+    loadingInstance.close()
+    loadingInstance = null
+  }
+}
+
+function handleUploadSuccess(res, file) {
+  if (res.code === 200) {
+    uploadList.value.push({ name: res.fileName, url: res.fileName })
+    uploadedSuccessfully()
+  } else {
+    number.value--
+    if (loadingInstance) {
+      loadingInstance.close()
+      loadingInstance = null
     }
-  },
-  watch: {
-    value: {
-      handler(val) {
-        if (val) {
-          let temp = 1
-          // 首先将值转为数组
-          const list = Array.isArray(val) ? val : this.value.split(',')
-          // 然后将数组转为对象数组
-          this.fileList = list.map(item => {
-            if (typeof item === "string") {
-              item = { name: item, url: item }
-            }
-            item.uid = item.uid || new Date().getTime() + temp++
-            return item
-          })
-        } else {
-          this.fileList = []
-          return []
-        }
-      },
-      deep: true,
-      immediate: true
-    }
-  },
-  computed: {
-    // 是否显示提示
-    showTip() {
-      return this.isShowTip && (this.fileType || this.fileSize)
-    },
-  },
-  methods: {
-    // 上传前校检格式和大小
-    handleBeforeUpload(file) {
-      // 校检文件类型
-      if (this.fileType) {
-        const fileName = file.name.split('.')
-        const fileExt = fileName[fileName.length - 1]
-        const isTypeOk = this.fileType.indexOf(fileExt) >= 0
-        if (!isTypeOk) {
-          ElMessage.error(`文件格式不正确，请上传${this.fileType.join("/")}格式文件!`)
-          return false
-        }
-      }
-      // 校检文件名是否包含特殊字符
-      if (file.name.includes(',')) {
-        ElMessage.error('文件名不正确，不能包含英文逗号!')
-        return false
-      }
-      // 校检文件大小
-      if (this.fileSize) {
-        const isLt = file.size / 1024 / 1024 < this.fileSize
-        if (!isLt) {
-          ElMessage.error(`上传文件大小不能超过 ${this.fileSize} MB!`)
-          return false
-        }
-      }
-      this.loadingInstance = ElLoading.service({ text: "正在上传文件，请稍候..." })
-      this.number++
-      return true
-    },
-    // 文件个数超出
-    handleExceed() {
-      ElMessage.error(`上传文件数量不能超过 ${this.limit} 个!`)
-    },
-    // 上传失败
-    handleUploadError(err) {
-      ElMessage.error("上传文件失败，请重试")
-      if (this.loadingInstance) {
-        this.loadingInstance.close()
-        this.loadingInstance = null
-      }
-    },
-    // 上传成功回调
-    handleUploadSuccess(res, file) {
-      if (res.code === 200) {
-        this.uploadList.push({ name: res.fileName, url: res.fileName })
-        this.uploadedSuccessfully()
-      } else {
-        this.number--
-        if (this.loadingInstance) {
-          this.loadingInstance.close()
-          this.loadingInstance = null
-        }
-        ElMessage.error(res.msg)
-        this.$refs.fileUpload.handleRemove(file)
-        this.uploadedSuccessfully()
-      }
-    },
-    // 删除文件
-    handleDelete(index) {
-      this.fileList.splice(index, 1)
-      this.$emit("input", this.listToString(this.fileList))
-    },
-    // 上传结束处理
-    uploadedSuccessfully() {
-      if (this.number > 0 && this.uploadList.length === this.number) {
-        this.fileList = this.fileList.concat(this.uploadList)
-        this.uploadList = []
-        this.number = 0
-        this.$emit("input", this.listToString(this.fileList))
-        if (this.loadingInstance) {
-          this.loadingInstance.close()
-          this.loadingInstance = null
-        }
-      }
-    },
-    // 获取文件名称
-    getFileName(name) {
-      // 如果是url那么取最后的名字 如果不是直接返回
-      if (name.lastIndexOf("/") > -1) {
-        return name.slice(name.lastIndexOf("/") + 1)
-      } else {
-        return name
-      }
-    },
-    // 对象转成指定字符串分隔
-    listToString(list, separator) {
-      let strs = ""
-      separator = separator || ","
-      for (let i in list) {
-        strs += list[i].url + separator
-      }
-      return strs != '' ? strs.substr(0, strs.length - 1) : ''
+    ElMessage.error(res.msg)
+    fileUpload.value.handleRemove(file)
+    uploadedSuccessfully()
+  }
+}
+
+function handleDelete(index) {
+  fileList.value.splice(index, 1)
+  emit("input", listToString(fileList.value))
+}
+
+function uploadedSuccessfully() {
+  if (number.value > 0 && uploadList.value.length === number.value) {
+    fileList.value = fileList.value.concat(uploadList.value)
+    uploadList.value = []
+    number.value = 0
+    emit("input", listToString(fileList.value))
+    if (loadingInstance) {
+      loadingInstance.close()
+      loadingInstance = null
     }
   }
 }
+
+function getFileName(name) {
+  if (name.lastIndexOf("/") > -1) {
+    return name.slice(name.lastIndexOf("/") + 1)
+  } else {
+    return name
+  }
+}
+
+function listToString(list, separator) {
+  let strs = ""
+  separator = separator || ","
+  for (let i in list) {
+    strs += list[i].url + separator
+  }
+  return strs != '' ? strs.substr(0, strs.length - 1) : ''
+}
+
+watch(() => props.value, (val) => {
+  if (val) {
+    let temp = 1
+    const list = Array.isArray(val) ? val : props.value.split(',')
+    fileList.value = list.map(item => {
+      if (typeof item === "string") {
+        item = { name: item, url: item }
+      }
+      item.uid = item.uid || new Date().getTime() + temp++
+      return item
+    })
+  } else {
+    fileList.value = []
+  }
+}, { deep: true, immediate: true })
+
+onMounted(() => {
+  if (props.drag && !props.disabled) {
+    nextTick(() => {
+      const element = uploadFileList.value?.$el || uploadFileList.value
+      Sortable.create(element, {
+        ghostClass: 'file-upload-darg',
+        onEnd: (evt) => {
+          const movedItem = fileList.value.splice(evt.oldIndex, 1)[0]
+          fileList.value.splice(evt.newIndex, 0, movedItem)
+          emit("input", listToString(fileList.value))
+        }
+      })
+    })
+  }
+})
 </script>
 
 <style scoped lang="scss">

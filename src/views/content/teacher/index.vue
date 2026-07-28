@@ -95,7 +95,7 @@ import { defineOptions, ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Picture, User } from '@element-plus/icons-vue'
 import { listTeacher, getTeacher, addTeacher, updateTeacher, delTeacher } from '@/api/content/teacher'
-import { getToken } from '@/utils/auth'
+import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 
 defineOptions({ name: 'Teacher' })
 
@@ -103,9 +103,8 @@ const queryFormRef = ref(null)
 const formRef = ref(null)
 const avatarUploadRef = ref(null)
 
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadImageUrl = import.meta.env.VITE_APP_BASE_API + '/file/record/upload?businessType=image'
-const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
+const uploadHeaders = getUploadHeaders()
 
 const loading = ref(true)
 const showSearch = ref(true)
@@ -229,11 +228,5 @@ function handleBeforeImageUpload(file) {
 
 function handleUploadError() {
   ElMessage.error('上传失败，请重试')
-}
-
-function resolveFileUrl(url) {
-  if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return baseUrl + '/' + url.replace(/^\/+/, '')
 }
 </script>

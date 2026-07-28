@@ -168,7 +168,7 @@
 
 <script setup>
 import { listAudioMix, getAudioMix, addAudioMix, updateAudioMix, delAudioMix } from '@/api/content/audio'
-import { getToken } from '@/utils/auth'
+import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { defineOptions } from 'vue'
@@ -191,9 +191,8 @@ const mixList = ref([])
 const title = ref('')
 const open = ref(false)
 const detailOpen = ref(false)
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadImageUrl = import.meta.env.VITE_APP_BASE_API + '/file/record/upload?businessType=image'
-const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
+const uploadHeaders = getUploadHeaders()
 
 const queryParams = reactive({
  pageNum: 1,
@@ -368,11 +367,5 @@ function handleUploadError() {
  ElMessage.error('上传失败，请重试')
 }
 
-// ================== URL 解析工具 ==================
-/** 将可能为相对路径的URL转为完整可访问URL */
-function resolveFileUrl(url) {
- if (!url) return ''
- if (url.startsWith('http://') || url.startsWith('https://')) return url
- return baseUrl + '/' + url.replace(/^\/+/, '')
-}
+
 </script>

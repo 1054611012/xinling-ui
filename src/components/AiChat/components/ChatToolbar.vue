@@ -1,130 +1,88 @@
 <template>
- <div>
- <!-- 浅色模式 macOS 风格工具栏 (非悬浮模式) -->
- <div class="macos-toolbar-wrapper" v-if="!isDarkMode && !isFloatMode">
-  <div class="macos-toolbar" @mousedown="startDrag">
-  <div class="traffic-lights">
-   <span class="traffic-light red" @click="closeFloat" v-if="isFloatMode || !isSidebarOpen"></span>
-   <span class="traffic-light yellow" @click="toggleMinimize" v-if="isFloatMode || !isSidebarOpen"></span>
-   <span class="traffic-light green" @click="toggleMaximize" v-if="isFloatMode || !isSidebarOpen"></span>
-  </div>
-  <div class="toolbar-buttons">
-   <button class="toolbar-btn" @click="toggleSidebar" title="切换侧边栏">
-   <img
-    :src="sidebarIcon"
-    :alt="isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
-    class="toolbar-icon"
-    @error="handleImageError"
-   />
-   </button>
-   <!-- 仅在侧边栏关闭时显示新建会话按钮 -->
-   <button class="toolbar-btn" @click="newSession" title="新建会话" v-if="!isSidebarOpen">
-   <img
-    :src="newSessionIcon"
-    alt="新建会话"
-    class="toolbar-icon"
-    @error="handleImageError"
-   />
-   </button>
-   <!-- 悬浮窗按钮 -->
-   <button class="toolbar-btn" @click="openFloatMode" title="悬浮窗" v-if="!isFloatMode">
-   <el-icon><Position /></el-icon>
-   </button>
-   <!-- 主题切换按钮 -->
-   <button class="toolbar-btn" @click="toggleTheme" title="切换主题">
-   <el-icon><component :is="isDarkMode ? Sunny : Moon" /></el-icon>
-   </button>
-  </div>
-  </div>
- </div>
+  <div>
+    <!-- 浅色模式 macOS 风格工具栏 -->
+    <div class="macos-toolbar-wrapper" v-if="!isDarkMode">
+      <div class="macos-toolbar" @mousedown="startDrag">
+        <div class="traffic-lights">
+          <span class="traffic-light red" @click="closeFloat" v-if="isFloatMode || !isSidebarOpen"></span>
+          <span class="traffic-light yellow" @click="toggleMinimize" v-if="isFloatMode || !isSidebarOpen"></span>
+          <span class="traffic-light green" @click="toggleMaximize" v-if="isFloatMode || !isSidebarOpen"></span>
+        </div>
+        <div class="toolbar-buttons">
+          <button class="toolbar-btn" @click="toggleSidebar" title="切换侧边栏">
+            <img
+              :src="sidebarIcon"
+              :alt="isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
+              class="toolbar-icon"
+              @error="handleImageError"
+            />
+          </button>
+          <button class="toolbar-btn" @click="newSession" title="新建会话" v-if="!isSidebarOpen">
+            <img
+              :src="newSessionIcon"
+              alt="新建会话"
+              class="toolbar-icon"
+              @error="handleImageError"
+            />
+          </button>
+          <button class="toolbar-btn" @click="openFloatMode" title="悬浮窗" v-if="!isFloatMode">
+            <el-icon><Position /></el-icon>
+          </button>
+          <button class="toolbar-btn" @click="toggleTheme" title="切换主题">
+            <el-icon><component :is="isDarkMode ? Sunny : Moon" /></el-icon>
+          </button>
+        </div>
+      </div>
+    </div>
 
- <!-- 浅色模式 macOS 风格工具栏 (悬浮模式) -->
- <div class="macos-toolbar-wrapper" v-else-if="!isDarkMode && isFloatMode">
-  <div class="macos-toolbar" @mousedown="startDrag">
-  <div class="traffic-lights">
-   <span class="traffic-light red" @click="closeFloat" v-if="isFloatMode || !isSidebarOpen"></span>
-   <span class="traffic-light yellow" @click="toggleMinimize" v-if="isFloatMode || !isSidebarOpen"></span>
-   <span class="traffic-light green" @click="toggleMaximize" v-if="isFloatMode || !isSidebarOpen"></span>
+    <!-- 深色模式工具栏 -->
+    <div class="dark-toolbar-wrapper" v-else>
+      <div class="dark-toolbar" @mousedown="startDrag">
+        <div class="toolbar-left">
+          <el-icon class="toolbar-icon"><MagicStick /></el-icon>
+          <span class="toolbar-title">AI 助手</span>
+          <button class="toolbar-btn" @click="toggleSidebar" title="切换侧边栏">
+            <img
+              :src="sidebarIcon"
+              :alt="isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
+              class="toolbar-icon-img"
+              @error="handleImageError"
+            />
+          </button>
+          <button class="toolbar-btn" @click="newSession" title="新建会话" v-if="!isSidebarOpen">
+            <img
+              :src="newSessionIcon"
+              alt="新建会话"
+              class="toolbar-icon-img"
+              @error="handleImageError"
+            />
+          </button>
+        </div>
+        <div class="toolbar-right">
+          <button class="toolbar-btn" @click="clearConversation" title="清空对话">
+            <el-icon><Delete /></el-icon>
+          </button>
+          <button class="toolbar-btn" @click="toggleTheme" title="切换主题">
+            <el-icon><Sunny /></el-icon>
+          </button>
+          <button class="toolbar-btn" @click="openFloatMode" title="悬浮窗" v-if="!isFloatMode">
+            <el-icon><Position /></el-icon>
+          </button>
+          <button class="toolbar-btn minimize-btn" @click="toggleMinimize" v-if="isFloatMode">
+            <el-icon><Minus /></el-icon>
+          </button>
+          <button class="toolbar-btn close-btn" @click="closeFloat" v-if="isFloatMode">
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="toolbar-buttons">
-   <button class="toolbar-btn" @click="toggleSidebar" title="切换侧边栏">
-   <img
-    :src="sidebarIcon"
-    :alt="isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
-    class="toolbar-icon"
-    @error="handleImageError"
-   />
-   </button>
-   <!-- 仅在侧边栏关闭时显示新建会话按钮 -->
-   <button class="toolbar-btn" @click="newSession" title="新建会话" v-if="!isSidebarOpen">
-   <img
-    :src="newSessionIcon"
-    alt="新建会话"
-    class="toolbar-icon"
-    @error="handleImageError"
-   />
-   </button>
-   <!-- 悬浮窗按钮 -->
-   <button class="toolbar-btn" @click="openFloatMode" title="悬浮窗" v-if="!isFloatMode">
-   <el-icon><Position /></el-icon>
-   </button>
-   <!-- 主题切换按钮 -->
-   <button class="toolbar-btn" @click="toggleTheme" title="切换主题">
-   <el-icon><component :is="isDarkMode ? Sunny : Moon" /></el-icon>
-   </button>
-  </div>
-  </div>
- </div>
-
- <!-- 深色模式工具栏 -->
- <div class="dark-toolbar-wrapper" v-else-if="isDarkMode">
-  <div class="dark-toolbar" @mousedown="startDrag">
-  <div class="toolbar-left">
-   <el-icon class="toolbar-icon"><MagicStick /></el-icon>
-   <span class="toolbar-title">AI 助手</span>
-   <!-- 工具按钮移动到左侧 -->
-   <button class="toolbar-btn" @click="toggleSidebar" title="切换侧边栏">
-   <img
-    :src="sidebarIcon"
-    :alt="isSidebarOpen ? '隐藏侧边栏' : '显示侧边栏'"
-    class="toolbar-icon-img"
-    @error="handleImageError"
-   />
-   </button>
-   <button class="toolbar-btn" @click="newSession" title="新建会话" v-if="!isSidebarOpen">
-   <img
-    :src="newSessionIcon"
-    alt="新建会话"
-    class="toolbar-icon-img"
-    @error="handleImageError"
-   />
-   </button>
-  </div>
-  <div class="toolbar-right">
-   <button class="toolbar-btn" @click="clearConversation" title="清空对话">
-   <el-icon><Delete /></el-icon>
-   </button>
-   <button class="toolbar-btn" @click="toggleTheme" title="切换主题">
-   <el-icon><Sunny /></el-icon>
-   </button>
-   <button class="toolbar-btn" @click="openFloatMode" title="悬浮窗" v-if="!isFloatMode">
-   <el-icon><Position /></el-icon>
-   </button>
-   <button class="toolbar-btn minimize-btn" @click="toggleMinimize" v-if="isFloatMode">
-   <el-icon><Minus /></el-icon>
-   </button>
-   <button class="toolbar-btn close-btn" @click="closeFloat" v-if="isFloatMode">
-   <el-icon><Close /></el-icon>
-   </button>
-  </div>
-  </div>
- </div>
- </div>
-
 </template>
 
 <script setup>
 import { Close, Delete, MagicStick, Minus, Moon, Position, Sunny } from '@element-plus/icons-vue'
+import aiLogo from '@/assets/icons/ai-logo.png'
 
 defineProps({
  isDarkMode: {
@@ -198,7 +156,7 @@ const closeFloat = () => {
 }
 
 const handleImageError = (event) => {
- event.target.src = require('@/assets/icons/ai-logo.png')
+ event.target.src = aiLogo
 }
 </script>
 

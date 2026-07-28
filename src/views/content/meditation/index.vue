@@ -115,19 +115,13 @@
         </template>
       </el-table-column>
       <el-table-column label="创建时间" align="center" width="140" prop="createTime" />
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240" fixed="right">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template #default="scope">
-          <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)">详情</el-button>
-          <el-button size="small" type="text" :icon="Edit" @click="handleUpdate(scope.row)">修改</el-button>
-          <el-button
-            size="small" type="text" :icon="Top"
-            @click="handleOnline(scope.row)" v-if="scope.row.status === 0"
-          >上架</el-button>
-          <el-button
-            size="small" type="text" :icon="Bottom"
-            @click="handleOffline(scope.row)" v-if="scope.row.status === 1"
-          >下架</el-button>
-          <el-button size="small" type="text" :icon="Delete" @click="handleDelete(scope.row)">删除</el-button>
+          <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['content:meditation:query']">详情</el-button>
+          <el-button size="small" type="text" :icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['content:meditation:update']">修改</el-button>
+          <el-button size="small" type="text" :icon="Top" @click="handleOnline(scope.row)" v-hasPermi="['content:meditation:online']" v-if="scope.row.status === 0">上架</el-button>
+          <el-button size="small" type="text" :icon="Bottom" @click="handleOffline(scope.row)" v-hasPermi="['content:meditation:offline']" v-if="scope.row.status === 1">下架</el-button>
+          <el-button size="small" type="text" :icon="Delete" @click="handleDelete(scope.row)" v-hasPermi="['content:meditation:delete']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -394,163 +388,77 @@
       title="冥想内容详情"
       :model-value="detailOpen"
       @update:model-value="detailOpen = $event"
-      width="860px"
+      width="700px"
       append-to-body
       v-dialog-drag
-      top="3vh"
-      class="meditation-detail-dialog"
     >
-      <div v-if="detailForm.id" class="detail-wrap">
-        <!-- 头部 -->
-        <div class="detail-header" :style="{ backgroundImage: detailForm.coverUrl ? `url(${resolveFileUrl(detailForm.coverUrl)})` : 'none' }">
-          <div class="detail-header-overlay" />
-          <div class="detail-header-content">
-            <div class="detail-cover-col">
-              <el-image
-                v-if="detailForm.coverUrl"
-                :src="resolveFileUrl(detailForm.coverUrl)"
-                class="detail-cover"
-                fit="cover"
-              >
-                <template #error>
-                  <div class="detail-cover-placeholder">
-                    <el-icon><PictureFilled /></el-icon> />
-                  </div>
-                </template>
-              </el-image>
-              <div v-else class="detail-cover-placeholder">
-                <el-icon><PictureFilled /></el-icon> />
-              </div>
-            </div>
-            <div class="detail-info-col">
-              <div class="detail-title-row">
-                <h2 class="detail-title">{{ detailForm.title }}</h2>
-                <el-tag :type="detailForm.status === 1 ? 'success' : 'warning'" size="small" effect="dark">
-                  {{ detailForm.status === 1 ? '已上架' : '已下架' }}
-                </el-tag>
-              </div>
-              <div class="detail-meta-tags">
-                <span v-if="detailForm.subType" class="meta-tag">
-                  <el-icon><CollectionTag /></el-icon> /> {{ getSubTypeLabel(detailForm.subType) }}
-                </span>
-                <span v-if="detailForm.difficulty" class="meta-tag">
-                  <el-icon><Sort /></el-icon> /> {{ getDifficultyLabel(detailForm.difficulty) }}
-                </span>
-                <span v-if="detailForm.totalDuration" class="meta-tag">
-                  <el-icon><Timer /></el-icon> /> {{ formatDuration(detailForm.totalDuration) }}
-                </span>
-              </div>
-              <p class="detail-desc">{{ detailForm.description || '暂无描述' }}</p>
-              <div v-if="getDetailTags().length > 0" class="detail-tags">
-                <el-tag v-for="tag in getDetailTags()" :key="tag" size="small" effect="plain">{{ tag }}</el-tag>
-              </div>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="ID">{{ detailForm.id }}</el-descriptions-item>
+        <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item>
+        <el-descriptions-item label="子分类">{{ getSubTypeLabel(detailForm.subType) || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="难度">{{ getDifficultyLabel(detailForm.difficulty) || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="总时长">{{ formatDuration(detailForm.totalDuration || detailForm.duration) }}</el-descriptions-item>
+        <el-descriptions-item label="播放次数">{{ detailForm.playCount || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="排序">{{ detailForm.sortOrder }}</el-descriptions-item>
+        <el-descriptions-item label="状态">
+          <el-tag :type="detailForm.status === 1 ? 'success' : 'info'" size="small">{{ detailForm.status === 1 ? '上架' : '下架' }}</el-tag>
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <el-descriptions :column="1" border style="margin-top: 16px;">
+        <el-descriptions-item label="描述">{{ detailForm.description || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="标签">
+          <template v-if="getDetailTags().length > 0">
+            <el-tag v-for="tag in getDetailTags()" :key="tag" size="small" style="margin-right: 4px;">{{ tag }}</el-tag>
+          </template>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="封面">
+          <el-image
+            v-if="detailForm.coverUrl"
+            :src="resolveFileUrl(detailForm.coverUrl)"
+            :preview-src-list="[resolveFileUrl(detailForm.coverUrl)]"
+            style="width: 120px; height: 120px; border-radius: 4px;"
+            fit="cover"
+          />
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="关联音频" :span="1">
+          <div v-if="detailAudioItems && detailAudioItems.length > 0">
+            <div v-for="(item, index) in detailAudioItems" :key="index" style="display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid #f5f5f5;">
+              <span style="color: #909399; font-size: 12px;">{{ index + 1 }}.</span>
+              <span>{{ (item.audioItem && item.audioItem.title) || item.audioTitle || '未知音频' }}</span>
+              <span v-if="item.audioItem && item.audioItem.duration" style="color: #909399; font-size: 12px;">
+                {{ formatDuration(item.audioItem.duration) }}
+              </span>
+              <el-button
+                v-if="item.audioItem && item.audioItem.audioUrl"
+                size="small"
+                type="primary"
+                :icon="VideoPlay"
+                circle
+                @click="playAudio(item.audioItem.audioUrl)"
+              />
             </div>
           </div>
-        </div>
-
-        <!-- 详情体 -->
-        <el-tabs v-model="detailTab" class="detail-tabs">
-          <!-- 关联音频 -->
-          <el-tab-pane label="关联音频" name="audio">
-            <div class="dt-section">
-              <div class="audio-detail-grid">
-                <div
-                  v-for="(item, index) in detailAudioItems"
-                  :key="index"
-                  class="audio-detail-card"
-                >
-                  <div class="adc-icon">
-                    <el-icon><Headset /></el-icon> />
-                  </div>
-                  <div class="adc-body">
-                    <div class="adc-title">{{ (item.audioItem && item.audioItem.title) || item.audioTitle || '未知音频' }}</div>
-                    <div class="adc-meta">
-                      <span v-if="item.authorId || (item.teacher && item.teacher.name)">
-                        <el-icon><User /></el-icon> /> {{ (item.teacher && item.teacher.name) || getTeacherName(item.authorId) || '-' }}
-                      </span>
-                      <span v-if="item.audioItem && item.audioItem.duration">
-                        <el-icon><Timer /></el-icon> /> {{ formatDuration(item.audioItem.duration) }}
-                      </span>
-                    </div>
-                  </div>
-                  <div class="adc-actions">
-                    <span class="sort-badge">{{ item.sortOrder }}</span>
-                    <el-button
-                      v-if="item.audioItem && item.audioItem.audioUrl"
-                      size="small"
-                      type="primary"
-                      :icon="VideoPlay"
-                      circle
-                      @click="playAudio(item.audioItem.audioUrl)"
-                    />
-                  </div>
-                </div>
-                <div v-if="!detailAudioItems || detailAudioItems.length === 0" class="empty-section">
-                  <el-icon><Headset /></el-icon> />
-                  <p>暂无关联音频</p>
-                </div>
-              </div>
-            </div>
-          </el-tab-pane>
-
-          <!-- 背景图 -->
-          <el-tab-pane label="背景图" name="bg">
-            <div class="dt-section">
-              <div class="bg-detail-grid">
-                <div v-for="(bg, index) in detailBgImages" :key="index" class="bg-detail-card">
-                  <el-image
-                    :src="resolveFileUrl(bg.url)"
-                    :preview-src-list="detailBgImages.map(b => resolveFileUrl(b.url))"
-                    fit="cover"
-                    class="bg-detail-img"
-                  />
-                  <div class="bg-detail-index">{{ index + 1 }}</div>
-                </div>
-              </div>
-              <div v-if="!detailBgImages || detailBgImages.length === 0" class="empty-section">
-                <el-icon><Picture /></el-icon> />
-                <p>暂无背景图</p>
-              </div>
-            </div>
-          </el-tab-pane>
-
-          <!-- 详细信息 -->
-          <el-tab-pane label="详细信息" name="info">
-            <div class="dt-section info-section">
-              <el-descriptions :column="2" border size="small">
-                <el-descriptions-item label="ID">{{ detailForm.id }}</el-descriptions-item>
-                <el-descriptions-item label="标题">{{ detailForm.title }}</el-descriptions-item>
-                <el-descriptions-item label="子分类">{{ getSubTypeLabel(detailForm.subType) || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="难度">{{ getDifficultyLabel(detailForm.difficulty) || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="总时长">{{ formatDuration(detailForm.totalDuration || detailForm.duration) }}</el-descriptions-item>
-                <el-descriptions-item label="播放次数">{{ detailForm.playCount || 0 }}</el-descriptions-item>
-                <el-descriptions-item label="排序">{{ detailForm.sortOrder }}</el-descriptions-item>
-                <el-descriptions-item label="状态">{{ detailForm.status === 1 ? '上架' : '下架' }}</el-descriptions-item>
-                <el-descriptions-item label="标签" :span="2">
-                  <template v-if="getDetailTags().length > 0">
-                    <el-tag v-for="tag in getDetailTags()" :key="tag" size="small" style="margin-right: 4px;">{{ tag }}</el-tag>
-                  </template>
-                  <span v-else>-</span>
-                </el-descriptions-item>
-                <el-descriptions-item label="描述" :span="2">{{ detailForm.description || '-' }}</el-descriptions-item>
-                <el-descriptions-item label="封面">
-                  <el-image
-                    v-if="detailForm.coverUrl"
-                    :src="resolveFileUrl(detailForm.coverUrl)"
-                    style="width: 80px; height: 80px; border-radius: 4px;"
-                    fit="cover"
-                  />
-                  <span v-else>-</span>
-                </el-descriptions-item>
-                <el-descriptions-item label="创建/更新">
-                  <div>{{ detailForm.createTime || '-' }}</div>
-                  <div style="color: #c0c4cc; font-size: 12px;">{{ detailForm.updateTime || '' }}</div>
-                </el-descriptions-item>
-              </el-descriptions>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
-      </div>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="背景图" :span="1">
+          <div v-if="detailBgImages && detailBgImages.length > 0" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <el-image
+              v-for="(bg, index) in detailBgImages"
+              :key="index"
+              :src="resolveFileUrl(bg.url)"
+              :preview-src-list="detailBgImages.map(b => resolveFileUrl(b.url))"
+              style="width: 80px; height: 60px; border-radius: 4px;"
+              fit="cover"
+            />
+          </div>
+          <span v-else>-</span>
+        </el-descriptions-item>
+        <el-descriptions-item label="创建时间">{{ detailForm.createTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="更新时间">{{ detailForm.updateTime || '-' }}</el-descriptions-item>
+      </el-descriptions>
 
       <template #footer>
         <el-button type="primary" @click="editFromDetail" :icon="Edit" v-hasPermi="['content:meditation:update']">编辑此内容</el-button>
@@ -566,8 +474,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { listMeditation, getMeditation, addMeditation, updateMeditation, delMeditation, onlineMeditation, offlineMeditation, batchSetMeditationAudioItems, batchSetMeditationBg } from '@/api/content/meditation'
 import { listAudioItem } from '@/api/content/audio'
 import { listTeacher } from '@/api/content/teacher'
-import { getToken } from '@/utils/auth'
 import { resetForm } from '@/utils/ruoyi'
+import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { Bottom, CollectionTag, Delete, Edit, Headset, Picture, PictureFilled, Plus, Refresh, Search, Sort, Timer, Top, User, VideoPlay, View } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'Meditation' })
@@ -618,13 +526,11 @@ const audioSelectorSelection = ref([])
 // ==================== 详情 ====================
 const detailOpen = ref(false)
 const detailForm = ref({})
-const detailTab = ref('audio')
 
 // ==================== 工具 ====================
 const teacherOptions = ref([])
-const baseUrl = import.meta.env.VITE_APP_BASE_API
 const uploadImageUrl = import.meta.env.VITE_APP_BASE_API + '/file/record/upload?businessType=image'
-const uploadHeaders = { Authorization: 'Bearer ' + getToken() }
+const uploadHeaders = getUploadHeaders()
 
 // ==================== 列表 ====================
 function getList() {
@@ -769,7 +675,6 @@ function cancel() {
 
 // ==================== 详情 ====================
 function handleDetail(row) {
-  detailTab.value = 'audio'
   detailOpen.value = true
   detailForm.value = {}
   getMeditation(row.id).then(response => {
@@ -897,11 +802,6 @@ function handleUploadError() {
 }
 
 // ==================== 工具方法 ====================
-function resolveFileUrl(url) {
-  if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
-  return baseUrl + '/' + url.replace(/^\/+/, '')
-}
 
 function formatDuration(seconds) {
   if (!seconds && seconds !== 0) return '-'
@@ -1274,267 +1174,7 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
-/* ==================== 详情弹窗 ==================== */
-.meditation-detail-dialog :deep(.el-dialog__body) {
-  padding: 0;
-  max-height: 70vh;
-  overflow: hidden;
-}
 
-.detail-wrap {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.detail-header {
-  position: relative;
-  background-size: cover;
-  background-position: center;
-  background-color: #f0f2f5;
-  min-height: 180px;
-}
-
-.detail-header-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(64, 158, 255, 0.85) 0%, rgba(103, 58, 183, 0.85) 100%);
-}
-
-.detail-header-content {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 20px;
-  padding: 24px;
-  align-items: flex-end;
-}
-
-.detail-cover-col {
-  flex-shrink: 0;
-}
-
-.detail-cover {
-  width: 110px;
-  height: 110px;
-  border-radius: 12px;
-  border: 3px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.detail-cover-placeholder {
-  width: 110px;
-  height: 110px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 36px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.detail-info-col {
-  flex: 1;
-  min-width: 0;
-}
-
-.detail-title-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.detail-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: #fff;
-  margin: 0;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.detail-meta-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.meta-tag {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.detail-desc {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0 0 8px 0;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.detail-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.detail-tags :deep(.el-tag) {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: transparent;
-  color: #fff;
-}
-
-/* Tabs*/
-.detail-tabs {
-  flex: 1;
-  overflow: hidden;
-}
-
-.detail-tabs :deep(.el-tabs__header) {
-  padding: 0 20px;
-  margin-bottom: 0;
-}
-
-.detail-tabs :deep(.el-tabs__content) {
-  padding: 16px 20px;
-  max-height: 350px;
-  overflow-y: auto;
-}
-
-/* 音频卡片网格 */
-.audio-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 12px;
-}
-
-.audio-detail-card {
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  border: 1px solid #ebeef5;
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.2s;
-}
-
-.audio-detail-card:hover {
-  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.1);
-  border-color: #d0d5e0;
-}
-
-.adc-icon {
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-
-.adc-body {
-  flex: 1;
-  margin-bottom: 12px;
-}
-
-.adc-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.adc-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: #909399;
-}
-
-.adc-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.adc-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px solid #f5f5f5;
-}
-
-.sort-badge {
-  font-size: 11px;
-  color: #909399;
-  padding: 2px 8px;
-  background: #f5f7fa;
-  border-radius: 10px;
-}
-
-/* 背景图网格 */
-.bg-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
-}
-
-.bg-detail-card {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #ebeef5;
-}
-
-.bg-detail-img {
-  width: 100%;
-  height: 100%;
-}
-
-.bg-detail-index {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 20px;
-  height: 20px;
-  background: rgba(0, 0, 0, 0.4);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 600;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 信息标签页 */
-.dt-section {
-  padding: 0;
-}
-
-.info-section {
-  padding: 4px;
-}
 
 /* 行内图片预览 */
 .cover-preview {
@@ -1543,18 +1183,6 @@ onMounted(() => {
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .detail-header-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .detail-cover {
-    width: 80px;
-    height: 80px;
-  }
-  .detail-cover-placeholder {
-    width: 80px;
-    height: 80px;
-  }
   .bg-form-grid {
     grid-template-columns: repeat(2, 1fr);
   }

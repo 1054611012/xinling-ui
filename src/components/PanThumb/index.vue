@@ -7,31 +7,27 @@
     </div>
     <div :style="{backgroundImage: `url(${image})`}" class="pan-thumb"></div>
   </div>
-
 </template>
 
-<script>
-export default {
-  name: 'PanThumb',
-  props: {
-    image: {
-      type: String,
-      required: true
-    },
-    zIndex: {
-      type: Number,
-      default: 1
-    },
-    width: {
-      type: String,
-      default: '150px'
-    },
-    height: {
-      type: String,
-      default: '150px'
-    }
+<script setup>
+defineProps({
+  image: {
+    type: String,
+    required: true
+  },
+  zIndex: {
+    type: Number,
+    default: 1
+  },
+  width: {
+    type: String,
+    default: '150px'
+  },
+  height: {
+    type: String,
+    default: '150px'
   }
-}
+})
 </script>
 
 <style scoped>
@@ -61,19 +57,6 @@ export default {
   transform-origin: 95% 40%;
   transition: all 0.3s ease-in-out;
 }
-
-/* .pan-thumb:after {
-  content: '';
-  width: 8px;
-  height: 8px;
-  position: absolute;
-  border-radius: 50%;
-  top: 40%;
-  left: 95%;
-  margin: -4px 0 0 -4px;
-  background: radial-gradient(ellipse at center, rgba(14, 14, 14, 1) 0%, rgba(125, 126, 125, 1) 100%);
-  box-shadow: 0 0 1px rgba(255, 255, 255, 0.9);
-} */
 
 .pan-info {
   position: absolute;

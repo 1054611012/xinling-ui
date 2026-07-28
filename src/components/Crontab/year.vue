@@ -26,7 +26,6 @@
 				<el-input-number v-model='average01' :min='fullYear' :max="2098"/> 年开始，每
 				<el-input-number v-model='average02' :min="1" :max="2099 - average01 || fullYear" /> 年执行一次
 			</el-radio>
-
 		</el-form-item>
 
 		<el-form-item>
@@ -38,95 +37,103 @@
 			</el-radio>
 		</el-form-item>
 	</el-form>
-
 </template>
 
-<script>
-export default {
-	data() {
-		return {
-			fullYear: 0,
-			radioValue: 1,
-			cycle01: 0,
-			cycle02: 0,
-			average01: 0,
-			average02: 1,
-			checkboxList: [],
-			checkNum: this.$options.propsData.check
-		}
-	},
-	name: 'crontab-year',
-	props: ['check', 'month', 'cron'],
-	methods: {
-		// 单选按钮值变化时
-		radioChange() {
-			switch (this.radioValue) {
-				case 1:
-					this.$emit('update', 'year', '')
-					break
-				case 2:
-					this.$emit('update', 'year', '*')
-					break
-				case 3:
-					this.$emit('update', 'year', this.cycleTotal)
-					break
-				case 4:
-					this.$emit('update', 'year', this.averageTotal)
-					break
-				case 5:
-					this.$emit('update', 'year', this.checkboxString)
-					break
-			}
-		},
-		// 周期两个值变化时
-		cycleChange() {
-			if (this.radioValue == '3') {
-				this.$emit('update', 'year', this.cycleTotal)
-			}
-		},
-		// 平均两个值变化时
-		averageChange() {
-			if (this.radioValue == '4') {
-				this.$emit('update', 'year', this.averageTotal)
-			}
-		},
-		// checkbox值变化时
-		checkboxChange() {
-			if (this.radioValue == '5') {
-				this.$emit('update', 'year', this.checkboxString)
-			}
-		}
-	},
-	watch: {
-		'radioValue': 'radioChange',
-		'cycleTotal': 'cycleChange',
-		'averageTotal': 'averageChange',
-		'checkboxString': 'checkboxChange'
-	},
-	computed: {
-		// 计算两个周期值
-		cycleTotal: function () {
-			const cycle01 = this.checkNum(this.cycle01, this.fullYear, 2098)
-			const cycle02 = this.checkNum(this.cycle02, cycle01 ? cycle01 + 1 : this.fullYear + 1, 2099)
-			return cycle01 + '-' + cycle02
-		},
-		// 计算平均用到的值
-		averageTotal: function () {
-			const average01 = this.checkNum(this.average01, this.fullYear, 2098)
-			const average02 = this.checkNum(this.average02, 1, 2099 - average01 || this.fullYear)
-			return average01 + '/' + average02
-		},
-		// 计算勾选的checkbox值合集
-		checkboxString: function () {
-			let str = this.checkboxList.join()
-			return str
-		}
-	},
-	mounted: function () {
-		// 仅获取当前年份
-		this.fullYear = Number(new Date().getFullYear())
-		this.cycle01 = this.fullYear
-		this.average01 = this.fullYear
-	}
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+
+const props = defineProps(['check', 'month', 'cron'])
+const emit = defineEmits(['update'])
+
+const fullYear = ref(0)
+const radioValue = ref(1)
+const cycle01 = ref(0)
+const cycle02 = ref(0)
+const average01 = ref(0)
+const average02 = ref(1)
+const checkboxList = ref([])
+
+const checkNum = (value, min, max) => {
+  value = Math.floor(value)
+  if (value < min) value = min
+  if (value > max) value = max
+  return value
 }
+
+const cycleTotal = computed(() => {
+  const c01 = checkNum(cycle01.value, fullYear.value, 2098)
+  const c02 = checkNum(cycle02.value, c01 ? c01 + 1 : fullYear.value + 1, 2099)
+  return c01 + '-' + c02
+})
+
+const averageTotal = computed(() => {
+  const a01 = checkNum(average01.value, fullYear.value, 2098)
+  const a02 = checkNum(average02.value, 1, 2099 - a01 || fullYear.value)
+  return a01 + '/' + a02
+})
+
+const checkboxString = computed(() => {
+  const str = checkboxList.value.join()
+  return str
+})
+
+function radioChange() {
+  switch (radioValue.value) {
+    case 1:
+      emit('update', 'year', '')
+      break
+    case 2:
+      emit('update', 'year', '*')
+      break
+    case 3:
+      emit('update', 'year', cycleTotal.value)
+      break
+    case 4:
+      emit('update', 'year', averageTotal.value)
+      break
+    case 5:
+      emit('update', 'year', checkboxString.value)
+      break
+  }
+}
+
+function cycleChange() {
+  if (radioValue.value === 3) {
+    emit('update', 'year', cycleTotal.value)
+  }
+}
+
+function averageChange() {
+  if (radioValue.value === 4) {
+    emit('update', 'year', averageTotal.value)
+  }
+}
+
+function checkboxChange() {
+  if (radioValue.value === 5) {
+    emit('update', 'year', checkboxString.value)
+  }
+}
+
+watch(radioValue, radioChange)
+watch(cycleTotal, cycleChange)
+watch(averageTotal, averageChange)
+watch(checkboxString, checkboxChange)
+
+onMounted(() => {
+  const currentYear = Number(new Date().getFullYear())
+  fullYear.value = currentYear
+  cycle01.value = currentYear
+  average01.value = currentYear
+})
+
+defineExpose({
+  fullYear,
+  radioValue,
+  cycle01,
+  cycle02,
+  average01,
+  average02,
+  checkboxList
+})
 </script>

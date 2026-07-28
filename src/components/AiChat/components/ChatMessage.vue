@@ -95,7 +95,9 @@ const executeSql = (sql) => {
 </script>
 
 <style scoped>
-/* 这里可以放置原来的消息样式 */
+@import '../message-styles.scss';
+
+/* 消息容器样式 */
 .message-item {
  display: flex;
  flex-direction: column;

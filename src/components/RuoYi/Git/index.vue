@@ -2,21 +2,12 @@
   <div>
     <svg-icon icon-class="github" @click="goto" />
   </div>
-
 </template>
 
-<script>
-export default {
-  name: 'RuoYiGit',
-  data() {
-    return {
-      url: 'https://gitee.com/y_project/ruoyi-Vue'
-    }
-  },
-  methods: {
-    goto() {
-      window.open(this.url)
-    }
-  }
+<script setup>
+const url = 'https://gitee.com/y_project/ruoyi-Vue'
+
+function goto() {
+  window.open(url)
 }
 </script>

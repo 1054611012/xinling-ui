@@ -401,6 +401,7 @@ const isScrolled = ref(false)
 const heroAnimated = ref(false)
 const loginLoading = ref(false)
 let scrollObserver = null
+let animationTimer = null
 
 const animatedStats = reactive({ videos: '0', creators: '0', visits: '0' })
 
@@ -542,7 +543,7 @@ function animateCountUp() {
   const steps = 60
   const interval = duration / steps
   let step = 0
-  const timer = setInterval(() => {
+  animationTimer = setInterval(() => {
     step++
     const progress = step / steps
     const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress)
@@ -550,7 +551,8 @@ function animateCountUp() {
     animatedStats.creators = Math.floor(targets.creators * eased) + suffixes.creators
     animatedStats.visits = Math.floor(targets.visits * eased) + suffixes.visits
     if (step >= steps) {
-      clearInterval(timer)
+      clearInterval(animationTimer)
+      animationTimer = null
       animatedStats.videos = targets.videos + suffixes.videos
       animatedStats.creators = targets.creators + suffixes.creators
       animatedStats.visits = targets.visits + suffixes.visits
@@ -596,6 +598,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
   if (scrollObserver) {
     scrollObserver.disconnect()
+  }
+  if (animationTimer) {
+    clearInterval(animationTimer)
+    animationTimer = null
   }
 })
 </script>

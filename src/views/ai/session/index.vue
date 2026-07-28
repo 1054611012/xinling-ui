@@ -373,7 +373,7 @@ function handleAdd() {
   reset()
   open.value = true
   title.value = "添加会话配置"
-}
+} 
 
 function handleUpdate(row) {
   reset()
