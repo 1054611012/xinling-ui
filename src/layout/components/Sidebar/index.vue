@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useSettingsStore, usePermissionStore, useAppStore } from '@/store'
 import Logo from "./Logo.vue"
@@ -56,4 +56,12 @@ const activeMenu = computed(() => {
 
 const showLogo = computed(() => settingsStore.sidebarLogo)
 const isCollapse = computed(() => !sidebar.value.opened)
+
+// 将主题色同步到全局 CSS 变量 --menu-theme
+// 挂载到 documentElement，使折叠态弹出层（teleport 到 body）也能继承
+watch(() => settingsStore.theme, (val) => {
+  if (val) {
+    document.documentElement.style.setProperty('--menu-theme', val)
+  }
+}, { immediate: true })
 </script>

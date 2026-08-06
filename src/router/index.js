@@ -54,19 +54,32 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/user',
-    component: Layout,
-    hidden: true,
-    redirect: 'noredirect',
-    children: [
-      {
-        path: 'profile',
-        component: () => import('@/views/system/user/profile/index.vue'),
-        name: 'Profile',
-        meta: { title: '个人中心', icon: 'user' }
-      }
-    ]
-  },
+ path: '/user',
+ component: Layout,
+ hidden: true,
+ redirect: 'noredirect',
+ children: [
+  {
+   path: 'profile',
+   component: () => import('@/views/system/user/profile/index.vue'),
+   name: 'Profile',
+   meta: { title: '个人中心', icon: 'user' }
+  }
+ ]
+ },
+ {
+ path: '/stock',
+ component: Layout,
+ redirect: 'noredirect',
+ children: [
+  {
+   path: 'analysis',
+   component: () => import('@/views/stock/analysis/index.vue'),
+   name: 'StockAnalysis',
+   meta: { title: 'AI分析', icon: 'chart' }
+  }
+ ]
+ },
   {
     path: '/:pathMatch(.*)*',
     name: 'TempCatchAll',

@@ -1,5 +1,5 @@
 <template>
-  <el-drawer size="280px" :visible="settingsStore.showSettingsPanel" :with-header="false" :append-to-body="true" :before-close="closeSetting" :lock-scroll="false">
+  <el-drawer size="280px" v-model="settingsStore.showSettingsPanel" :with-header="false" :append-to-body="true" :before-close="closeSetting" :lock-scroll="false">
     <div class="drawer-container">
       <div>
         <div class="setting-drawer-content">

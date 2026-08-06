@@ -3,14 +3,14 @@
     <template v-if="hasOneShowingChild(item.children, item) && (!onlyOneChild.children || onlyOneChild.noShowingChildren) && !item.alwaysShow">
       <app-link v-if="onlyOneChild.meta" :to="resolvePath(onlyOneChild.path, onlyOneChild.query)">
         <el-menu-item :index="resolvePath(onlyOneChild.path)" :class="{'submenu-title-noDropdown': !isNest}">
-          <item :icon="onlyOneChild.meta.icon || (item.meta && item.meta.icon)" :title="onlyOneChild.meta.title" />
+          <item :icon="resolveMenuIcon(onlyOneChild.meta.icon || (item.meta && item.meta.icon), onlyOneChild.meta.title, onlyOneChild.path)" :title="onlyOneChild.meta.title" />
         </el-menu-item>
       </app-link>
     </template>
 
-    <el-sub-menu v-else ref="subMenuRef" :index="resolvePath(item.path)" :teleported="false">
+    <el-sub-menu v-else ref="subMenuRef" :index="resolvePath(item.path)">
       <template #title>
-        <item v-if="item.meta" :icon="item.meta && item.meta.icon" :title="item.meta.title" />
+        <item v-if="item.meta" :icon="resolveMenuIcon(item.meta && item.meta.icon, item.meta.title, item.path)" :title="item.meta.title" />
       </template>
       <sidebar-item
         v-for="(child, index) in item.children"
@@ -30,6 +30,7 @@ import { isExternal } from '@/utils/validate'
 import { useAppStore } from '@/store'
 import Item from './Item.vue'
 import AppLink from './Link.vue'
+import { resolveMenuIcon } from '@/utils/menuIcon'
 
 const props = defineProps({
   item: {

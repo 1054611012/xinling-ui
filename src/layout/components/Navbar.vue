@@ -23,15 +23,6 @@
           <size-select id="size-select" class="right-menu-item hover-effect" />
         </el-tooltip>
 
-        <el-tooltip content="布局设置" effect="dark" placement="bottom">
-          <button id="layout-settings-btn" class="right-menu-item hover-effect layout-settings-btn" @click="setLayout">
-            <svg viewBox="0 0 1024 1024" width="18" height="18" fill="#5a5e66">
-              <path d="M512 64C264.58 64 64 264.58 64 512s200.58 448 448 448 448-200.58 448-448S759.42 64 512 64zm0 832c-211.62 0-384-172.38-384-384s172.38-384 384-384 384 172.38 384 384-172.38 384-384 384zm188.2-484.84L652 568h-84.4l-44.2-80.84H460l-33.8 80.84H372l92.6-175.4h76.8L512 440l44.6-87.4h78.8l93.4 175.4h-73.6z"/>
-            </svg>
-          </button>
-        </el-tooltip>
-
-
       <el-dropdown class="avatar-container right-menu-item hover-effect" trigger="hover">
         <div class="avatar-wrapper">
           <img :src="avatar" class="user-avatar">
@@ -58,7 +49,6 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAppStore, useUserStore, useSettingsStore } from '@/store'
 import Breadcrumb from '@/components/Breadcrumb/index.vue'
@@ -70,7 +60,6 @@ import Search from '@/components/HeaderSearch/index.vue'
 import RuoYiGit from '@/components/RuoYi/Git/index.vue'
 import RuoYiDoc from '@/components/RuoYi/Doc/index.vue'
 
-const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
@@ -135,7 +124,9 @@ const logout = async () => {
 
   .topmenu-container {
     position: absolute;
-    left: 50px;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .errLog-container {
@@ -168,14 +159,6 @@ const logout = async () => {
           background: rgba(0, 0, 0, .025)
         }
       }
-    }
-
-    .layout-settings-btn {
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      outline: none;
     }
 
     .avatar-container {

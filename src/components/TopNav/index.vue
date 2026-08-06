@@ -172,23 +172,101 @@ onBeforeUnmount(() => {
   float: left;
   height: 50px !important;
   line-height: 50px !important;
-  color: #999093 !important;
+  color: #5a5e66 !important;
   padding: 0 5px !important;
   margin: 0 10px !important;
+  font-size: 14px;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #303133 !important;
+    background: rgba(0, 0, 0, 0.025);
+  }
 }
 
 .topmenu-container.el-menu--horizontal > .el-menu-item.is-active,
 .el-menu--horizontal > .el-sub-menu.is-active .el-sub-menu__title {
   border-bottom: 2px solid #{'var(--theme)'} !important;
-  color: #303133;
+  color: #303133 !important;
+  font-weight: 500;
 }
 
 .topmenu-container.el-menu--horizontal > .el-sub-menu .el-sub-menu__title {
   float: left;
   height: 50px !important;
   line-height: 50px !important;
-  color: #999093 !important;
+  color: #5a5e66 !important;
   padding: 0 5px !important;
   margin: 0 10px !important;
+  font-size: 14px;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #303133 !important;
+    background: rgba(0, 0, 0, 0.025);
+  }
+}
+
+/* 多级菜单下拉面板美化 */
+.el-menu--horizontal > .el-sub-menu .el-menu {
+  border-radius: 8px;
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.12),
+    0 4px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  min-width: 180px;
+  animation: subMenuFadeIn 0.2s ease-out;
+}
+
+@keyframes subMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 下拉菜单项美化 */
+.el-menu--horizontal > .el-sub-menu .el-menu-item {
+  height: 38px;
+  line-height: 38px;
+  border-radius: 6px;
+  padding: 0 14px !important;
+  margin: 2px 0;
+  color: #5a5e66 !important;
+  font-size: 13px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.08)) !important;
+    color: #303133 !important;
+  }
+
+  &.is-active {
+    background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)) !important;
+    color: #303133 !important;
+    font-weight: 500;
+  }
+}
+
+/* 下拉菜单图标和文字间距 */
+.el-menu--horizontal > .el-sub-menu .el-menu-item .svg-icon {
+  margin-right: 10px;
+  font-size: 16px;
+}
+
+/* 箭头指示器旋转 */
+.el-menu--horizontal > .el-sub-menu .el-sub-menu__icon-arrow {
+  transition: transform 0.3s ease;
+}
+
+.el-menu--horizontal > .el-sub-menu.is-opened .el-sub-menu__icon-arrow {
+  transform: rotate(180deg);
 }
 </style>

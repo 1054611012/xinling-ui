@@ -91,11 +91,18 @@
    </div>
 
    <div class="chart-card">
-   <div class="card-header">
-    <h3>用户分布</h3>
+   <div class="card-header sector-header">
+    <h3>期货 & A股板块涨幅</h3>
+    <div class="sector-meta">
+     <span class="data-tag" :class="`data-tag-${marketDataSource}`">
+      {{ marketDataSource === 'live' ? '实时' : '示例' }}
+     </span>
+     <span class="update-time" v-if="marketUpdateTime">{{ marketUpdateTime }}</span>
+     <el-icon class="refresh-btn" :class="{ 'is-loading': marketLoading }" @click="fetchSectorRanking" title="刷新"><Refresh /></el-icon>
+    </div>
    </div>
    <div class="chart-container">
-    <div ref="pieChartRef" class="chart"></div>
+    <div ref="sectorChartRef" class="chart"></div>
    </div>
    </div>
   </div>
@@ -115,7 +122,7 @@
     @click="executeAction(action)"
     >
     <div class="action-icon" :class="`bg-${action.color}`">
-     <i :class="action.icon"></i>
+     <el-icon :size="16"><component :is="action.icon" /></el-icon>
     </div>
     <div class="action-text">{{ action.title }}</div>
     </div>
@@ -136,7 +143,7 @@
     @click="showActivityDetails(activity)"
     >
     <div class="activity-icon" :class="`activity-icon-${activity.type}`">
-     <i :class="activity.icon"></i>
+     <el-icon :size="16"><component :is="activityIconMap[activity.type]" /></el-icon>
     </div>
     <div class="activity-content">
      <div class="activity-title">{{ activity.title }}</div>
@@ -160,15 +167,125 @@ import { ref, onMounted, onActivated, onDeactivated, onBeforeUnmount, nextTick }
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getRecentActivities } from '@/api/system/activity'
-import { ChatLineSquare, Document, User } from '@element-plus/icons-vue'
+import {
+  ChatLineSquare,
+  Document,
+  User,
+  Plus,
+  List,
+  DataAnalysis,
+  Setting,
+  Message,
+  Monitor,
+  Refresh
+} from '@element-plus/icons-vue'
+import * as echarts from 'echarts'
+import { getMarketRanking } from '@/api/stock/market'
 
 const router = useRouter()
 
 const lineChartRef = ref(null)
-const pieChartRef = ref(null)
+const sectorChartRef = ref(null)
 let lineChart = null
-let pieChart = null
-let echarts = null
+let sectorChart = null
+
+// ===== 期货 & A股板块涨幅（动态获取）=====
+const formatNow = () => {
+ const d = new Date()
+ const p = (n) => String(n).padStart(2, '0')
+ return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
+// 规范化单条数据：推导 type、兜底 consecutive
+const normalizeItem = (item) => {
+ const value = Number(item && item.value) || 0
+ return {
+ name: (item && item.name) || '未知',
+ value,
+ type: (item && item.type) || (value >= 0 ? 'up' : 'down'),
+ consecutive: Number(item && item.consecutive) || 1
+ }
+}
+
+// 是否处于交易时段（A股/期货日盘 9:00-15:00，期货夜盘 21:00-23:00，仅工作日）
+const isMarketOpen = () => {
+ const now = new Date()
+ const day = now.getDay()
+ if (day === 0 || day === 6) return false
+ const hm = now.getHours() * 60 + now.getMinutes()
+ return (hm >= 540 && hm <= 900) || (hm >= 1260 && hm <= 1380)
+}
+
+// 示例数据（后端不可用时降级显示）
+const MOCK_SECTOR = [
+ { name: '半导体', value: 4.85, type: 'up', consecutive: 3 },
+ { name: '新能源', value: 3.21, type: 'up', consecutive: 2 },
+ { name: '医药生物', value: 2.67, type: 'up', consecutive: 1 },
+ { name: '人工智能', value: 2.45, type: 'up', consecutive: 2 },
+ { name: '军工', value: 1.98, type: 'up', consecutive: 1 },
+ { name: '房地产', value: -1.23, type: 'down', consecutive: 2 },
+ { name: '银行', value: -0.87, type: 'down', consecutive: 1 },
+ { name: '消费', value: -0.45, type: 'down', consecutive: 1 }
+]
+const MOCK_FUTURES = [
+ { name: '黄金', value: 1.56, type: 'up', consecutive: 2 },
+ { name: '白银', value: 0.98, type: 'up', consecutive: 1 },
+ { name: '原油', value: 0.76, type: 'up', consecutive: 1 },
+ { name: '铜', value: 0.32, type: 'up', consecutive: 1 },
+ { name: '铁矿石', value: -0.65, type: 'down', consecutive: 2 },
+ { name: '豆粕', value: -0.28, type: 'down', consecutive: 1 },
+ { name: '螺纹钢', value: -1.12, type: 'down', consecutive: 3 },
+ { name: '焦炭', value: -2.34, type: 'down', consecutive: 2 }
+]
+
+const marketRanking = ref({
+ sector: MOCK_SECTOR.map(normalizeItem),
+ futures: MOCK_FUTURES.map(normalizeItem)
+})
+const marketDataSource = ref('mock') // 'live' | 'mock'
+const marketUpdateTime = ref('')
+const marketLoading = ref(false)
+let marketTimer = null
+
+// 拉取涨幅榜：成功更新实时数据，失败静默降级到示例数据（不弹错误提示）
+const fetchSectorRanking = async () => {
+ if (marketLoading.value) return
+ marketLoading.value = true
+ try {
+ const data = await getMarketRanking()
+ if (data && Array.isArray(data.sector) && Array.isArray(data.futures) && (data.sector.length || data.futures.length)) {
+  marketRanking.value = {
+  sector: data.sector.map(normalizeItem),
+  futures: data.futures.map(normalizeItem)
+  }
+  marketDataSource.value = 'live'
+  marketUpdateTime.value = data.updateTime || formatNow()
+  renderSectorChart()
+ } else if (marketDataSource.value !== 'live') {
+  // 首次拉取失败 → 降级示例
+  marketDataSource.value = 'mock'
+  marketUpdateTime.value = formatNow()
+ }
+ } finally {
+ marketLoading.value = false
+ }
+}
+
+const startMarketPolling = () => {
+ stopMarketPolling()
+ marketTimer = setInterval(() => {
+ if (isMarketOpen()) {
+  fetchSectorRanking()
+ }
+ }, 60000)
+}
+
+const stopMarketPolling = () => {
+ if (marketTimer) {
+ clearInterval(marketTimer)
+ marketTimer = null
+ }
+}
 
 const currentDate = ref('')
 const currentWeekday = ref('')
@@ -185,29 +302,61 @@ const stats = ref({
  todayMessages: 23
 })
 
-const recentActivities = ref([])
+const activityIconMap = {
+ user: User,
+ order: List,
+ system: Monitor,
+ message: Message
+}
+
+const recentActivities = ref([
+ {
+ type: 'user',
+ title: '新用户注册',
+ description: '张三 注册了账号',
+ time: '10 分钟前'
+ },
+ {
+ type: 'order',
+ title: '订单已创建',
+ description: '订单 #1024 已创建',
+ time: '30 分钟前'
+ },
+ {
+ type: 'system',
+ title: '系统更新',
+ description: '系统已完成自动备份',
+ time: '1 小时前'
+ },
+ {
+ type: 'message',
+ title: '新消息通知',
+ description: '您有 3 条未读消息',
+ time: '2 小时前'
+ }
+])
 
 const quickActions = [
  {
- icon: 'el-icon-plus',
+ icon: Plus,
  title: '添加用户',
  color: 'blue',
  route: '/system/user'
  },
  {
- icon: 'el-icon-s-order',
+ icon: List,
  title: '处理订单',
  color: 'green',
  route: '/system/order'
  },
  {
- icon: 'el-icon-data-analysis',
+ icon: DataAnalysis,
  title: '数据报表',
  color: 'purple',
  route: '/system/report'
  },
  {
- icon: 'el-icon-setting',
+ icon: Setting,
  title: '系统设置',
  color: 'orange',
  route: '/system/config'
@@ -272,24 +421,19 @@ const setWorkdayStatus = () => {
  }
 }
 
-const initCharts = async () => {
- if (!echarts) {
- const echartsModule = await import('echarts')
- echarts = echartsModule.default
- }
- 
+const initCharts = () => {
  nextTick(() => {
  initLineChart()
- initPieChart()
+ initSectorChart()
  if (window && typeof window.addEventListener === 'function') {
  window.addEventListener('resize', handleLineResize)
- window.addEventListener('resize', handlePieResize)
+ window.addEventListener('resize', handleSectorResize)
  }
  })
 }
 
 const initLineChart = () => {
- if (!echarts || !lineChartRef.value) return
+ if (!lineChartRef.value) return
  
  if (lineChart) {
  lineChart.dispose()
@@ -342,62 +486,138 @@ const handleLineResize = () => {
  lineChart?.resize()
 }
 
-const initPieChart = () => {
- if (!echarts || !pieChartRef.value) return
+const initSectorChart = () => {
+ if (!sectorChartRef.value) return
  
- if (pieChart) {
- pieChart.dispose()
+ if (sectorChart) {
+ sectorChart.dispose()
  }
  
- pieChart = echarts.init(pieChartRef.value)
+ sectorChart = echarts.init(sectorChartRef.value)
+ renderSectorChart()
+}
+
+const renderSectorChart = () => {
+ if (!sectorChart) return
+
+ const aShareData = marketRanking.value.sector
+ const futuresData = marketRanking.value.futures
+
+ const allData = [
+ ...aShareData.map(d => ({ ...d, category: 'A股' })),
+ ...futuresData.map(d => ({ ...d, category: '期货' }))
+ ].sort((a, b) => b.value - a.value)
+ const names = allData.map(d => d.name)
+ const values = allData.map(d => d.value)
+ const colors = allData.map(d => d.type === 'up' ? '#ef4444' : '#22c55e')
  
  const option = {
  tooltip: {
-  trigger: 'item',
-  formatter: '{a} <br/>{b}: {c} ({d}%)'
+ trigger: 'axis',
+ axisPointer: { type: 'shadow' },
+ formatter: (params) => {
+ const dataIndex = params[0].dataIndex
+ const item = allData[dataIndex]
+ const consecutiveText = item.consecutive > 1
+ ? `<div style="color:${item.type === 'up' ? '#ef4444' : '#22c55e'};margin-top:4px">
+   ${item.type === 'up' ? '连涨' : '连跌'} ${item.consecutive} 天
+  </div>` 
+ : ''
+ return `<div style="font-weight:600">${item.name}</div>
+ <div>${item.category}板块</div>
+ <div style="color:${item.type === 'up' ? '#ef4444' : '#22c55e'};margin-top:4px">
+ 涨跌幅: ${item.value > 0 ? '+' : ''}${item.value}%
+ </div>
+ ${consecutiveText}`
+ }
  },
- legend: {
-  orient: 'horizontal',
-  bottom: 10
+ grid: {
+ left: '3%',
+ right: '4%',
+ bottom: '15%',
+ top: '15%',
+ containLabel: true
+ },
+ xAxis: {
+ type: 'category',
+ data: names,
+ axisLabel: {
+ rotate: 30,
+ fontSize: 11,
+ interval: 0,
+ color: '#6b7280'
+ },
+ axisLine: { lineStyle: { color: '#e5e7eb' } },
+ axisTick: { show: false }
+ },
+ yAxis: {
+ type: 'value',
+ axisLine: { show: false },
+ axisTick: { show: false },
+ splitLine: { lineStyle: { color: '#f3f4f6' } },
+ axisLabel: {
+ formatter: (v) => v > 0 ? `+${v}%` : `${v}%`,
+ fontSize: 10
+ }
  },
  series: [
-  {
-  name: '用户分布',
-  type: 'pie',
-  radius: ['40%', '70%'],
-  avoidLabelOverlap: false,
-  itemStyle: {
-   borderRadius: 4,
-   borderColor: '#fff',
-   borderWidth: 2
-  },
-  label: {
-   show: true,
-   formatter: '{b}: {d}%'
-  },
-  emphasis: {
-   label: {
-   show: true,
-   fontSize: '14',
-   fontWeight: 'bold'
-   }
-  },
-  data: [
-   { value: 1048, name: '北京', itemStyle: { color: '#409EFF' } },
-   { value: 735, name: '上海', itemStyle: { color: '#67C23A' } },
-   { value: 580, name: '广州', itemStyle: { color: '#E6A23C' } },
-   { value: 484, name: '深圳', itemStyle: { color: '#F56C6C' } },
-   { value: 300, name: '杭州', itemStyle: { color: '#909399' } }
-  ]
-  }
+ {
+ name: '涨跌幅',
+ type: 'bar',
+ data: values.map((v, i) => {
+ const item = allData[i]
+ const isConsecutive = item.consecutive > 1
+ return {
+ value: v,
+ itemStyle: {
+ color: isConsecutive 
+ ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+ { offset: 0, color: item.type === 'up' ? '#dc2626' : '#16a34a' },
+ { offset: 1, color: item.type === 'up' ? '#fca5a5' : '#86efac' }
+ ])
+ : new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+ { offset: 0, color: colors[i] },
+ { offset: 1, color: colors[i] + '80' }
+ ]),
+ borderRadius: [4, 4, 0, 0],
+ borderColor: isConsecutive ? (item.type === 'up' ? '#991b1b' : '#14532d') : 'transparent',
+ borderWidth: isConsecutive ? 2 : 0
+ }
+ }
+ }),
+ barWidth: '50%',
+ label: {
+ show: true,
+ position: 'top',
+ formatter: (params) => {
+ const item = allData[params.dataIndex]
+ const v = params.value
+ const valueText = v > 0 ? `+${v}%` : `${v}%`
+ if (item.consecutive > 1) {
+ const arrow = item.type === 'up' ? '↑' : '↓'
+ return `${valueText}\n${arrow}${item.consecutive}天`
+ }
+ return valueText
+ },
+ fontSize: 10,
+ color: (params) => {
+ const item = allData[params.dataIndex]
+ if (item.consecutive > 1) {
+ return item.type === 'up' ? '#dc2626' : '#16a34a'
+ }
+ return params.value >= 0 ? '#ef4444' : '#22c55e'
+ },
+ lineHeight: 14
+ }
+ }
  ]
  }
- 
- pieChart.setOption(option)
+
+ sectorChart.setOption(option, true)
 }
 
-const handlePieResize = () => {
- pieChart?.resize()
+const handleSectorResize = () => {
+ sectorChart?.resize()
 }
 
 const executeAction = (action) => {
@@ -415,23 +635,25 @@ const showActivityDetails = (activity) => {
 const fetchRecentActivities = async () => {
  try {
  const response = await getRecentActivities()
- recentActivities.value = response.data || []
+ if (response.data && response.data.length > 0) {
+ recentActivities.value = response.data
+ }
  } catch (error) {
- ElMessage.error('获取近期活动失败')
+ // 保留默认数据，不显示错误提示
  }
 }
 
 const cleanUpCharts = () => {
  window.removeEventListener('resize', handleLineResize)
- window.removeEventListener('resize', handlePieResize)
+ window.removeEventListener('resize', handleSectorResize)
  
  if (lineChart) {
  lineChart.dispose()
  lineChart = null
  }
- if (pieChart) {
- pieChart.dispose()
- pieChart = null
+ if (sectorChart) {
+ sectorChart.dispose()
+ sectorChart = null
  }
 }
 
@@ -443,27 +665,31 @@ onMounted(() => {
 
 onActivated(() => {
  initCharts()
+ fetchSectorRanking()
+ startMarketPolling()
 })
 
 onDeactivated(() => {
+ stopMarketPolling()
  cleanUpCharts()
 })
 
 onBeforeUnmount(() => {
+ stopMarketPolling()
  cleanUpCharts()
 })
 </script>
 
 <style scoped lang="scss">
 .dashboard-container {
- font-family: 'Helvetica Neue', Arial, sans-serif;
- padding: 20px;
- background-color: #f5f7fa;
+ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+ padding: 24px;
+ background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
  min-height: 100vh;
  
  h1, h2, h3, h4, h5, h6 {
  margin: 0;
- font-weight: 500;
+ font-weight: 600;
  }
  
  p {
@@ -476,54 +702,61 @@ onBeforeUnmount(() => {
  display: flex;
  justify-content: space-between;
  align-items: center;
- margin-bottom: 25px;
- padding: 20px;
- background: #fff;
- border-radius: 10px;
- box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ margin-bottom: 24px;
+ padding: 24px 28px;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ border-radius: 16px;
+ box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
  
  @media (max-width: 768px) {
  flex-direction: column;
  align-items: flex-start;
- gap: 15px;
+ gap: 20px;
+ padding: 20px;
  }
 }
 
 .dashboard-title {
- font-size: 24px;
- font-weight: 600;
- color: #303133;
+ font-size: 26px;
+ font-weight: 700;
+ color: #fff;
+ letter-spacing: 1px;
 }
 
 .header-stats {
  display: flex;
- gap: 25px;
+ gap: 32px;
  
  @media (max-width: 768px) {
  width: 100%;
  justify-content: space-around;
+ gap: 16px;
  }
 }
 
 .stat-box {
  text-align: center;
+ padding: 8px 16px;
+ background: rgba(255, 255, 255, 0.2);
+ border-radius: 12px;
+ backdrop-filter: blur(10px);
  
  .stat-value {
- font-size: 24px;
+ font-size: 22px;
  font-weight: 700;
- color: #409EFF;
- margin-bottom: 5px;
+ color: #fff;
+ margin-bottom: 4px;
  }
  
  .stat-label {
- font-size: 14px;
- color: #909399;
+ font-size: 12px;
+ color: rgba(255, 255, 255, 0.9);
  }
 }
 
 .dashboard-content {
  display: flex;
- gap: 30px;
+ gap: 24px;
  
  @media (max-width: 992px) {
  flex-direction: column;
@@ -533,6 +766,9 @@ onBeforeUnmount(() => {
 
 .main-content {
  flex: 3;
+ display: flex;
+ flex-direction: column;
+ gap: 24px;
  
  @media (max-width: 992px) {
  flex: none;
@@ -543,18 +779,16 @@ onBeforeUnmount(() => {
  flex: 1;
  display: flex;
  flex-direction: column;
- gap: 20px;
+ gap: 24px;
  
  @media (max-width: 992px) {
  flex: none;
- margin-top: 20px;
  }
 }
 
 .card-row {
  display: flex;
- gap: 20px;
- margin-bottom: 20px;
+ gap: 24px;
  
  @media (max-width: 768px) {
  flex-direction: column;
@@ -563,25 +797,31 @@ onBeforeUnmount(() => {
 
 .info-card {
  background: #fff;
- border-radius: 10px;
- box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ border-radius: 14px;
+ box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
  overflow: hidden;
  flex: 1;
+ transition: box-shadow 0.3s ease, transform 0.2s ease;
+ 
+ &:hover {
+ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+ transform: translateY(-2px);
+ }
  
  .card-header {
- padding: 15px 20px;
- border-bottom: 1px solid #eee;
- background: #fafafa;
+ padding: 18px 24px;
+ border-bottom: 1px solid #f0f2f5;
+ background: #fafbfc;
  
  h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+ font-size: 16px;
+ font-weight: 600;
+ color: #1f2937;
  }
  }
  
  .card-body {
- padding: 25px;
+ padding: 24px;
  }
 }
 
@@ -589,12 +829,12 @@ onBeforeUnmount(() => {
  display: flex;
  justify-content: space-between;
  align-items: center;
- margin-bottom: 15px;
+ margin-bottom: 16px;
  
  @media (max-width: 576px) {
  flex-direction: column;
  align-items: flex-start;
- gap: 10px;
+ gap: 12px;
  }
 }
 
@@ -603,31 +843,32 @@ onBeforeUnmount(() => {
  flex-direction: column;
  
  .current-date {
- font-size: 18px;
- font-weight: 600;
- color: #303133;
+ font-size: 20px;
+ font-weight: 700;
+ color: #1f2937;
  }
  
  .current-weekday {
- font-size: 14px;
- color: #909399;
+ font-size: 13px;
+ color: #6b7280;
+ margin-top: 2px;
  }
 }
 
 .status-badge {
- padding: 5px 10px;
- border-radius: 12px;
+ padding: 6px 14px;
+ border-radius: 20px;
  font-size: 12px;
  font-weight: 500;
  
  &.status-work {
- background: #ecf5ff;
- color: #409eff;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ color: #fff;
  }
  
  &.status-rest {
- background: #f0f9eb;
- color: #67c23a;
+ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+ color: #fff;
  }
 }
 
@@ -635,36 +876,43 @@ onBeforeUnmount(() => {
  display: flex;
  justify-content: space-between;
  align-items: center;
- padding-top: 15px;
- border-top: 1px dashed #eee;
+ padding-top: 16px;
+ border-top: 1px dashed #e5e7eb;
  
  .holiday-name {
- font-weight: 500;
- color: #e6a23c;
+ font-weight: 600;
+ color: #f59e0b;
  }
  
  .holiday-countdown {
- font-size: 14px;
- color: #909399;
+ font-size: 13px;
+ color: #6b7280;
  }
 }
 
 .today-stats {
  display: flex;
  flex-direction: column;
- gap: 15px;
+ gap: 16px;
 }
 
 .today-stat {
  display: flex;
  align-items: center;
- gap: 15px;
+ gap: 14px;
+ padding: 12px;
+ border-radius: 10px;
+ transition: background-color 0.2s;
+ 
+ &:hover {
+ background-color: #f9fafb;
+ }
 }
 
 .stat-icon {
- width: 40px;
- height: 40px;
- border-radius: 8px;
+ width: 44px;
+ height: 44px;
+ border-radius: 12px;
  display: flex;
  align-items: center;
  justify-content: center;
@@ -672,15 +920,15 @@ onBeforeUnmount(() => {
  flex-shrink: 0;
  
  &.bg-blue {
- background: #409EFF;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
  }
  
  &.bg-green {
- background: #67C23A;
+ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
  }
  
  &.bg-orange {
- background: #E6A23C;
+ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
  }
 }
 
@@ -688,168 +936,236 @@ onBeforeUnmount(() => {
  flex: 1;
  
  .stat-number {
- font-size: 18px;
+ font-size: 20px;
  font-weight: 700;
- color: #303133;
- margin-bottom: 3px;
+ color: #1f2937;
+ margin-bottom: 2px;
  }
  
  .stat-text {
- font-size: 14px;
- color: #909399;
+ font-size: 13px;
+ color: #6b7280;
  }
 }
 
 .chart-section {
  display: flex;
  flex-direction: column;
- gap: 20px;
+ gap: 24px;
 }
 
 .chart-card {
  background: #fff;
- border-radius: 10px;
- box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+ border-radius: 14px;
+ box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
  overflow: hidden;
+ transition: box-shadow 0.3s ease;
+ 
+ &:hover {
+ box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+ }
  
  .card-header {
- padding: 15px 20px;
- border-bottom: 1px solid #eee;
- background: #fafafa;
+ padding: 18px 24px;
+ border-bottom: 1px solid #f0f2f5;
+ background: #fafbfc;
  
  h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+ font-size: 16px;
+ font-weight: 600;
+ color: #1f2937;
  }
  }
  
  .chart-container {
  padding: 20px;
  height: 300px;
- 
+
  .chart {
-  width: 100%;
-  height: 100%;
+ width: 100%;
+ height: 100%;
  }
  }
 }
 
-.quick-actions {
+.sector-header {
  display: flex;
- flex-direction: column;
- gap: 15px;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+
+ h3 {
+ flex-shrink: 0;
+ }
+}
+
+.sector-meta {
+ display: flex;
+ align-items: center;
+ gap: 10px;
+ flex-shrink: 0;
+}
+
+.data-tag {
+ font-size: 12px;
+ padding: 2px 8px;
+ border-radius: 10px;
+ font-weight: 500;
+ line-height: 1.4;
+
+ &.data-tag-live {
+ background: rgba(34, 197, 94, 0.12);
+ color: #16a34a;
+ }
+
+ &.data-tag-mock {
+ background: rgba(148, 163, 184, 0.15);
+ color: #64748b;
+ }
+}
+
+.update-time {
+ font-size: 12px;
+ color: #9ca3af;
+ white-space: nowrap;
+}
+
+.refresh-btn {
+ cursor: pointer;
+ color: #6b7280;
+ font-size: 16px;
+ transition: color 0.2s ease;
+
+ &:hover {
+ color: #409eff;
+ }
+
+ &.is-loading {
+ color: #409eff;
+ animation: sector-refresh-rotating 1.2s linear infinite;
+ }
+}
+
+@keyframes sector-refresh-rotating {
+ from { transform: rotate(0deg); }
+ to { transform: rotate(360deg); }
+}
+
+.quick-actions {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 12px;
 }
 
 .action-item {
  display: flex;
  align-items: center;
- padding: 10px;
- border-radius: 6px;
+ padding: 12px 14px;
+ border-radius: 10px;
  cursor: pointer;
- transition: background-color 0.3s;
+ transition: all 0.3s ease;
+ background: #f9fafb;
  
  &:hover {
- background-color: #f5f7fa;
+ background-color: #f0f2f5;
+ transform: translateY(-1px);
+ box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
  }
 }
 
 .action-icon {
  width: 36px;
  height: 36px;
- border-radius: 6px;
+ border-radius: 10px;
  display: flex;
  align-items: center;
  justify-content: center;
  color: #fff;
  margin-right: 10px;
  flex-shrink: 0;
+ transition: transform 0.2s ease;
  
  &.bg-blue {
- background: #409EFF;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
  }
  
  &.bg-green {
- background: #67C23A;
+ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
  }
  
  &.bg-purple {
- background: #905DC8;
+ background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
  }
  
  &.bg-orange {
- background: #E6A23C;
+ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
  }
 }
 
 .action-text {
- font-size: 14px;
- color: #606266;
+ font-size: 13px;
+ font-weight: 500;
+ color: #374151;
 }
 
 .activity-list {
  display: flex;
  flex-direction: column;
- gap: 20px;
+ gap: 8px;
 }
 
 .activity-item {
  display: flex;
  align-items: flex-start;
- padding: 10px 0;
- border-bottom: 1px solid #f4f4f5;
+ padding: 14px;
+ border-radius: 10px;
  cursor: pointer;
- transition: background-color 0.3s;
- 
- &:hover {
- background-color: #f5f7fa;
- padding-left: 8px;
- 
- .activity-icon {
-  background: #ecf5ff;
-  color: #409eff;
- }
- }
+ transition: all 0.3s ease;
+ border-bottom: 1px solid #f3f4f6;
  
  &:last-child {
  border-bottom: none;
  }
+ 
+ &:hover {
+ background-color: #f9fafb;
+ transform: translateX(4px);
+ 
+ .activity-icon {
+ transform: scale(1.1);
+ }
+ }
 }
 
 .activity-icon {
- width: 32px;
- height: 32px;
- border-radius: 6px;
+ width: 36px;
+ height: 36px;
+ border-radius: 10px;
  display: flex;
  align-items: center;
  justify-content: center;
- background: #f5f7fa;
- color: #909399;
- margin-right: 12px;
+ margin-right: 14px;
  flex-shrink: 0;
+ transition: transform 0.2s ease;
  
  &.activity-icon-user {
- background: #ecf5ff;
- color: #409eff;
+ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ color: #fff;
  }
  
  &.activity-icon-order {
- background: #f0f9eb;
- color: #67c23a;
+ background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+ color: #fff;
  }
  
  &.activity-icon-system {
- background: #fdf6ec;
- color: #e6a23c;
+ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+ color: #fff;
  }
  
  &.activity-icon-message {
- background: #fef0f0;
- color: #f56c6c;
- }
- 
- i {
- font-size: 14px;
+ background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+ color: #fff;
  }
 }
 
@@ -860,18 +1176,18 @@ onBeforeUnmount(() => {
 .activity-title {
  font-size: 14px;
  font-weight: 600;
- color: #303133;
+ color: #1f2937;
  margin-bottom: 4px;
 }
 
 .activity-desc {
  font-size: 13px;
- color: #909399;
+ color: #6b7280;
  margin-bottom: 4px;
 }
 
 .activity-time {
  font-size: 12px;
- color: #c0c4cc;
+ color: #9ca3af;
 }
 </style>

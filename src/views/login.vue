@@ -1,19 +1,19 @@
 <template>
   <div class="login-container">
-    <!-- 背景装饰元素 -->
-    <div class="background-decoration">
-      <div class="decoration-circle circle-1"></div>
-      <div class="decoration-circle circle-2"></div>
-      <div class="decoration-circle circle-3"></div>
+    <!-- 动漫背景图 -->
+    <div class="anime-bg"></div>
+    <!-- 背景遮罩,增强文字对比度 -->
+    <div class="bg-overlay"></div>
+    <!-- 飘落花瓣装饰 -->
+    <div class="petals">
+      <span v-for="n in 12" :key="n" class="petal" :class="`petal-${n}`"></span>
     </div>
 
+    <!-- 登录卡片 -->
     <div class="login-card">
       <div class="login-header">
-        <div class="logo-wrapper" v-if="showLogo">
-          <img src="../assets/logo/logo.png" alt="Logo" class="logo">
-        </div>
         <h2 class="login-title">{{ title }}</h2>
-        <p class="login-subtitle">欢迎回来，请登录您的账户</p>
+        <p class="login-subtitle">欢迎回来,请登录您的账户</p>
       </div>
 
       <el-form
@@ -74,27 +74,33 @@
               </div>
             </div>
           </div>
-          </el-form-item>
+        </el-form-item>
 
         <div class="login-options">
           <el-checkbox v-model="loginForm.rememberMe" class="remember-checkbox">记住我</el-checkbox>
-          <a href="#" class="forgot-password" @click.prevent="handleForgotPassword">忘记密码？</a>
+          <a href="#" class="forgot-password" @click.prevent="handleForgotPassword">忘记密码?</a>
         </div>
 
-        <el-button
-          :loading="loading"
-          type="primary"
-          size="large"
-          native-type="submit"
+        <button
+          type="submit"
           class="login-button"
-          block
+          :class="{ 'is-loading': loading }"
+          :disabled="loading"
         >
-          <span v-if="!loading">登录</span>
-          <span v-else>登录中...</span>
-        </el-button>
+          <span class="btn-shine"></span>
+          <span class="btn-content" v-if="!loading">
+            <span class="btn-text">登 录</span>
+          </span>
+          <span class="btn-loading" v-else>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-dot"></span>
+            <span class="loading-text">登录中</span>
+          </span>
+        </button>
 
         <div class="register-link" v-if="register">
-          <span>还没有账户？</span>
+          <span>还没有账户?</span>
           <router-link to="/register">立即注册</router-link>
         </div>
       </el-form>
@@ -112,7 +118,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import Cookies from 'js-cookie'
 import { encrypt, decrypt } from '@/utils/jsencrypt'
-import defaultSettings from '@/settings'
 import { getCodeImg } from '@/api/login'
 import { useUserStore } from '@/store/user'
 import { Hide, Key, Lock, Refresh, User, View } from '@element-plus/icons-vue'
@@ -122,7 +127,6 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const title = import.meta.env.VITE_APP_TITLE || import.meta.env.VITE_APP_TITLE
-const footerContent = defaultSettings.footerContent
 const codeUrl = ref('')
 const loginFormRef = ref(null)
 
@@ -149,9 +153,7 @@ const captchaEnabled = ref(true)
 const register = ref(false)
 const redirect = ref(undefined)
 const passwordVisible = ref(false)
-const showLogo = ref(true)
 
-// 监听路由变化
 watch(() => route.query.redirect, (val) => {
   redirect.value = val
 }, { immediate: true })
@@ -194,13 +196,12 @@ const handleLogin = () => {
         Cookies.remove('rememberMe')
       }
       userStore.login(loginForm).then(() => {
-        // 登录成功后直接跳转，路由守卫会负责加载用户信息和生成路由
         const redirectUrl = redirect.value || '/index'
         router.push(redirectUrl).catch(() => {
           window.location.href = redirectUrl
         })
         loading.value = false
-      }).catch((err) => {
+      }).catch(() => {
         loading.value = false
         if (captchaEnabled.value) {
           getCode()
@@ -220,6 +221,8 @@ const handleForgotPassword = () => {
 </script>
 
 <style rel="stylesheet/scss" lang="scss" scoped>
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+QingKe+HuangYou&family=Noto+Sans+SC:wght@300;400&display=swap');
+
 .login-container {
   position: relative;
   display: flex;
@@ -227,173 +230,177 @@ const handleForgotPassword = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   padding: 20px;
   box-sizing: border-box;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
 }
 
-.background-decoration {
+/* ========== 动漫背景图 ========== */
+.anime-bg {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
+  inset: 0;
   z-index: 0;
+  background-color: #1e1b4b;
+  background-image: url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=anime%20landscape%20background%20makoto%20shinkai%20style%20blue%20sky%20soft%20clouds%20distant%20city%20skyline%20warm%20sunrise%20pink%20purple%20gradient%20sky%20cherry%20blossom%20trees%20no%20characters%20wide%20composition%20high%20quality%20digital%20painting&image_size=landscape_16_9');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: bgZoom 30s infinite alternate ease-in-out;
 }
 
-.decoration-circle {
+@keyframes bgZoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.08); }
+}
+
+/* 背景遮罩 */
+.bg-overlay {
   position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  animation: float 20s infinite ease-in-out;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(135deg, rgba(30, 27, 75, 0.55) 0%, rgba(76, 29, 149, 0.35) 50%, rgba(15, 23, 42, 0.6) 100%),
+    radial-gradient(ellipse at center, transparent 0%, rgba(15, 23, 42, 0.4) 100%);
+  pointer-events: none;
 }
 
-.circle-1 {
-  width: 300px;
-  height: 300px;
-  top: -150px;
-  right: -150px;
-  animation-delay: 0s;
+/* ========== 飘落花瓣 ========== */
+.petals {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
 }
 
-.circle-2 {
-  width: 200px;
-  height: 200px;
-  bottom: -100px;
-  left: -100px;
-  animation-delay: 5s;
+.petal {
+  position: absolute;
+  top: -20px;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 30% 30%, #ffd1e8, #ff8fb8 70%, #ff6fa1);
+  border-radius: 0 100% 0 100%;
+  opacity: 0.85;
+  animation: petalFall linear infinite;
+  filter: drop-shadow(0 1px 2px rgba(255, 111, 161, 0.3));
 }
 
-.circle-3 {
-  width: 150px;
-  height: 150px;
-  top: 50%;
-  left: 10%;
-  animation-delay: 10s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
+@keyframes petalFall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
   }
-  33% {
-    transform: translate(30px, -30px) scale(1.1);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.9);
+  10% { opacity: 0.85; }
+  90% { opacity: 0.85; }
+  100% {
+    transform: translateY(105vh) rotate(540deg);
+    opacity: 0;
   }
 }
 
+.petal-1  { left: 4%;  width: 14px; height: 14px; animation-duration: 12s; animation-delay: 0s; }
+.petal-2  { left: 12%; width: 10px; height: 10px; animation-duration: 15s; animation-delay: -3s; }
+.petal-3  { left: 22%; width: 16px; height: 16px; animation-duration: 11s; animation-delay: -6s; }
+.petal-4  { left: 32%; width: 11px; height: 11px; animation-duration: 14s; animation-delay: -2s; }
+.petal-5  { left: 42%; width: 13px; height: 13px; animation-duration: 13s; animation-delay: -8s; }
+.petal-6  { left: 52%; width: 9px;  height: 9px;  animation-duration: 16s; animation-delay: -4s; }
+.petal-7  { left: 62%; width: 15px; height: 15px; animation-duration: 12s; animation-delay: -7s; }
+.petal-8  { left: 72%; width: 11px; height: 11px; animation-duration: 14s; animation-delay: -1s; }
+.petal-9  { left: 82%; width: 14px; height: 14px; animation-duration: 13s; animation-delay: -5s; }
+.petal-10 { left: 88%; width: 10px; height: 10px; animation-duration: 15s; animation-delay: -9s; }
+.petal-11 { left: 94%; width: 13px; height: 13px; animation-duration: 11s; animation-delay: -3s; }
+.petal-12 { left: 18%; width: 12px; height: 12px; animation-duration: 14s; animation-delay: -10s; }
+
+/* ========== 登录卡片 - 玻璃拟态 ========== */
 .login-card {
   position: relative;
-  z-index: 1;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  padding: 40px 36px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.35),
+    0 2px 8px rgba(76, 29, 149, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  padding: 44px 40px;
   width: 100%;
   max-width: 420px;
-  animation: slideUp 0.5s ease-out;
+  animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 
   @media (max-width: 768px) {
     padding: 32px 24px;
-    margin: 0 15px;
-    border-radius: 12px;
+    margin: 0 12px;
+    border-radius: 18px;
   }
 }
 
-@keyframes slideUp {
+@keyframes cardAppear {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* ========== Header ========== */
 .login-header {
   text-align: center;
-  margin-bottom: 32px;
-}
-
-.logo-wrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 14px;
-  padding: 8px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
-}
-
-.logo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 8px;
+  margin-bottom: 34px;
 }
 
 .login-title {
-  font-size: 24px;
-  font-weight: 600;
-  color: #303133;
-  margin: 0 0 6px 0;
-  letter-spacing: -0.3px;
+  font-family: 'ZCOOL QingKe HuangYou', 'Noto Sans SC', sans-serif;
+  font-size: 34px;
+  font-weight: 400;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 14px rgba(15, 23, 42, 0.6);
 }
 
 .login-subtitle {
-  color: #909399;
-  font-size: 14px;
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
   margin: 0;
-  font-weight: 400;
+  font-weight: 300;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 6px rgba(15, 23, 42, 0.5);
 }
 
+/* ========== Form ========== */
 .login-form {
-  .el-form-item {
+  :deep(.el-form-item) {
     margin-bottom: 20px;
-  }
-
-  .el-form-item.is-error {
-    :deep(.custom-input) {
-      .el-input__wrapper {
-        border-color: #f56c6c !important;
-        background: #fef0f0 !important;
-        box-shadow: 0 0 0 3px rgba(245, 108, 108, 0.1) !important;
-      }
-
-      .el-input__prefix {
-        color: #f56c6c !important;
-      }
-    }
   }
 
   :deep(.custom-input) {
     .el-input__wrapper {
       height: 48px;
-      border-radius: 10px;
+      border-radius: 12px;
       padding-left: 42px;
       padding-right: 12px;
-      border: 1px solid #e4e7ed;
-      background: #fff;
-      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(8px);
+      transition: all 0.25s ease;
       box-shadow: none;
 
       &:hover {
-        border-color: #c0c4cc;
+        border-color: rgba(255, 209, 232, 0.6);
+        background: rgba(255, 255, 255, 0.2);
       }
 
       &.is-focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #ff8fb8;
+        background: rgba(255, 255, 255, 0.24);
+        box-shadow: 0 0 0 4px rgba(255, 143, 184, 0.25);
       }
     }
 
@@ -404,21 +411,22 @@ const handleForgotPassword = () => {
       border: none;
       background: transparent;
       padding: 0;
+      color: #ffffff;
 
       &::placeholder {
-        color: #c0c4cc;
+        color: rgba(255, 255, 255, 0.65);
       }
     }
 
     .el-input__prefix {
       left: 14px;
-      color: #909399;
+      color: rgba(255, 255, 255, 0.7);
       font-size: 16px;
-      transition: color 0.2s ease;
+      transition: color 0.25s ease;
     }
 
     &.is-focus .el-input__prefix {
-      color: #667eea;
+      color: #ffd1e8;
     }
 
     .el-input__suffix {
@@ -431,6 +439,7 @@ const handleForgotPassword = () => {
   display: flex;
   gap: 10px;
   align-items: stretch;
+  width: 100%;
 
   .el-input {
     flex: 1;
@@ -442,14 +451,15 @@ const handleForgotPassword = () => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    border: 1px solid #e4e7ed;
-    background: #f8f9fa;
-    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(8px);
+    transition: all 0.25s ease;
 
     &:hover {
-      border-color: #667eea;
+      border-color: #ff8fb8;
 
       .captcha-refresh {
         opacity: 1;
@@ -466,16 +476,13 @@ const handleForgotPassword = () => {
 
   .captcha-refresh {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(102, 126, 234, 0.9);
+    inset: 0;
+    background: rgba(255, 111, 161, 0.92);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.25s ease;
 
     .el-icon {
       color: #fff;
@@ -492,106 +499,198 @@ const handleForgotPassword = () => {
 
   :deep(.remember-checkbox) {
     .el-checkbox__label {
-      color: #606266;
+      color: rgba(255, 255, 255, 0.85);
       font-size: 13px;
       font-weight: 400;
       padding-left: 6px;
     }
 
+    .el-checkbox__inner {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
     .el-checkbox__input.is-checked .el-checkbox__inner {
-      background-color: #667eea;
-      border-color: #667eea;
+      background-color: #ff6fa1;
+      border-color: #ff6fa1;
     }
   }
 
   .forgot-password {
-    color: #667eea;
+    color: #ffd1e8;
     text-decoration: none;
     font-size: 13px;
-    font-weight: 400;
-    transition: color 0.2s ease;
+    font-weight: 500;
+    transition: color 0.25s ease;
+    text-shadow: 0 1px 4px rgba(15, 23, 42, 0.3);
 
     &:hover {
-      color: #764ba2;
-      text-decoration: none;
+      color: #ffffff;
     }
   }
 }
 
+/* ========== 登录按钮 - 樱花渐变 + 流光 ========== */
 .login-button {
-  height: 48px;
-  font-size: 15px;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  font-weight: 500;
-  letter-spacing: 0.2px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  width: 100%;
+  height: 50px;
   border: none;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+  border-radius: 12px;
+  cursor: pointer;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ff6fa1 0%, #c084fc 50%, #818cf8 100%);
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  margin-bottom: 16px;
+  font-family: inherit;
+  transition: all 0.35s ease;
+  box-shadow: 0 6px 20px rgba(255, 111, 161, 0.45);
 
-  &:hover:not(.is-loading) {
-    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-    opacity: 0.95;
+  &:hover:not(:disabled) {
+    background-position: 100% 50%;
+    box-shadow: 0 8px 26px rgba(192, 132, 252, 0.55);
+    transform: translateY(-1px);
   }
 
-  &:active:not(.is-loading) {
-    opacity: 0.9;
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(255, 111, 161, 0.4);
+  }
+
+  /* 流光层 */
+  .btn-shine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: translateX(-150%) skewX(-20deg);
+    transition: transform 0.7s ease;
+  }
+
+  &:hover:not(:disabled) .btn-shine {
+    transform: translateX(250%) skewX(-20deg);
+  }
+
+  .btn-content, .btn-loading {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+  }
+
+  .btn-loading {
+    gap: 6px;
+  }
+
+  .loading-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    animation: dotPulse 1.2s infinite ease-in-out;
+
+    &:nth-child(2) { animation-delay: 0.15s; }
+    &:nth-child(3) { animation-delay: 0.3s; }
+  }
+
+  .loading-text {
+    margin-left: 8px;
+    letter-spacing: 1px;
   }
 
   &.is-loading {
-    opacity: 0.7;
+    cursor: wait;
+    background: linear-gradient(135deg, #ff8fb8 0%, #d8b4fe 50%, #a5b4fc 100%);
+    background-size: 200% 200%;
+    animation: btnPulse 2s infinite ease-in-out;
+  }
+
+  &:disabled {
+    cursor: wait;
+  }
+}
+
+@keyframes btnPulse {
+  0%, 100% {
+    background-position: 0% 50%;
+    box-shadow: 0 6px 20px rgba(255, 111, 161, 0.45);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 6px 24px rgba(192, 132, 252, 0.6);
+  }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.1);
   }
 }
 
 .register-link {
   text-align: center;
-  color: #8b8b8b;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   margin-top: 8px;
+  text-shadow: 0 1px 4px rgba(15, 23, 42, 0.4);
 
   span {
     margin-right: 4px;
   }
 
   a {
-    color: #667eea;
+    color: #ffd1e8;
     text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
+    font-weight: 500;
+    transition: color 0.25s ease;
 
     &:hover {
-      color: #764ba2;
-      text-decoration: underline;
+      color: #ffffff;
     }
   }
 }
 
+/* ========== Footer ========== */
 .login-footer {
   position: relative;
-  z-index: 1;
-  color: rgba(255, 255, 255, 0.9);
+  z-index: 3;
+  color: rgba(255, 255, 255, 0.75);
   text-align: center;
   margin-top: 40px;
   font-size: 13px;
   font-weight: 400;
+  text-shadow: 0 1px 4px rgba(15, 23, 42, 0.5);
 
   p {
     margin: 0;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 
 .password-toggle {
   cursor: pointer;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.7);
   font-size: 18px;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   padding: 4px;
 
   &:hover {
-    color: #667eea;
-    transform: scale(1.1);
+    color: #ffd1e8;
   }
 }
 </style>

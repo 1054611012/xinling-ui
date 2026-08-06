@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onBeforeMount, onBeforeUnmount, watch } from 'vue'
+import { computed, ref, onBeforeMount, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore, useSettingsStore } from '@/store'
 import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
@@ -29,12 +29,11 @@ const settingsStore = useSettingsStore()
 const settingRef = ref(null)
 
 const WIDTH = 992
-const body = document.body
 const lastDevice = ref('')
 
 const isMobile = () => {
-  const rect = body.getBoundingClientRect()
-  return rect.width - 1 < WIDTH
+  // 使用 window.innerWidth 判断（更准确，不受 body 边框/滚动条影响）
+  return window.innerWidth < WIDTH
 }
 
 const resizeHandler = () => {
@@ -59,6 +58,26 @@ onBeforeMount(() => {
     appStore.toggleDevice('mobile')
     appStore.closeSideBar({ withoutAnimation: true })
   }
+})
+
+// 页面挂载后立即检查设备类型并同步状态
+onMounted(() => {
+  // 确保首次加载时设备类型判断正确（onBeforeMount 时 DOM 可能未完全就绪）
+  const checkDevice = () => {
+    const mobile = isMobile()
+    const device = mobile ? 'mobile' : 'desktop'
+    if (device !== lastDevice.value) {
+      lastDevice.value = device
+      appStore.toggleDevice(device)
+      if (mobile) {
+        appStore.closeSideBar({ withoutAnimation: true })
+      }
+    }
+  }
+  // 立即检查一次
+  checkDevice()
+  // 延迟一帧再检查，确保布局已完成
+  requestAnimationFrame(checkDevice)
 })
 
 onBeforeUnmount(() => {

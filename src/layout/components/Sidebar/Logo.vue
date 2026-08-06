@@ -48,7 +48,7 @@ const logo = logoImg
   width: 100%;
   height: 50px;
   line-height: 50px;
-  background: #2b2f3a;
+  background: transparent;
   text-align: center;
   overflow: hidden;
 
@@ -57,10 +57,10 @@ const logo = logoImg
     width: 100%;
 
     & .sidebar-logo {
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       vertical-align: middle;
-      margin-right: 12px;
+      margin-right: 10px;
     }
 
     & .sidebar-title {
@@ -69,9 +69,11 @@ const logo = logoImg
       color: #fff;
       font-weight: 600;
       line-height: 50px;
-      font-size: 14px;
-      font-family: Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      font-family: 'PingFang SC', Avenir, Helvetica Neue, Arial, Helvetica, sans-serif;
       vertical-align: middle;
+      white-space: nowrap;
     }
   }
 
