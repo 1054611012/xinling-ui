@@ -35,12 +35,12 @@
       </el-table-column>
       <el-table-column label="会话编号" align="center" prop="tokenId" :show-overflow-tooltip="true" />
       <el-table-column label="登录名称" align="center" prop="userName" :show-overflow-tooltip="true" />
-      <el-table-column label="部门名称" align="center" prop="deptName" />
+      <el-table-column label="部门名称" align="center" prop="deptName" show-overflow-tooltip />
       <el-table-column label="主机" align="center" prop="ipaddr" :show-overflow-tooltip="true" />
       <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" />
-      <el-table-column label="浏览器" align="center" prop="browser" />
+      <el-table-column label="浏览器" align="center" prop="browser" show-overflow-tooltip />
       <el-table-column label="操作系统" align="center" prop="os" />
-      <el-table-column label="登录时间" align="center" prop="loginTime" width="180">
+      <el-table-column label="登录时间" align="center" prop="loginTime" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.loginTime) }}</span>
         </template>
@@ -67,6 +67,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { list, forceLogout } from "@/api/monitor/online"
 import { parseTime, resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { Delete, Refresh, Search } from '@element-plus/icons-vue'
 
 defineOptions({ name: "Online" })
@@ -83,11 +84,9 @@ const queryParams = reactive({
 })
 
 function getList() {
-  loading.value = true
-  list(queryParams).then(response => {
+  withLoading(loading, list(queryParams)).then(response => {
     listData.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

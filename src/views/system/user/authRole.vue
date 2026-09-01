@@ -51,6 +51,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAuthRole, updateAuthRole } from "@/api/system/user"
 import { parseTime } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 
 defineOptions({ name: "AuthRole" })
 
@@ -110,8 +111,7 @@ onMounted(() => {
   }
   
   if (paramUserId) {
-    loading.value = true
-    getAuthRole(paramUserId).then((response) => {
+    withLoading(loading, getAuthRole(paramUserId)).then(response => {
       const data = response.data || response
       
       if (data.user) {
@@ -132,7 +132,6 @@ onMounted(() => {
           }
         })
       })
-      loading.value = false
     }).catch(() => {
       loading.value = false
     })

@@ -8,7 +8,7 @@
       </app-link>
     </template>
 
-    <el-sub-menu v-else ref="subMenuRef" :index="resolvePath(item.path)">
+    <el-sub-menu v-else ref="subMenuRef" :index="resolvePath(item.path)" :popper-class="subMenuPopperClass" :teleported="isCollapse">
       <template #title>
         <item v-if="item.meta" :icon="resolveMenuIcon(item.meta && item.meta.icon, item.meta.title, item.path)" :title="item.meta.title" />
       </template>
@@ -18,6 +18,7 @@
         :is-nest="true"
         :item="child"
         :base-path="resolvePath(child.path)"
+        :level="props.level + 1"
         class="nest-menu"
       />
     </el-sub-menu>
@@ -25,9 +26,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { isExternal } from '@/utils/validate'
-import { useAppStore } from '@/store'
+import { useSettingsStore, useAppStore } from '@/store'
 import Item from './Item.vue'
 import AppLink from './Link.vue'
 import { resolveMenuIcon } from '@/utils/menuIcon'
@@ -44,13 +45,27 @@ const props = defineProps({
   basePath: {
     type: String,
     default: ''
+  },
+  level: {
+    type: Number,
+    default: 0
   }
+})
+
+const settingsStore = useSettingsStore()
+const appStore = useAppStore()
+// 折叠态下强制把各级子菜单弹层 teleport 到 body，避免嵌套的三级菜单
+// 被父级弹出层的 overflow 裁剪而“显示不全”
+const isCollapse = computed(() => !appStore.sidebar.opened)
+const subMenuPopperClass = computed(() => {
+  const theme = settingsStore.sideTheme === 'theme-dark' ? 'dark' : 'light'
+  // 折叠态弹出层最多区分到三级（level-2）；更深层统一复用 level-2 的紧凑样式与末端圆点
+  const lvl = Math.min(props.level + 1, 2)
+  return `xinling-sidebar-popper xinling-sidebar-popper--${theme} xinling-sidebar-popper--level-${lvl}`
 })
 
 const subMenuRef = ref(null)
 const onlyOneChild = ref(null)
-
-const appStore = useAppStore()
 
 function pathResolve(basePath, routePath) {
   if (routePath.startsWith('/')) return routePath
@@ -102,17 +117,4 @@ function resolvePath(routePath, routeQuery) {
   }
   return pathResolve(props.basePath, routePath)
 }
-
-onMounted(() => {
-  const $subMenu = subMenuRef.value
-  if ($subMenu) {
-    const handleMouseleave = $subMenu.handleMouseleave
-    $subMenu.handleMouseleave = (e) => {
-      if (appStore.device === 'mobile') {
-        return
-      }
-      handleMouseleave(e)
-    }
-  }
-})
 </script>

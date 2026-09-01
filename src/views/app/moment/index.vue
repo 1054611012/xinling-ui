@@ -17,10 +17,10 @@
     </el-form>
 
     <el-table :data="momentList" v-loading="loading">
-      <el-table-column label="动态ID" align="center" prop="id" />
-      <el-table-column label="用户ID" align="center" prop="userId" />
-      <el-table-column label="用户昵称" align="center" prop="nickname" />
-      <el-table-column label="类型" align="center" prop="type">
+      <el-table-column label="动态ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="用户ID" align="center" prop="userId" show-overflow-tooltip />
+      <el-table-column label="用户昵称" align="center" prop="nickname" show-overflow-tooltip />
+      <el-table-column label="类型" align="center" prop="type" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.type === 'auto' ? 'info' : 'success'">
             {{ scope.row.type === 'auto' ? '自动' : '手动' }}
@@ -28,16 +28,16 @@
         </template>
       </el-table-column>
       <el-table-column label="内容" align="center" prop="content" :show-overflow-tooltip="true" />
-      <el-table-column label="点赞数" align="center" prop="likeCount" />
-      <el-table-column label="评论数" align="center" prop="commentCount" />
-      <el-table-column label="状态" align="center" prop="isDeleted">
+      <el-table-column label="点赞数" align="center" prop="likeCount" show-overflow-tooltip />
+      <el-table-column label="评论数" align="center" prop="commentCount" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="isDeleted" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.isDeleted === 1 ? 'danger' : 'success'">
             {{ scope.row.isDeleted === 1 ? '已隐藏' : '正常' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['app:moment:detail']">详情</el-button>

@@ -71,18 +71,18 @@
 
     <el-table v-loading="loading" :data="testList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="测评ID" align="center" prop="id" />
-      <el-table-column label="测评名称" align="center" prop="testName" />
+      <el-table-column label="测评ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="测评名称" align="center" prop="testName" show-overflow-tooltip />
       <el-table-column label="测评简介" align="center" prop="description" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="String(scope.row.status) === '1' ? 'success' : 'info'">
             {{ String(scope.row.status) === '1' ? '启用' : '停用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="题目数量" align="center" prop="totalQuestions" />
-      <el-table-column label="测评时长" align="center" prop="duration" />
+      <el-table-column label="题目数量" align="center" prop="totalQuestions" show-overflow-tooltip />
+      <el-table-column label="测评时长" align="center" prop="duration" show-overflow-tooltip />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
@@ -658,6 +658,7 @@ import { listTest, getTest, delTest, addTest, updateTest } from "@/api/psyc/test
 import { listQuestions } from "@/api/psyc/questions"
 import { Search, Refresh, Plus, Edit, Delete, Download, View, Tickets, Check, Close } from "@element-plus/icons-vue"
 import { resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 
 defineOptions({ name: "Test" })
@@ -715,14 +716,12 @@ const formRef = ref(null)
 const queryForm = ref(null)
 
 function getList() {
-  loading.value = true
-  listTest(queryParams).then(response => {
+  withLoading(loading, listTest(queryParams)).then(response => {
     testList.value = response.rows.map(item => ({
       ...item,
       status: String(item.status || "0")
     }))
     total.value = response.total
-    loading.value = false
   })
 }
 
@@ -806,9 +805,7 @@ function submitForm() {
 function handleView(row) {
   const id = row.id
   openView.value = true
-  loading.value = true
-  
-  getTest(id).then(response => {
+  withLoading(loading, getTest(id)).then(response => {
     const data = response.data || {}
     Object.assign(form, data)
 
@@ -824,7 +821,6 @@ function handleView(row) {
       questionsList.value = []
     }
 
-    loading.value = false
   })
 }
 

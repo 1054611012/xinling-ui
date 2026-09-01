@@ -50,7 +50,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['app:order:query']">详情</el-button>

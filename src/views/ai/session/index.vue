@@ -71,32 +71,32 @@
 
     <el-table v-loading="loading" :data="sessionList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="配置ID" align="center" prop="configId" width="70" />
+      <el-table-column label="配置ID" align="center" prop="configId" width="70" show-overflow-tooltip />
       <el-table-column label="配置名称" align="center" prop="configName" :show-overflow-tooltip="true" />
-      <el-table-column label="对话模型" align="center" prop="chatModelName" width="130" />
-      <el-table-column label="嵌入模型" align="center" prop="embeddingModelName" width="130" />
-      <el-table-column label="历史消息数" align="center" prop="maxHistoryMessages" width="90" />
-      <el-table-column label="启用RAG" align="center" prop="enableRag" width="80">
+      <el-table-column label="对话模型" align="center" prop="chatModelName" width="130" show-overflow-tooltip />
+      <el-table-column label="嵌入模型" align="center" prop="embeddingModelName" width="130" show-overflow-tooltip />
+      <el-table-column label="历史消息数" align="center" prop="maxHistoryMessages" width="90" show-overflow-tooltip />
+      <el-table-column label="启用RAG" align="center" prop="enableRag" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.enableRag === '1'" size="small" type="success">是</el-tag>
           <el-tag v-else size="small" type="info">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="RAG数量" align="center" prop="ragMaxResults" width="80" />
-      <el-table-column label="RAG相似度" align="center" prop="ragMinScore" width="90" />
-      <el-table-column label="配置标识" align="center" prop="configKey" width="120" />
-      <el-table-column label="关联提示词" align="center" width="130">
+      <el-table-column label="RAG数量" align="center" prop="ragMaxResults" width="80" show-overflow-tooltip />
+      <el-table-column label="RAG相似度" align="center" prop="ragMinScore" width="90" show-overflow-tooltip />
+      <el-table-column label="配置标识" align="center" prop="configKey" width="120" show-overflow-tooltip />
+      <el-table-column label="关联提示词" align="center" width="130" show-overflow-tooltip>
         <template #default="scope">
           <el-tag size="small" type="info">已关联 {{ (scope.row.promptIds?.length || 0) }} 个</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="默认" align="center" prop="isDefault" width="70">
+      <el-table-column label="默认" align="center" prop="isDefault" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.isDefault === '1'" size="small" type="success">是</el-tag>
           <el-tag v-else size="small" type="info">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="70">
+      <el-table-column label="状态" align="center" prop="status" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">正常</el-tag>
           <el-tag v-else size="small" type="danger">停用</el-tag>
@@ -237,6 +237,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download, Star } from '@element-plus/icons-vue'
@@ -309,11 +310,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listSession(queryParams).then(response => {
+  withLoading(loading, listSession(queryParams)).then(response => {
     sessionList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

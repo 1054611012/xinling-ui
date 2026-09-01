@@ -87,17 +87,17 @@
 
     <el-table v-loading="loading" :data="actionList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="行为ID" align="center" prop="actionId" width="80" />
+      <el-table-column label="行为ID" align="center" prop="actionId" width="80" show-overflow-tooltip />
       <el-table-column label="行为名称" align="center" prop="actionName" :show-overflow-tooltip="true" width="180" />
       <el-table-column label="行为编码" align="center" prop="actionCode" :show-overflow-tooltip="true" width="150" />
-      <el-table-column label="所属概念" align="center" prop="conceptName" width="150">
+      <el-table-column label="所属概念" align="center" prop="conceptName" width="150" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ scope.row.conceptName || '全局行为' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="行为类型" align="center" prop="actionType" width="120" />
+      <el-table-column label="行为类型" align="center" prop="actionType" width="120" show-overflow-tooltip />
       <el-table-column label="目标" align="center" prop="target" :show-overflow-tooltip="true" width="180" />
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="状态" align="center" prop="status" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">启用</el-tag>
           <el-tag v-else size="small" type="danger">禁用</el-tag>
@@ -185,6 +185,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
@@ -248,11 +249,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listAction(queryParams).then(response => {
+  withLoading(loading, listAction(queryParams)).then(response => {
     actionList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

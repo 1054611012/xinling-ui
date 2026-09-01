@@ -25,6 +25,16 @@ service.interceptors.request.use(config => {
   if (getToken() && !isToken) {
     config.headers['Authorization'] = 'Bearer ' + getToken()
   }
+  // 修复文件上传：axios 1.x 在 Content-Type 为 JSON 时会把 FormData 序列化为 JSON，
+  // 导致后端 MultipartException；此处移除默认 JSON 头，让浏览器自动携带 multipart boundary
+  if (config.data instanceof FormData) {
+    if (config.headers && typeof config.headers.delete === 'function') {
+      config.headers.delete('Content-Type')
+    } else if (config.headers) {
+      delete config.headers['Content-Type']
+    }
+    config.timeout = 60000
+  }
   if (config.method === 'get' && config.params) {
     let url = config.url + '?' + tansParams(config.params)
     url = url.slice(0, -1)

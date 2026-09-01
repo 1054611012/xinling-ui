@@ -45,7 +45,7 @@ export function filterAsyncRouter(routes, parentPath = '') {
 
     if (!r.path) return
 
-    const fullPath = r.path.startsWith('/') ? r.path : parentPath + '/' + r.path
+    const fullPath = r.path.startsWith('/') ? r.path : parentPath.replace(/\/$/, '') + '/' + r.path
     r.path = fullPath
 
     if (r.component) {
@@ -90,7 +90,7 @@ export function flatMultiLevelRoutes(routeModules) {
     if (route.children && Array.isArray(route.children) && route.children.length > 0) {
       route.children = route.children.map(child => {
         if (!child.path.startsWith('/')) {
-          child.path = route.path + '/' + child.path
+          child.path = route.path.replace(/\/$/, '') + '/' + child.path
         }
         return child
       })
@@ -102,7 +102,7 @@ export function flatMultiLevelRoutes(routeModules) {
 
 export function addRouteNames(routes, parentPath = '') {
   routes.forEach(route => {
-    const fullPath = route.path.startsWith('/') ? route.path : parentPath + '/' + route.path
+    const fullPath = route.path.startsWith('/') ? route.path : parentPath.replace(/\/$/, '') + '/' + route.path
     route.name = generateRouteName(fullPath)
 
     if (route.children && route.children.length) {

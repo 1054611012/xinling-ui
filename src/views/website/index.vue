@@ -3,13 +3,7 @@
     <!-- 顶部导航 -->
     <header class="site-header" :class="{ scrolled: isScrolled }">
       <div class="header-content">
-        <div class="logo" @click="scrollToTop">
-          <svg viewBox="0 0 100 100" class="logo-icon">
-            <path d="M50 5C25 5 10 20 10 45c0 15 8 28 20 35v-20c-6-5-10-12-10-20 0-18 12-30 25-30s25 12 25 30c0 8-4 15-10 20v20c12-7 20-20 20-35 0-25-15-40-40-40z" fill="currentColor"/>
-            <path d="M38 35v30l12-6v-18l-12-6z" fill="#fff"/>
-          </svg>
-          <span class="logo-text">心灵视频</span>
-        </div>
+        <brand-logo class="logo" :size="36" :text-size="20" @click="scrollToTop" />
 
         <nav class="main-nav">
           <a href="javascript:;" class="nav-link" @click="scrollTo('featured')">精选</a>
@@ -296,8 +290,7 @@
         <div class="footer-content">
           <div class="footer-section footer-brand">
             <div class="logo">
-              <svg viewBox="0 0 100 100" class="logo-icon"><path d="M50 5C25 5 10 20 10 45c0 15 8 28 20 35v-20c-6-5-10-12-10-20 0-18 12-30 25-30s25 12 25 30c0 8-4 15-10 20v20c12-7 20-20 20-35 0-25-15-40-40-40z" fill="currentColor"/><path d="M38 35v30l12-6v-18l-12-6z" fill="#fff"/></svg>
-              <span class="logo-text">心灵视频</span>
+              <brand-logo :size="32" :text-size="18" />
             </div>
             <p class="footer-desc">探索精彩视频内容，发现无限创意可能。</p>
           </div>
@@ -319,31 +312,91 @@
     </footer>
 
     <!-- 登录弹窗 -->
-    <el-dialog title="欢迎回来" :model-value="showLogin" @update:model-value="showLogin = $event" width="420px" :close-on-click-modal="false" custom-class="login-dialog">
-      <div class="login-dialog-header">
-        <svg viewBox="0 0 100 100" class="login-logo"><path d="M50 5C25 5 10 20 10 45c0 15 8 28 20 35v-20c-6-5-10-12-10-20 0-18 12-30 25-30s25 12 25 30c0 8-4 15-10 20v20c12-7 20-20 20-35 0-25-15-40-40-40z" fill="#409EFF"/><path d="M38 35v30l12-6v-18l-12-6z" fill="#fff"/></svg>
-        <p>登录您的心灵视频账号</p>
-      </div>
-      <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" label-position="top">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="loginForm.username" placeholder="请输入用户名" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" show-password />
-        </el-form-item>
-        <el-form-item>
-          <div class="login-options">
-            <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-            <a href="javascript:;" class="forgot-link">忘记密码?</a>
+    <el-dialog
+      :model-value="showLogin"
+      @update:model-value="showLogin = $event"
+      width="420px"
+      :close-on-click-modal="false"
+      custom-class="login-dialog"
+      align-center
+      destroy-on-close
+      @open="resetLoginForm"
+    >
+      <div class="login-dialog-body">
+        <div class="login-dialog-header">
+          <div class="login-logo-wrap">
+            <brand-logo class="login-logo" :size="52" :show-text="false" />
           </div>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-      <div>
-          <el-button @click="showLogin = false" style="width: 45%">取消</el-button>
-          <el-button type="primary" :loading="loginLoading" @click="handleLogin" style="width: 45%">登录</el-button>
+          <h3>欢迎回来</h3>
+          <p>登录您的心灵视频账号</p>
         </div>
-      </template>
+
+        <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" class="login-form" @submit.prevent="handleLogin">
+          <el-form-item prop="username">
+            <el-input
+              v-model="loginForm.username"
+              placeholder="请输入用户名"
+              size="large"
+              :prefix-icon="User"
+              clearable
+              @keyup.enter="handleLogin"
+            />
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model="loginForm.password"
+              :type="passwordVisible ? 'text' : 'password'"
+              placeholder="请输入密码"
+              size="large"
+              :prefix-icon="Lock"
+              @keyup.enter="handleLogin"
+            >
+              <template #suffix>
+                <span class="password-toggle" @click="togglePasswordVisibility">
+                  <el-icon><component :is="passwordVisible ? View : Hide" /></el-icon>
+                </span>
+              </template>
+            </el-input>
+          </el-form-item>
+          <el-form-item>
+            <div class="login-options">
+              <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
+              <a href="javascript:;" class="forgot-link" @click="handleForgotPassword">忘记密码?</a>
+            </div>
+          </el-form-item>
+
+          <el-button
+            type="primary"
+            size="large"
+            class="login-submit-btn"
+            :loading="loginLoading"
+            @click="handleLogin"
+          >
+            登 录
+          </el-button>
+        </el-form>
+
+        <div class="login-divider">
+          <span>其他登录方式</span>
+        </div>
+
+        <div class="social-login">
+          <button class="social-btn wechat" title="微信登录" @click="handleSocialLogin('wechat')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.238 4.616c-3.965 0-7.163 2.608-7.163 5.828 0 3.222 3.198 5.83 7.163 5.83.752 0 1.488-.098 2.189-.308a.67.67 0 0 1 .553.074l1.46.854a.252.252 0 0 0 .128.04c.124 0 .224-.1.224-.224 0-.055-.023-.11-.037-.163l-.3-1.138a.453.453 0 0 1 .163-.51c1.41-1.036 2.31-2.568 2.31-4.255 0-3.22-3.199-5.828-7.163-5.828h-.527zm-2.372 3.183c.493 0 .893.407.893.908s-.4.908-.893.908a.9.9 0 0 1-.893-.908c0-.501.4-.908.893-.908zm4.748 0c.493 0 .893.407.893.908s-.4.908-.893.908a.9.9 0 0 1-.893-.908c0-.501.4-.908.893-.908z"/></svg>
+          </button>
+          <button class="social-btn qq" title="QQ 登录" @click="handleSocialLogin('qq')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.281 1.025.114 0 .902-.484 1.748-2.072 0 0-.18 2.197 1.904 3.967 0 0-1.77.495-1.77 1.182 0 .686 4.078.43 6.29.43 2.21 0 6.287.257 6.287-.43 0-.687-1.768-1.182-1.768-1.182 2.085-1.77 1.905-3.967 1.905-3.967.845 1.588 1.634 2.072 1.746 2.072.111 0 .283-.36.283-1.025 0-2.514-2.164-6.954-2.164-6.954V9.325C18.29 3.364 14.268 2 12.003 2z"/></svg>
+          </button>
+          <button class="social-btn github" title="GitHub 登录" @click="handleSocialLogin('github')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.026 2.747-1.026.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+          </button>
+        </div>
+
+        <div class="login-register">
+          <span>还没有账号？</span>
+          <a href="javascript:;" @click="showLogin = false; scrollTo('pricing')">立即注册</a>
+        </div>
+      </div>
     </el-dialog>
 
     <!-- 视频播放弹窗 -->
@@ -385,6 +438,8 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/user'
+import { buildLogoSvg } from '@/components/BrandLogo/logo.js'
+import { Hide, Lock, User, View } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'Website' })
 
@@ -400,6 +455,7 @@ const activeFilter = ref('latest')
 const isScrolled = ref(false)
 const heroAnimated = ref(false)
 const loginLoading = ref(false)
+const passwordVisible = ref(false)
 let scrollObserver = null
 let animationTimer = null
 
@@ -487,6 +543,27 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+// 为 /website 路由动态注入专属 SVG favicon（仅作用于当前标签页，不影响后台全局）
+let faviconOriginalHref = null
+function applyWebsiteFavicon() {
+  const dataUri = 'data:image/svg+xml,' + encodeURIComponent(buildLogoSvg('xl-favicon'))
+  let link = document.querySelector("link[rel~='icon']")
+  if (!link) {
+    link = document.createElement('link')
+    link.rel = 'icon'
+    document.head.appendChild(link)
+  }
+  faviconOriginalHref = link.href
+  link.href = dataUri
+  document.title = '心灵视频 · 高品质视频分享平台'
+}
+function restoreFavicon() {
+  if (faviconOriginalHref == null) return
+  const link = document.querySelector("link[rel~='icon']")
+  if (link) link.href = faviconOriginalHref
+  faviconOriginalHref = null
+}
+
 function handleScroll() {
   isScrolled.value = window.scrollY > 50
 }
@@ -534,6 +611,25 @@ function handleLogin() {
       })
     }
   })
+}
+
+function togglePasswordVisibility() {
+  passwordVisible.value = !passwordVisible.value
+}
+
+function resetLoginForm() {
+  passwordVisible.value = false
+  if (loginFormRef.value) {
+    loginFormRef.value.resetFields()
+  }
+}
+
+function handleForgotPassword() {
+  ElMessage.info('忘记密码功能待实现')
+}
+
+function handleSocialLogin(provider) {
+  ElMessage.info(`${provider} 登录功能待接入`)
 }
 
 function animateCountUp() {
@@ -589,6 +685,7 @@ function setupScrollAnimations() {
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   handleScroll()
+  applyWebsiteFavicon()
   setTimeout(() => {
     setupScrollAnimations()
   }, 0)
@@ -596,6 +693,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
+  restoreFavicon()
   if (scrollObserver) {
     scrollObserver.disconnect()
   }
@@ -656,10 +754,7 @@ $header-height: 72px;
   transition: all 0.4s cubic-bezier(0.4,0,0.2,1); padding: 0 40px;
   &.scrolled { background: rgba(10,10,30,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: 0 1px 20px rgba(0,0,0,0.15); }
   .header-content { display: flex; align-items: center; justify-content: space-between; height: $header-height; }
-  .logo { display: flex; align-items: center; gap: 12px; cursor: pointer;
-    .logo-icon { width: 36px; height: 36px; color: $primary; }
-    .logo-text { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
-  }
+  .logo { display: flex; align-items: center; gap: 12px; cursor: pointer; color: #fff; }
   .main-nav { display: flex; gap: 36px;
     .nav-link { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 15px; font-weight: 500; transition: all 0.3s; position: relative; padding: 4px 0;
       &::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px; background: $primary; transition: width 0.3s; border-radius: 1px; }
@@ -823,14 +918,91 @@ $header-height: 72px;
 @keyframes ctaBgMove { 0% { transform: translate(0,0); } 100% { transform: translate(30px,30px); } }
 .site-footer { background: #0a0a1e; color: rgba(255,255,255,0.7); padding: 72px 0 0;
   .footer-content { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .footer-brand { .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; .logo-icon { width: 32px; height: 32px; color: $primary; } .logo-text { font-size: 18px; font-weight: 700; color: #fff; } } .footer-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5); } }
+  .footer-brand { .logo { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; color: #fff; } .footer-desc { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.5); } }
   .footer-section { h4 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 20px; letter-spacing: 0.5px; } ul { list-style: none; padding: 0; li { margin-bottom: 12px; a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 14px; transition: all 0.3s; &:hover { color: $primary; } } } } }
   .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding: 28px 0; p { font-size: 13px; color: rgba(255,255,255,0.4); } .social-links { display: flex; gap: 12px; .social-link { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); text-decoration: none; transition: all 0.3s; svg { width: 18px; height: 18px; } &:hover { background: $primary; color: #fff; transform: translateY(-2px); } } } }
   @media (max-width: 768px) { padding: 48px 0 0; .footer-content { grid-template-columns: 1fr 1fr; gap: 32px; } .footer-brand { grid-column: 1 / -1; } .footer-bottom { flex-direction: column; gap: 16px; text-align: center; } }
 }
-.login-dialog-header { text-align: center; margin-bottom: 24px; .login-logo { width: 48px; height: 48px; margin-bottom: 12px; } p { font-size: 14px; color: $text-muted; } }
-.login-options { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-.forgot-link { font-size: 14px; color: $primary; text-decoration: none; &:hover { text-decoration: underline; } }
+:deep(.login-dialog) {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.22);
+  .el-dialog__header { display: none; }
+  .el-dialog__body { padding: 0; }
+  .el-dialog__footer { display: none; }
+}
+.login-dialog-body { padding: 36px 40px 32px; }
+.login-dialog-header {
+  text-align: center; margin-bottom: 28px;
+  .login-logo-wrap {
+    width: 64px; height: 64px; margin: 0 auto 14px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, $primary 0%, $accent 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(64,158,255,0.35);
+    .login-logo { width: 36px; height: 36px; color: #fff; }
+  }
+  h3 { font-size: 24px; font-weight: 700; color: $text-primary; margin: 0 0 6px; }
+  p { font-size: 14px; color: $text-muted; margin: 0; }
+}
+.login-form {
+  :deep(.el-form-item) { margin-bottom: 18px; }
+  :deep(.el-form-item__error) { padding-top: 4px; }
+  :deep(.el-input__wrapper) {
+    border-radius: 12px; box-shadow: 0 0 0 1px $border-color inset; padding-left: 12px; padding-right: 12px;
+    transition: all 0.25s ease;
+    .el-input__inner { height: 46px; font-size: 14px; }
+    .el-input__prefix { color: $text-muted; }
+    &.is-focus { box-shadow: 0 0 0 1px $primary inset, 0 0 0 4px rgba(64,158,255,0.12); }
+  }
+  .password-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 6px; cursor: pointer;
+    color: $text-muted; transition: all 0.2s ease;
+    &:hover { color: $primary; background: $primary-light; }
+  }
+}
+.login-options { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: -4px;
+  :deep(.el-checkbox__label) { font-size: 13px; color: $text-secondary; }
+  :deep(.el-checkbox__input.is-checked + .el-checkbox__label) { color: $primary; }
+}
+.forgot-link { font-size: 13px; color: $primary; text-decoration: none; font-weight: 500;
+  &:hover { text-decoration: underline; }
+}
+.login-submit-btn {
+  width: 100%; height: 48px; border-radius: 12px; font-size: 16px; font-weight: 600; letter-spacing: 2px;
+  margin-top: 8px; box-shadow: 0 6px 20px rgba(64,158,255,0.35);
+  &:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(64,158,255,0.45); }
+}
+.login-divider {
+  display: flex; align-items: center; margin: 24px 0 18px;
+  &::before, &::after { content: ''; flex: 1; height: 1px; background: $border-color; }
+  span { padding: 0 14px; font-size: 12px; color: $text-muted; }
+}
+.social-login { display: flex; justify-content: center; gap: 16px;
+  .social-btn {
+    width: 44px; height: 44px; border-radius: 12px; border: 1px solid $border-color; background: #fff;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.25s ease;
+    svg { width: 22px; height: 22px; }
+    &:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    &.wechat { color: #07c160; &:hover { background: #f0fff5; border-color: #07c160; } }
+    &.qq { color: #12b7f5; &:hover { background: #f0fbff; border-color: #12b7f5; } }
+    &.github { color: #24292f; &:hover { background: #f6f8fa; border-color: #24292f; } }
+  }
+}
+.login-register { text-align: center; margin-top: 22px; font-size: 13px; color: $text-muted;
+  a { color: $primary; font-weight: 600; text-decoration: none; margin-left: 4px;
+    &:hover { text-decoration: underline; }
+  }
+}
+@media (max-width: 480px) {
+  :deep(.login-dialog) { width: 92vw !important; }
+  .login-dialog-body { padding: 28px 24px 24px; }
+  .login-dialog-header {
+    .login-logo-wrap { width: 56px; height: 56px; .login-logo { width: 30px; height: 30px; } }
+    h3 { font-size: 22px; }
+  }
+}
 .video-player { .video-player-cover { position: relative; border-radius: 12px; overflow: hidden;
     img { width: 100%; display: block; border-radius: 12px; }
     .player-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.4); transition: background 0.3s; &:hover { background: rgba(0,0,0,0.5); } }

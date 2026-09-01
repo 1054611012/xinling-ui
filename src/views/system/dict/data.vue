@@ -83,22 +83,22 @@
 
     <el-table v-loading="loading" :data="dataList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="字典编码" align="center" prop="dictCode" />
-      <el-table-column label="字典标签" align="center" prop="dictLabel">
+      <el-table-column label="字典编码" align="center" prop="dictCode" show-overflow-tooltip />
+      <el-table-column label="字典标签" align="center" prop="dictLabel" show-overflow-tooltip>
         <template #default="scope">
           <span v-if="(scope.row.listClass == '' || scope.row.listClass == 'default') && (scope.row.cssClass == '' || scope.row.cssClass == null)">{{ scope.row.dictLabel }}</span>
           <el-tag v-else :type="scope.row.listClass == 'primary' ? '' : scope.row.listClass" :class="scope.row.cssClass">{{ scope.row.dictLabel }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="字典键值" align="center" prop="dictValue" />
-      <el-table-column label="字典排序" align="center" prop="dictSort" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="字典键值" align="center" prop="dictValue" show-overflow-tooltip />
+      <el-table-column label="字典排序" align="center" prop="dictSort" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -192,6 +192,7 @@ import { listData, getData, delData, addData, updateData } from "@/api/system/di
 import { optionselect as getDictOptionselect, getType } from "@/api/system/dict/type"
 import { useDictStore } from '@/store'
 import { parseTime, resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { Close, Delete, Download, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
@@ -268,11 +269,9 @@ function getTypeList() {
 }
 
 function getList() {
-  loading.value = true
-  listData(queryParams).then(response => {
+  withLoading(loading, listData(queryParams)).then(response => {
     dataList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

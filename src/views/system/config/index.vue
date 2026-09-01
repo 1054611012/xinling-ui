@@ -94,17 +94,17 @@
 
     <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="参数主键" align="center" prop="configId" />
+      <el-table-column label="参数主键" align="center" prop="configId" show-overflow-tooltip />
       <el-table-column label="参数名称" align="center" prop="configName" :show-overflow-tooltip="true" />
       <el-table-column label="参数键名" align="center" prop="configKey" :show-overflow-tooltip="true" />
       <el-table-column label="参数键值" align="center" prop="configValue" :show-overflow-tooltip="true" />
-      <el-table-column label="系统内置" align="center" prop="configType">
+      <el-table-column label="系统内置" align="center" prop="configType" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_yes_no" :value="scope.row.configType"/>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -179,6 +179,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listConfig, getConfig, delConfig, addConfig, updateConfig, refreshCache } from "@/api/system/config"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { Delete, Download, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
@@ -218,11 +219,9 @@ const rules = reactive({
 })
 
 function getList() {
-  loading.value = true
-  listConfig(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, listConfig(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     configList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

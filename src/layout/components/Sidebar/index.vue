@@ -10,6 +10,8 @@
                 :unique-opened="true"
                 :active-text-color="settings.theme"
                 :collapse-transition="false"
+                :popper-class="popperClass"
+                :popper-offset="8"
                 mode="vertical"
                 :router="true"
             >
@@ -43,6 +45,8 @@ const settings = computed(() => ({
   sidebarLogo: settingsStore.sidebarLogo
 }))
 
+const popperClass = computed(() => `xinling-sidebar-popper xinling-sidebar-popper--${settings.value.sideTheme.replace('theme-', '')}`)
+
 const sidebarRouters = computed(() => permissionStore.sidebarRouters)
 const sidebar = computed(() => appStore.sidebar)
 
@@ -51,8 +55,26 @@ const activeMenu = computed(() => {
   if (meta.activeMenu) {
     return meta.activeMenu
   }
-  return path
+  // 详情页 / 动态参数路由（如 /system/role-auth/user/10）回退：
+  // 菜单 index 通常只到业务父级（如 /system/role），用最长前缀匹配使其正确高亮
+  return matchLongestPrefix(permissionStore.sidebarRouters, path) || path
 })
+
+// 递归查找 path 为 target 最长前缀的菜单项，用于详情页高亮回退
+function matchLongestPrefix(routes, target) {
+  let best = ''
+  const walk = (list) => {
+    for (const r of list || []) {
+      const p = r.path
+      if (p && target.startsWith(p) && p.length > best.length) {
+        best = p
+      }
+      if (r.children && r.children.length) walk(r.children)
+    }
+  }
+  walk(routes)
+  return best
+}
 
 const showLogo = computed(() => settingsStore.sidebarLogo)
 const isCollapse = computed(() => !sidebar.value.opened)

@@ -127,8 +127,8 @@
     <!-- 数据表格 -->
     <el-table v-loading="loading" :data="recordList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="文件ID" align="center" prop="fileId" width="70" />
-      <el-table-column label="文件预览" align="center" width="80">
+      <el-table-column label="文件ID" align="center" prop="fileId" width="70" show-overflow-tooltip />
+      <el-table-column label="文件预览" align="center" width="80" show-overflow-tooltip>
         <template #default="scope">
           <img
             v-if="isImage(scope.row.fileExtension)"
@@ -151,20 +151,20 @@
         </template>
       </el-table-column>
       <el-table-column label="文件名称" align="center" prop="fileName" min-width="160" :show-overflow-tooltip="true" />
-      <el-table-column label="扩展名" align="center" prop="fileExtension" width="70" />
-      <el-table-column label="文件大小" align="center" prop="fileSize" width="100">
+      <el-table-column label="扩展名" align="center" prop="fileExtension" width="70" show-overflow-tooltip />
+      <el-table-column label="文件大小" align="center" prop="fileSize" width="100" show-overflow-tooltip>
         <template #default="scope">
           {{ formatFileSize(scope.row.fileSize) }}
         </template>
       </el-table-column>
-      <el-table-column label="来源" align="center" prop="sourceType" width="90">
+      <el-table-column label="来源" align="center" prop="sourceType" width="90" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="getSourceTypeTag(scope.row.sourceType)" size="small" effect="plain">
             {{ getSourceTypeLabel(scope.row.sourceType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="存储类型" align="center" prop="storageType" width="90">
+      <el-table-column label="存储类型" align="center" prop="storageType" width="90" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="getStorageTypeTag(scope.row.storageType)" size="small">
             {{ getStorageTypeLabel(scope.row.storageType) }}
@@ -172,7 +172,7 @@
         </template>
       </el-table-column>
       <el-table-column label="业务类型" align="center" prop="businessType" width="90" :show-overflow-tooltip="true" />
-      <el-table-column label="公开" align="center" prop="isPublic" width="60">
+      <el-table-column label="公开" align="center" prop="isPublic" width="60" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.isPublic === 1 ? 'success' : 'info'" size="small" effect="dark" disable-transitions>
             {{ scope.row.isPublic === 1 ? '是' : '否' }}
@@ -180,15 +180,15 @@
         </template>
       </el-table-column>
       <el-table-column label="上传者" align="center" prop="uploaderName" width="90" :show-overflow-tooltip="true" />
-      <el-table-column label="下载次数" align="center" prop="downloadCount" width="80" />
-      <el-table-column label="状态" align="center" prop="status" width="60">
+      <el-table-column label="下载次数" align="center" prop="downloadCount" width="80" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="60" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.status === '0' ? 'success' : 'danger'" size="small" effect="dark" disable-transitions>
             {{ scope.row.status === '0' ? '正常' : '已删' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="上传时间" align="center" prop="createTime" width="155">
+      <el-table-column label="上传时间" align="center" prop="createTime" width="155" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -448,6 +448,7 @@ import { listFileRecord, getFileRecord, delFileRecord, updateFileRecord } from "
 import { getToken } from "@/utils/auth"
 import { download } from '@/utils/request'
 import { parseTime, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Upload, UploadFilled, Plus, Edit, Delete, Download, View, VideoCamera, Headset, DocumentCopy, Document } from '@element-plus/icons-vue'
 import { onMounted, reactive, ref, computed } from 'vue'
@@ -565,11 +566,9 @@ onMounted(() => {
 
 /** 查询文件记录列表 */
 function getList() {
-  loading.value = true
-  listFileRecord(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, listFileRecord(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     recordList.value = response.rows
     total.value = response.total
-    loading.value = false
   }).catch(() => {
     loading.value = false
   })

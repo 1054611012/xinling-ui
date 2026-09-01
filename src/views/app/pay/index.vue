@@ -7,12 +7,12 @@
         </div>
 
         <el-table :data="configList" v-loading="configLoading">
-          <el-table-column label="配置ID" align="center" prop="id" />
-          <el-table-column label="配置名称" align="center" prop="name" />
-          <el-table-column label="配置键" align="center" prop="configKey" />
-          <el-table-column label="配置值" align="center" prop="configValue" />
-          <el-table-column label="备注" align="center" prop="remark" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="配置ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="配置名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="配置键" align="center" prop="configKey" show-overflow-tooltip />
+          <el-table-column label="配置值" align="center" prop="configValue" show-overflow-tooltip />
+          <el-table-column label="备注" align="center" prop="remark" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <!-- 配置弹窗 -->
@@ -55,24 +55,24 @@
         </div>
 
         <el-table :data="transactionList" v-loading="transactionLoading">
-          <el-table-column label="交易ID" align="center" prop="id" />
-          <el-table-column label="订单号" align="center" prop="orderNo" />
-          <el-table-column label="交易金额" align="center" prop="amount" />
-          <el-table-column label="支付方式" align="center" prop="payMethod">
+          <el-table-column label="交易ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="订单号" align="center" prop="orderNo" show-overflow-tooltip />
+          <el-table-column label="交易金额" align="center" prop="amount" show-overflow-tooltip />
+          <el-table-column label="支付方式" align="center" prop="payMethod" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.payMethod === 'wechat' ? 'success' : 'info'">
                 {{ scope.row.payMethod === 'wechat' ? '微信支付' : '支付宝' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="交易状态" align="center" prop="status">
+          <el-table-column label="交易状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
                 {{ scope.row.status === 1 ? '成功' : '失败' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="transactionTotal>0" :total="transactionTotal" :page="transactionQuery.pageNum" :limit="transactionQuery.pageSize" @update:page="transactionQuery.pageNum = $event" @update:limit="transactionQuery.pageSize = $event" @pagination="getTransactionList" />
@@ -99,17 +99,17 @@
         </div>
 
         <el-table :data="refundList" v-loading="refundLoading">
-          <el-table-column label="退款ID" align="center" prop="id" />
-          <el-table-column label="订单号" align="center" prop="orderNo" />
-          <el-table-column label="退款金额" align="center" prop="refundAmount" />
-          <el-table-column label="审核状态" align="center" prop="refundStatus">
+          <el-table-column label="退款ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="订单号" align="center" prop="orderNo" show-overflow-tooltip />
+          <el-table-column label="退款金额" align="center" prop="refundAmount" show-overflow-tooltip />
+          <el-table-column label="审核状态" align="center" prop="refundStatus" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="getRefundStatusType(scope.row.refundStatus)">
                 {{ getRefundStatusLabel(scope.row.refundStatus) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class="small-padding fixed-width">
             <template #default="scope">
               <el-button v-if="scope.row.refundStatus === 0" size="small" type="text" :icon="Check" @click="handleAuditRefund(scope.row)" v-hasPermi="['app:pay:refund:audit']">审核</el-button>

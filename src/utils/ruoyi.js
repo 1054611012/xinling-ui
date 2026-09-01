@@ -16,12 +16,19 @@ export function parseTime(time, pattern) {
     if ((typeof time === 'string') && (/^[0-9]+$/.test(time))) {
       time = parseInt(time)
     } else if (typeof time === 'string') {
-      time = time.replace(new RegExp(/-/gm), '/').replace('T', ' ').replace(new RegExp(/\.[\d]{3}/gm), '')
+      // 优先原生解析（兼容 ISO 8601 带时区格式，如 2026-06-03T06:30:20.000+08:00）
+      date = new Date(time)
+      // 原生解析失败时降级处理非标准格式（如 2026-06-03 06:30:20）
+      if (isNaN(date.getTime())) {
+        time = time.replace(new RegExp(/-/gm), '/').replace('T', ' ').replace(new RegExp(/\.[\d]{3}/gm), '')
+      }
     }
     if ((typeof time === 'number') && (time.toString().length === 10)) {
       time = time * 1000
     }
-    date = new Date(time)
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      date = new Date(time)
+    }
   }
   const formatObj = {
     y: date.getFullYear(),

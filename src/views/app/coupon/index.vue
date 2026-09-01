@@ -21,25 +21,25 @@
     </div>
 
     <el-table :data="couponList" v-loading="loading">
-      <el-table-column label="优惠券ID" align="center" prop="id" />
-      <el-table-column label="优惠券名称" align="center" prop="name" />
-      <el-table-column label="面值" align="center" prop="value" />
-      <el-table-column label="最低消费" align="center" prop="minAmount" />
-      <el-table-column label="发放数量" align="center" prop="totalCount" />
-      <el-table-column label="使用数量" align="center" prop="usedCount" />
-      <el-table-column label="有效期" align="center">
+      <el-table-column label="优惠券ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="优惠券名称" align="center" prop="name" show-overflow-tooltip />
+      <el-table-column label="面值" align="center" prop="value" show-overflow-tooltip />
+      <el-table-column label="最低消费" align="center" prop="minAmount" show-overflow-tooltip />
+      <el-table-column label="发放数量" align="center" prop="totalCount" show-overflow-tooltip />
+      <el-table-column label="使用数量" align="center" prop="usedCount" show-overflow-tooltip />
+      <el-table-column label="有效期" align="center" show-overflow-tooltip>
         <template #default="scope">
           {{ scope.row.startTime }} - {{ scope.row.endTime }}
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'warning'">
             {{ scope.row.status === 1 ? '已启用' : '未启用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['app:coupon:update']">修改</el-button>

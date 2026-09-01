@@ -83,23 +83,23 @@
 
     <el-table v-loading="loading" :data="instrumentsList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="记录ID" align="center" prop="id" />
-      <el-table-column label="乐器图片路径" align="center" prop="image" width="100">
+      <el-table-column label="记录ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="乐器图片路径" align="center" prop="image" width="100" show-overflow-tooltip>
         <template #default="scope">
           <image-preview :src="scope.row.image" :width="50" :height="50" />
         </template>
       </el-table-column>
-      <el-table-column label="乐器名称" align="center" prop="instrumentName" />
-      <el-table-column label="分类" align="center" prop="firstCategory" />
-      <el-table-column label="排序号" align="center" prop="sortNumber" />
-      <el-table-column label="会员专属" align="center" prop="isMemberOnly">
+      <el-table-column label="乐器名称" align="center" prop="instrumentName" show-overflow-tooltip />
+      <el-table-column label="分类" align="center" prop="firstCategory" show-overflow-tooltip />
+      <el-table-column label="排序号" align="center" prop="sortNumber" show-overflow-tooltip />
+      <el-table-column label="会员专属" align="center" prop="isMemberOnly" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="String(scope.row.isMemberOnly) === '1' ? 'success' : 'info'">
             {{ String(scope.row.isMemberOnly) === '1' ? '是' : '否' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="是否显示" align="center" prop="isDisplayed">
+      <el-table-column label="是否显示" align="center" prop="isDisplayed" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="String(scope.row.isDisplayed) === '1' ? 'success' : 'info'">
             {{ String(scope.row.isDisplayed) === '1' ? '显示' : '隐藏' }}
@@ -173,6 +173,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { listInstruments, getInstruments, delInstruments, addInstruments, updateInstruments } from "@/api/education/instruments"
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
@@ -245,8 +246,7 @@ onMounted(() => {
 
 /** 查询乐器信息列表 */
 function getList() {
-  loading.value = true
-  listInstruments(queryParams).then(response => {
+  withLoading(loading, listInstruments(queryParams)).then(response => {
     instrumentsList.value = response.rows
     // 处理列表数据，确保会员专属和是否显示字段是字符串类型
     instrumentsList.value = instrumentsList.value.map(item => {
@@ -257,7 +257,6 @@ function getList() {
       }
     })
     total.value = response.total
-    loading.value = false
   })
 }
 

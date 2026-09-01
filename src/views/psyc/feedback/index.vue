@@ -83,9 +83,9 @@
 
     <el-table v-loading="loading" :data="feedbackList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键ID" align="center" prop="id" />
-      <el-table-column label="反馈用户ID" align="center" prop="userId" />
-      <el-table-column label="反馈类型" align="center" prop="type">
+      <el-table-column label="主键ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="反馈用户ID" align="center" prop="userId" show-overflow-tooltip />
+      <el-table-column label="反馈类型" align="center" prop="type" show-overflow-tooltip>
         <template #default="scope">
           <el-tag 
             :type="scope.row.type == 1 ? 'danger' : 
@@ -101,11 +101,11 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="反馈内容" align="center" prop="content" />
-      <el-table-column label="图片，JSON数组形式" align="center" prop="images" />
-      <el-table-column label="联系方式" align="center" prop="contact" />
-      <el-table-column label="自动收集的设备信息" align="center" prop="deviceInfo" />
-      <el-table-column label="处理状态" align="center" prop="status">
+      <el-table-column label="反馈内容" align="center" prop="content" show-overflow-tooltip />
+      <el-table-column label="图片，JSON数组形式" align="center" prop="images" show-overflow-tooltip />
+      <el-table-column label="联系方式" align="center" prop="contact" show-overflow-tooltip />
+      <el-table-column label="自动收集的设备信息" align="center" prop="deviceInfo" show-overflow-tooltip />
+      <el-table-column label="处理状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <el-tag 
             :type="scope.row.status == 0 ? 'info' : scope.row.status == 1 ? 'warning' : scope.row.status == 2 ? 'success' : 'danger'"
@@ -415,6 +415,7 @@ import { getInfo } from "@/api/login"
 import { useUserStore } from '@/store/user'
 import { Search, Refresh, Plus, Edit, Delete, Download } from "@element-plus/icons-vue"
 import { resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 
 defineOptions({ name: "Feedback" })
@@ -502,11 +503,9 @@ const id = computed(() => userStore.id)
 const name = computed(() => userStore.name)
 
 function getList() {
-  loading.value = true
-  listFeedback(queryParams).then(response => {
+  withLoading(loading, listFeedback(queryParams)).then(response => {
     feedbackList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

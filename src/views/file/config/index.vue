@@ -71,16 +71,16 @@
 
     <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="配置ID" align="center" prop="id" width="70" />
+      <el-table-column label="配置ID" align="center" prop="id" width="70" show-overflow-tooltip />
       <el-table-column label="配置名称" align="center" prop="name" :show-overflow-tooltip="true" />
-      <el-table-column label="存储类型" align="center" prop="storageType" width="120">
+      <el-table-column label="存储类型" align="center" prop="storageType" width="120" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="getStorageTypeTag(scope.row.storageType)" size="small">
             {{ getStorageTypeLabel(scope.row.storageType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="主配置" align="center" prop="isMaster" width="80">
+      <el-table-column label="主配置" align="center" prop="isMaster" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.isMaster === '1'" size="small" type="success">是</el-tag>
           <el-tag v-else size="small" type="info">否</el-tag>
@@ -88,14 +88,14 @@
       </el-table-column>
       <el-table-column label="服务端点" align="center" prop="endpoint" :show-overflow-tooltip="true" />
       <el-table-column label="存储桶" align="center" prop="bucketName" :show-overflow-tooltip="true" />
-      <el-table-column label="最大文件(字节)" align="center" prop="maxFileSize" width="130" />
-      <el-table-column label="状态" align="center" prop="status" width="70">
+      <el-table-column label="最大文件(字节)" align="center" prop="maxFileSize" width="130" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">正常</el-tag>
           <el-tag v-else size="small" type="danger">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -234,6 +234,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
 import { download } from '@/utils/request'
 import { parseTime } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { onMounted, reactive, ref } from 'vue'
 
 defineOptions({ name: 'FileConfig' })
@@ -327,11 +328,9 @@ onMounted(() => {
 
 /** 查询存储配置列表 */
 function getList() {
-  loading.value = true
-  listFileConfig(queryParams).then(response => {
+  withLoading(loading, listFileConfig(queryParams)).then(response => {
     configList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

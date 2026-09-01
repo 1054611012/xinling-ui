@@ -73,7 +73,7 @@
       <el-table-column label="源概念" align="center" prop="sourceConceptName" width="120" />
       <el-table-column label="目标概念" align="center" prop="targetConceptName" width="120" />
       <el-table-column label="关系描述" align="center" prop="description" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="180" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template #default="scope">
           <el-button
@@ -151,6 +151,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
@@ -207,11 +208,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listRelation(queryParams).then(response => {
+  withLoading(loading, listRelation(queryParams)).then(response => {
     relationList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

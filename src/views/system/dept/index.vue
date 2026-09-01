@@ -166,6 +166,7 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listDept, getDept, delDept, addDept, updateDept, listDeptExcludeChild } from "@/api/system/dept"
 import { parseTime, resetForm, handleTree } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
 import Treeselect from "vue3-treeselect"
 import "vue3-treeselect/dist/vue3-treeselect.css"
@@ -229,10 +230,8 @@ const rules = reactive({
 })
 
 function getList() {
-  loading.value = true
-  listDept(queryParams).then(response => {
+  withLoading(loading, listDept(queryParams)).then(response => {
     deptList.value = handleTree(response.data, "deptId")
-    loading.value = false
   })
 }
 

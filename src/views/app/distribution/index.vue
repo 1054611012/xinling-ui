@@ -22,18 +22,18 @@
         </div>
 
         <el-table :data="distributorList" v-loading="distributorLoading">
-          <el-table-column label="分销员ID" align="center" prop="id" />
-          <el-table-column label="用户ID" align="center" prop="userId" />
-          <el-table-column label="昵称" align="center" prop="nickname" />
-          <el-table-column label="审核状态" align="center" prop="status">
+          <el-table-column label="分销员ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="用户ID" align="center" prop="userId" show-overflow-tooltip />
+          <el-table-column label="昵称" align="center" prop="nickname" show-overflow-tooltip />
+          <el-table-column label="审核状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="getStatusType(scope.row.status)">
                 {{ getStatusLabel(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="累计佣金" align="center" prop="totalCommission" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="累计佣金" align="center" prop="totalCommission" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class="small-padding fixed-width">
             <template #default="scope">
               <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['app:distribution:query']">详情</el-button>
@@ -59,12 +59,12 @@
         </div>
 
         <el-table :data="orderList" v-loading="orderLoading">
-          <el-table-column label="订单ID" align="center" prop="id" />
-          <el-table-column label="订单号" align="center" prop="orderNo" />
-          <el-table-column label="分销员ID" align="center" prop="distributorId" />
-          <el-table-column label="订单金额" align="center" prop="orderAmount" />
-          <el-table-column label="佣金" align="center" prop="commission" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="订单ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="订单号" align="center" prop="orderNo" show-overflow-tooltip />
+          <el-table-column label="分销员ID" align="center" prop="distributorId" show-overflow-tooltip />
+          <el-table-column label="订单金额" align="center" prop="orderAmount" show-overflow-tooltip />
+          <el-table-column label="佣金" align="center" prop="commission" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="orderTotal>0" :total="orderTotal" :page="orderQuery.pageNum" :limit="orderQuery.pageSize" @update:page="orderQuery.pageNum = $event" @update:limit="orderQuery.pageSize = $event" @pagination="getOrderList" />
@@ -84,11 +84,11 @@
         </div>
 
         <el-table :data="commissionList" v-loading="commissionLoading">
-          <el-table-column label="记录ID" align="center" prop="id" />
-          <el-table-column label="分销员ID" align="center" prop="distributorId" />
-          <el-table-column label="佣金金额" align="center" prop="amount" />
-          <el-table-column label="订单号" align="center" prop="orderNo" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="记录ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="分销员ID" align="center" prop="distributorId" show-overflow-tooltip />
+          <el-table-column label="佣金金额" align="center" prop="amount" show-overflow-tooltip />
+          <el-table-column label="订单号" align="center" prop="orderNo" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="commissionTotal>0" :total="commissionTotal" :page="commissionQuery.pageNum" :limit="commissionQuery.pageSize" @update:page="commissionQuery.pageNum = $event" @update:limit="commissionQuery.pageSize = $event" @pagination="getCommissionList" />
@@ -115,17 +115,17 @@
         </div>
 
         <el-table :data="withdrawList" v-loading="withdrawLoading">
-          <el-table-column label="提现ID" align="center" prop="id" />
-          <el-table-column label="分销员ID" align="center" prop="distributorId" />
-          <el-table-column label="提现金额" align="center" prop="amount" />
-          <el-table-column label="审核状态" align="center" prop="status">
+          <el-table-column label="提现ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="分销员ID" align="center" prop="distributorId" show-overflow-tooltip />
+          <el-table-column label="提现金额" align="center" prop="amount" show-overflow-tooltip />
+          <el-table-column label="审核状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="getStatusType(scope.row.status)">
                 {{ getStatusLabel(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class="small-padding fixed-width">
             <template #default="scope">
               <el-button v-if="scope.row.status === 0" size="small" type="text" :icon="Check" @click="handleWithdrawAudit(scope.row)" v-hasPermi="['app:distribution:audit']">审核</el-button>

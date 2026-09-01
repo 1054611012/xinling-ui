@@ -126,13 +126,14 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const title = import.meta.env.VITE_APP_TITLE || import.meta.env.VITE_APP_TITLE
+const title = import.meta.env.VITE_APP_TITLE || 'AI管理系统'
 const codeUrl = ref('')
 const loginFormRef = ref(null)
 
+// 默认留空：不在源码中固化任何账号密码，避免生产包泄露默认凭据
 const loginForm = reactive({
-  username: 'admin',
-  password: 'admin123',
+  username: '',
+  password: '',
   rememberMe: false,
   code: '',
   uuid: ''
@@ -182,6 +183,18 @@ const getCookie = () => {
   loginForm.rememberMe = rememberMe === undefined ? false : Boolean(rememberMe)
 }
 
+/**
+ * 登录成功后的跳转地址。
+ * redirect 取自 URL 查询参数，属于外部可控输入，必须限制为站内路径：
+ * 否则 ?redirect=https://evil.com 会在登录成功后把用户带到外部站点（开放重定向，可用于钓鱼）。
+ */
+const resolveRedirect = () => {
+  const target = redirect.value
+  // 只接受单斜杠开头的站内路径，排除 //evil.com 这类协议相对地址
+  const isInternal = typeof target === 'string' && /^\/(?!\/)/.test(target)
+  return isInternal ? target : '/index'
+}
+
 const handleLogin = () => {
   loginFormRef.value.validate(valid => {
     if (valid) {
@@ -196,9 +209,9 @@ const handleLogin = () => {
         Cookies.remove('rememberMe')
       }
       userStore.login(loginForm).then(() => {
-        const redirectUrl = redirect.value || '/index'
-        router.push(redirectUrl).catch(() => {
-          window.location.href = redirectUrl
+        // 目标路由可能不存在（无权限或无此菜单），此时留在首页即可，不再整页刷新
+        router.push(resolveRedirect()).catch(() => {
+          router.push('/index').catch(() => {})
         })
         loading.value = false
       }).catch(() => {

@@ -27,27 +27,27 @@
         </div>
 
         <el-table :data="taskList" v-loading="taskLoading">
-          <el-table-column label="任务ID" align="center" prop="id" />
-          <el-table-column label="任务名称" align="center" prop="name" />
-          <el-table-column label="推送标题" align="center" prop="title" />
-          <el-table-column label="推送类型" align="center" prop="pushType">
+          <el-table-column label="任务ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="任务名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="推送标题" align="center" prop="title" show-overflow-tooltip />
+          <el-table-column label="推送类型" align="center" prop="pushType" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.pushType === 'all' ? 'success' : 'info'">
                 {{ scope.row.pushType === 'all' ? '全部用户' : '指定用户' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="推送状态" align="center" prop="status">
+          <el-table-column label="推送状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="getStatusType(scope.row.status)">
                 {{ getStatusLabel(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="推送数量" align="center" prop="pushCount" />
-          <el-table-column label="成功数量" align="center" prop="successCount" />
-          <el-table-column label="失败数量" align="center" prop="failCount" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="推送数量" align="center" prop="pushCount" show-overflow-tooltip />
+          <el-table-column label="成功数量" align="center" prop="successCount" show-overflow-tooltip />
+          <el-table-column label="失败数量" align="center" prop="failCount" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class="small-padding fixed-width">
             <template #default="scope">
               <el-button v-if="scope.row.status === 3" size="small" type="text" :icon="Refresh" @click="handleRetry(scope.row)" v-hasPermi="['app:notification:task:retry']">重试</el-button>

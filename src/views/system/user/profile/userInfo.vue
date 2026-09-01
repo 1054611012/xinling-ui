@@ -11,24 +11,21 @@
     </el-form-item>
     <el-form-item label="性别">
       <el-radio-group v-model="form.sex">
-        <el-radio label="0">男</el-radio>
-        <el-radio label="1">女</el-radio>
+        <el-radio value="0">男</el-radio>
+        <el-radio value="1">女</el-radio>
       </el-radio-group>
     </el-form-item>
     <el-form-item>
       <el-button type="primary" size="small" @click="submit">保存</el-button>
-      <el-button type="danger" size="small" @click="close">关闭</el-button>
-      </el-form-item>
+      <el-button size="small" @click="close">关闭</el-button>
+    </el-form-item>
   </el-form>
 </template>
 
 <script setup>
-import { ref, reactive, watch, toRefs } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useRouter } from 'vue-router'
 import { updateUserProfile } from "@/api/system/user"
-
-const router = useRouter()
 
 const props = defineProps({
   user: {
@@ -39,6 +36,7 @@ const props = defineProps({
 const emit = defineEmits(['update:user'])
 
 const form = reactive({})
+
 const rules = reactive({
   nickName: [
     { required: true, message: "用户昵称不能为空", trigger: "blur" }
@@ -54,7 +52,7 @@ const rules = reactive({
   phonenumber: [
     { required: true, message: "手机号码不能为空", trigger: "blur" },
     {
-      pattern: /^1[3|4|5|6|7|8|9][0-9]\d{8}$/,
+      pattern: /^1[3-9]\d{9}$/,
       message: "请输入正确的手机号码",
       trigger: "blur"
     }
@@ -65,28 +63,37 @@ const formRef = ref(null)
 
 watch(() => props.user, (user) => {
   if (user) {
-    form.nickName = user.nickName
-    form.phonenumber = user.phonenumber
-    form.email = user.email
-    form.sex = user.sex
+    form.nickName = user.nickName || ''
+    form.phonenumber = user.phonenumber || ''
+    form.email = user.email || ''
+    form.sex = user.sex || '0'
   }
-}, { immediate: true })
+}, { immediate: true, deep: true })
 
 function submit() {
   formRef.value.validate(valid => {
     if (valid) {
-      updateUserProfile(form).then(response => {
+      updateUserProfile(form).then(() => {
         ElMessage.success("修改成功")
-        if (props.user) {
-          props.user.phonenumber = form.phonenumber
-          props.user.email = form.email
-        }
+        emit('update:user', {
+          nickName: form.nickName,
+          phonenumber: form.phonenumber,
+          email: form.email,
+          sex: form.sex
+        })
+      }).catch(() => {
+        ElMessage.error("修改失败，请重试")
       })
     }
   })
 }
 
 function close() {
-  router.back()
+  if (props.user) {
+    form.nickName = props.user.nickName
+    form.phonenumber = props.user.phonenumber
+    form.email = props.user.email
+    form.sex = props.user.sex
+  }
 }
 </script>

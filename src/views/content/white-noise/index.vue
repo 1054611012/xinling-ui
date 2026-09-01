@@ -39,7 +39,7 @@
       </el-table-column>
       <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
       <el-table-column label="播放" align="center" prop="playCount" width="70" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="300">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['content:white-noise:query']">详情</el-button>
@@ -367,6 +367,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { listWhiteNoise, getWhiteNoise, addWhiteNoise, updateWhiteNoise, delWhiteNoise, onlineWhiteNoise, offlineWhiteNoise, batchWhiteNoiseBg } from '@/api/content/white-noise'
 import { listAudioItem } from '@/api/content/audio'
 import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
@@ -440,11 +441,9 @@ onMounted(() => {
 
 // ================== 列表查询 ==================
 function getList() {
-  loading.value = true
-  listWhiteNoise(queryParams).then(response => {
+  withLoading(loading, listWhiteNoise(queryParams)).then(response => {
     list.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

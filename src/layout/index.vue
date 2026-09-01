@@ -17,11 +17,14 @@
 </template>
 
 <script setup>
-import { computed, ref, onBeforeMount, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, ref, onBeforeMount, onBeforeUnmount, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore, useSettingsStore } from '@/store'
 import { AppMain, Navbar, Settings, Sidebar, TagsView } from './components'
-import OllamaChat from '@/components/AiChat/index.vue'
+
+// AI 助手会连带引入 highlight.js 与 markdown 解析，体积较大；
+// 首屏只需要右下角那颗悬浮球，这里改为异步加载，避免把主包撑大、拖慢登录后的首屏。
+const OllamaChat = defineAsyncComponent(() => import('@/components/AiChat/index.vue'))
 
 const route = useRoute()
 const appStore = useAppStore()

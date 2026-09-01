@@ -23,8 +23,8 @@
  </div>
 
  <el-table :data="mixList" v-loading="loading">
-  <el-table-column label="ID" align="center" prop="id" width="70" />
-  <el-table-column label="封面" align="center" prop="coverUrl" width="80">
+  <el-table-column label="ID" align="center" prop="id" width="70" show-overflow-tooltip />
+  <el-table-column label="封面" align="center" prop="coverUrl" width="80" show-overflow-tooltip>
   <template #default="scope">
    <el-image
    v-if="scope.row.coverUrl"
@@ -42,20 +42,20 @@
    <span v-else>-</span>
   </template>
   </el-table-column>
-  <el-table-column label="名称" align="center" prop="name" min-width="120" />
+  <el-table-column label="名称" align="center" prop="name" min-width="120" show-overflow-tooltip />
   <el-table-column label="描述" align="center" prop="description" min-width="150" show-overflow-tooltip />
-  <el-table-column label="默认" align="center" prop="isDefault" width="60">
+  <el-table-column label="默认" align="center" prop="isDefault" width="60" show-overflow-tooltip>
   <template #default="scope">
    <el-tag :type="scope.row.isDefault === 1 ? 'success' : 'info'" size="small">{{ scope.row.isDefault === 1 ? '是' : '否' }}</el-tag>
   </template>
   </el-table-column>
-  <el-table-column label="状态" align="center" prop="status" width="65">
+  <el-table-column label="状态" align="center" prop="status" width="65" show-overflow-tooltip>
   <template #default="scope">
    <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">{{ scope.row.status === 1 ? '启用' : '停用' }}</el-tag>
   </template>
   </el-table-column>
-  <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
-  <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+  <el-table-column label="排序" align="center" prop="sortOrder" width="60" show-overflow-tooltip />
+  <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
   <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="180">
   <template #default="scope">
    <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['content:audio:mix:query']">详情</el-button>
@@ -167,6 +167,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { listAudioMix, getAudioMix, addAudioMix, updateAudioMix, delAudioMix } from '@/api/content/audio'
 import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { ref, reactive, onMounted } from 'vue'
@@ -218,11 +219,9 @@ onMounted(() => {
 })
 
 function getList() {
- loading.value = true
- listAudioMix(queryParams).then(response => {
+ withLoading(loading, listAudioMix(queryParams)).then(response => {
  mixList.value = response.rows
  total.value = response.total
- loading.value = false
  })
 }
 

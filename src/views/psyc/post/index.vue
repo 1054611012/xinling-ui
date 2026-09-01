@@ -73,19 +73,19 @@
 
     <el-table v-loading="loading" :data="postList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="动态ID" align="center" prop="id" />
-      <el-table-column label="发布用户" align="center" prop="userId" />
-      <el-table-column label="文字内容" align="center" prop="content" width="300">
+      <el-table-column label="动态ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="发布用户" align="center" prop="userId" show-overflow-tooltip />
+      <el-table-column label="文字内容" align="center" prop="content" width="300" show-overflow-tooltip>
         <template #default="scope">
           <div class="post-content-preview" v-html="scope.row.content"></div>
         </template>
       </el-table-column>
-      <el-table-column label="可见范围" align="center" prop="visible">
+      <el-table-column label="可见范围" align="center" prop="visible" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.psyc_post_visible" :value="scope.row.visible"/>
         </template>
       </el-table-column>
-      <el-table-column label="互动数据" align="center" width="200">
+      <el-table-column label="互动数据" align="center" width="200" show-overflow-tooltip>
         <template #default="scope">
           <el-row :gutter="10">
             <el-col :span="12">
@@ -115,19 +115,19 @@
           </el-row>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="statusTagType(scope.row.status)">
             {{ getStatusLabel(scope.row.status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="发布时间" align="center" prop="createdAt" width="180">
+      <el-table-column label="发布时间" align="center" prop="createdAt" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createdAt, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="更新时间" align="center" prop="updatedAt" width="180">
+      <el-table-column label="更新时间" align="center" prop="updatedAt" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.updatedAt, '{y}-{m}-{d}') }}</span>
         </template>
@@ -408,6 +408,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { listPost, getPost, delPost, addPost, updatePost } from "@/api/psyc/post"
 import { Search, Refresh, Plus, Edit, Delete, Download, Close, Check } from "@element-plus/icons-vue"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 
 defineOptions({ name: "Post" })
@@ -472,11 +473,9 @@ const formRef = ref(null)
 const queryForm = ref(null)
 
 function getList() {
-  loading.value = true
-  listPost(addDateRange(queryParams, dateRange.value)).then(response => {
+  withLoading(loading, listPost(addDateRange(queryParams, dateRange.value))).then(response => {
     postList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

@@ -123,7 +123,12 @@
 </template>
 
 <script setup>
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { PieChart, LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent, DataZoomComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
+echarts.use([PieChart, LineChart, GridComponent, TooltipComponent, LegendComponent, DataZoomComponent, CanvasRenderer])
 import {
   getFileStatistics,
   getStorageTypeDistribution,

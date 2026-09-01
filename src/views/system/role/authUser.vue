@@ -59,12 +59,12 @@
       <el-table-column label="用户昵称" prop="nickName" :show-overflow-tooltip="true" />
       <el-table-column label="邮箱" prop="email" :show-overflow-tooltip="true" />
       <el-table-column label="手机" prop="phonenumber" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -101,6 +101,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { allocatedUserList, authUserCancel, authUserCancelAll } from "@/api/system/role"
 import { parseTime, resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
 import selectUser from "./selectUser"
 import { CircleClose, Close, Plus, Refresh, Search } from '@element-plus/icons-vue'
@@ -129,11 +130,9 @@ const queryParams = reactive({
 })
 
 function getList() {
-  loading.value = true
-  allocatedUserList(queryParams).then(response => {
+  withLoading(loading, allocatedUserList(queryParams)).then(response => {
     userList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

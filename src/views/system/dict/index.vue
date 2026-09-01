@@ -99,7 +99,7 @@
 
     <el-table v-loading="loading" :data="typeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="字典编号" align="center" prop="dictId" />
+      <el-table-column label="字典编号" align="center" prop="dictId" show-overflow-tooltip />
       <el-table-column label="字典名称" align="center" prop="dictName" :show-overflow-tooltip="true" />
       <el-table-column label="字典类型" align="center" :show-overflow-tooltip="true">
         <template #default="scope">
@@ -108,13 +108,13 @@
           </router-link>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status">
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_normal_disable" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="备注" align="center" prop="remark" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -187,6 +187,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { listType, getType, delType, addType, updateType, refreshCache } from "@/api/system/dict/type"
 import { useDictStore } from '@/store'
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { Delete, Download, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
@@ -231,11 +232,9 @@ const rules = reactive({
 })
 
 function getList() {
-  loading.value = true
-  listType(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, listType(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     typeList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

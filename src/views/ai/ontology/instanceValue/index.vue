@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
@@ -159,11 +160,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listInstanceValue(queryParams).then(response => {
+  withLoading(loading, listInstanceValue(queryParams)).then(response => {
     valueList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

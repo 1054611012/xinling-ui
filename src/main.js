@@ -1,4 +1,4 @@
-import { createApp } from 'vue'
+import { createApp, defineAsyncComponent } from 'vue'
 import { createPinia } from 'pinia'
 import Cookies from 'js-cookie'
 
@@ -29,10 +29,14 @@ import Pagination from '@/components/Pagination/index.vue'
 import RightToolbar from '@/components/RightToolbar/index.vue'
 import DictTag from '@/components/DictTag/index.vue'
 import DictData from '@/components/DictData/index.js'
-import Editor from '@/components/Editor/index.vue'
+// 富文本编辑器只在少数页面的弹窗里使用，却要带上 quill（约 180KB）。
+// 改为异步组件后 quill 会被拆成独立 chunk，首屏不再为它买单。
+const Editor = defineAsyncComponent(() => import('@/components/Editor/index.vue'))
 import FileUpload from '@/components/FileUpload/index.vue'
 import ImageUpload from '@/components/ImageUpload/index.vue'
 import ImagePreview from '@/components/ImagePreview/index.vue'
+import TableTimeColumn from '@/components/TableTimeColumn/index.vue'
+import BrandLogo from '@/components/BrandLogo/index.vue'
 
 // SVG 图标
 import 'virtual:svg-icons-register'
@@ -89,6 +93,8 @@ app.component('Editor', Editor)
 app.component('FileUpload', FileUpload)
 app.component('ImageUpload', ImageUpload)
 app.component('ImagePreview', ImagePreview)
+app.component('TableTimeColumn', TableTimeColumn)
+app.component('BrandLogo', BrandLogo)
 
 // $store 兼容层 — 将 Vuex 风格的 dispatch/getters 映射到 Pinia
 const storeInstances = {}

@@ -12,6 +12,6 @@ const router = useRouter()
 onMounted(() => {
   const { params, query } = route
   const { path } = params
-  router.push({ path: '/' + path, query })
+  router.push({ path: '/' + path.replace(/^\/+/, ''), query })
 })
 </script>

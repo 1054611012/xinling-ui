@@ -107,7 +107,7 @@
 
     <el-table ref="tables" v-loading="loading" :data="listData" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" width="50" align="center" />
-      <el-table-column label="日志编号" align="center" prop="operId" />
+      <el-table-column label="日志编号" align="center" prop="operId" show-overflow-tooltip />
       <el-table-column label="系统模块" align="center" prop="title" :show-overflow-tooltip="true" />
       <el-table-column label="操作类型" align="center" prop="businessType">
         <template #default="scope">
@@ -209,6 +209,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { list, delOperlog, cleanOperlog } from "@/api/monitor/operlog"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { Delete, Download, Refresh, Search, View } from '@element-plus/icons-vue'
@@ -244,11 +245,9 @@ function typeFormat(row) {
 }
 
 function getList() {
-  loading.value = true
-  list(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, list(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     listData.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

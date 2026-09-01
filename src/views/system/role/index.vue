@@ -31,16 +31,16 @@
 
  <el-table v-loading="loading" :data="roleList" @selection-change="handleSelectionChange">
   <el-table-column type="selection" width="55" align="center" />
-  <el-table-column label="角色编号" prop="roleId" width="120" />
+  <el-table-column label="角色编号" prop="roleId" width="120" show-overflow-tooltip />
   <el-table-column label="角色名称" prop="roleName" :show-overflow-tooltip="true" width="150" />
   <el-table-column label="权限字符" prop="roleKey" :show-overflow-tooltip="true" width="150" />
-  <el-table-column label="显示顺序" prop="roleSort" width="100" />
-  <el-table-column label="状态" align="center" width="100">
+  <el-table-column label="显示顺序" prop="roleSort" width="100" show-overflow-tooltip />
+  <el-table-column label="状态" align="center" width="100" show-overflow-tooltip>
   <template #default="scope">
    <el-switch v-model="scope.row.status" active-value="0" inactive-value="1" @change="handleStatusChange(scope.row)"></el-switch>
   </template>
   </el-table-column>
-  <el-table-column label="创建时间" align="center" prop="createTime" width="180">
+  <el-table-column label="创建时间" align="center" prop="createTime" width="180" show-overflow-tooltip>
   <template #default="scope">
    <span>{{ parseTime(scope.row.createTime) }}</span>
   </template>
@@ -92,10 +92,34 @@
    </el-radio-group>
   </el-form-item>
   <el-form-item label="菜单权限">
-   <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
-   <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
-   <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
-   <el-tree class="tree-border" :data="menuOptions" show-checkbox ref="menuRef" node-key="id" :check-strictly="!form.menuCheckStrictly" empty-text="加载中，请稍候" :props="defaultProps"></el-tree>
+   <div class="menu-permission-toolbar">
+    <el-checkbox v-model="menuExpand" @change="handleCheckedTreeExpand($event, 'menu')">展开/折叠</el-checkbox>
+    <el-checkbox v-model="menuNodeAll" @change="handleCheckedTreeNodeAll($event, 'menu')">全选/全不选</el-checkbox>
+    <el-checkbox v-model="form.menuCheckStrictly" @change="handleCheckedTreeConnect($event, 'menu')">父子联动</el-checkbox>
+   </div>
+   <el-tree
+    class="tree-border menu-tree"
+    :data="menuOptions"
+    show-checkbox
+    ref="menuRef"
+    node-key="id"
+    :check-strictly="!form.menuCheckStrictly"
+    default-expand-all
+    empty-text="加载中，请稍候"
+    :props="defaultProps"
+   >
+    <template #default="{ node, data }">
+     <span class="menu-tree-node">
+      <svg-icon v-if="data.icon" :icon-class="data.icon" class-name="menu-tree-icon" />
+      <el-icon v-else class="menu-tree-icon"><Menu /></el-icon>
+      <span class="menu-tree-label">{{ node.label }}</span>
+      <el-tag v-if="data.menuType === 'M'" type="info" size="small" effect="plain" class="menu-tree-tag">目录</el-tag>
+      <el-tag v-else-if="data.menuType === 'C'" type="primary" size="small" effect="plain" class="menu-tree-tag">菜单</el-tag>
+      <el-tag v-else-if="data.menuType === 'F'" type="success" size="small" effect="plain" class="menu-tree-tag">按钮</el-tag>
+      <span v-if="data.perms" class="menu-tree-perms">{{ data.perms }}</span>
+     </span>
+    </template>
+   </el-tree>
   </el-form-item>
   <el-form-item label="备注">
    <el-input v-model="form.remark" type="textarea" placeholder="请输入内容"></el-input>
@@ -147,9 +171,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { listRole, getRole, delRole, addRole, updateRole, dataScope, changeRoleStatus, deptTreeSelect } from "@/api/system/role"
 import { treeselect as menuTreeselect, roleMenuTreeselect } from "@/api/system/menu"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
-import { CircleCheck, DArrowRight, Delete, Download, Edit, Plus, QuestionFilled, Refresh, Search, User } from '@element-plus/icons-vue'
+import { CircleCheck, DArrowRight, Delete, Download, Edit, Menu, Plus, QuestionFilled, Refresh, Search, User } from '@element-plus/icons-vue'
 
 defineOptions({ name: "Role" })
 
@@ -167,7 +192,7 @@ const roleList = ref([])
 const title = ref("")
 const open = ref(false)
 const openDataScope = ref(false)
-const menuExpand = ref(false)
+const menuExpand = ref(true)
 const menuNodeAll = ref(false)
 const deptExpand = ref(true)
 const deptNodeAll = ref(false)
@@ -207,11 +232,9 @@ const menuRef = ref(null)
 const deptRef = ref(null)
 
 function getList() {
- loading.value = true
- listRole(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+ withLoading(loading, listRole(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
  roleList.value = response.rows
  total.value = response.total
- loading.value = false
  })
 }
 
@@ -266,7 +289,7 @@ function cancelDataScope() { openDataScope.value = false; reset() }
 
 function reset() {
  if (menuRef.value) menuRef.value.setCheckedKeys([])
- menuExpand.value = false
+ menuExpand.value = true
  menuNodeAll.value = false
  deptExpand.value = true
  deptNodeAll.value = false
@@ -337,24 +360,20 @@ function handleAdd() {
 }
 
 function handleUpdate(row) {
- reset()
- const roleId = row.roleId || ids.value
- const roleMenu = getRoleMenuTreeselect(roleId)
- getRole(roleId).then(response => {
- Object.assign(form, response.data)
- open.value = true
- nextTick(() => {
-  roleMenu.then(res => {
-  let checkedKeys = res.checkedKeys
-  checkedKeys.forEach((v) => {
-   nextTick(() => {
-   menuRef.value.setChecked(v, true, false)
-   })
+  reset()
+  const roleId = row.roleId || ids.value
+  const roleMenu = getRoleMenuTreeselect(roleId)
+  getRole(roleId).then(response => {
+    Object.assign(form, response.data)
+    open.value = true
+    nextTick(() => {
+      roleMenu.then(res => {
+        // 菜单树渲染完成后一次性回填勾选，避免逐节点 setChecked 在父子联动下漏勾选父节点
+        menuRef.value?.setCheckedKeys(res.checkedKeys || [])
+      })
+    })
   })
-  })
- })
- })
- title.value = "修改角色"
+  title.value = "修改角色"
 }
 
 function dataScopeSelectChange(value) {
@@ -437,3 +456,64 @@ const queryForm = ref(null)
 
 onMounted(() => { getList() })
 </script>
+
+<style lang="scss" scoped>
+.menu-permission-toolbar {
+ display: flex;
+ flex-wrap: wrap;
+ gap: 16px;
+ margin-bottom: 8px;
+ padding: 4px 0;
+}
+:deep(.menu-tree) {
+ max-height: 360px;
+ overflow-y: auto;
+ padding: 6px 8px;
+ border-radius: 4px;
+ background: #fafbfc;
+}
+:deep(.menu-tree .el-tree-node__content) {
+ height: 32px;
+ line-height: 32px;
+}
+:deep(.menu-tree-node) {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ font-size: 13px;
+ width: 100%;
+ padding-right: 8px;
+}
+:deep(.menu-tree-node .menu-tree-icon) {
+ width: 14px;
+ height: 14px;
+ color: #909399;
+ flex-shrink: 0;
+}
+:deep(.menu-tree-node .menu-tree-label) {
+ font-weight: 500;
+ color: #303133;
+}
+:deep(.menu-tree-node .menu-tree-tag) {
+ height: 18px;
+ line-height: 16px;
+ padding: 0 6px;
+ font-size: 11px;
+}
+:deep(.menu-tree-node .menu-tree-perms) {
+ margin-left: auto;
+ font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+ font-size: 11px;
+ color: #909399;
+ background: #f0f2f5;
+ border-radius: 3px;
+ padding: 1px 6px;
+ max-width: 50%;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+:deep(.menu-tree .el-tree-node__content:hover) {
+ background: #e6f1fc;
+}
+</style>

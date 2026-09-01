@@ -75,24 +75,24 @@
 
     <el-table v-loading="loading" :data="providerList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="提供商ID" align="center" prop="providerId" width="80" />
+      <el-table-column label="提供商ID" align="center" prop="providerId" width="80" show-overflow-tooltip />
       <el-table-column label="提供商名称" align="center" prop="providerName" :show-overflow-tooltip="true" />
-      <el-table-column label="提供商编码" align="center" prop="providerCode" />
-      <el-table-column label="提供商类型" align="center" prop="providerType" width="100">
+      <el-table-column label="提供商编码" align="center" prop="providerCode" show-overflow-tooltip />
+      <el-table-column label="提供商类型" align="center" prop="providerType" width="100" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.providerType === 'local'" size="small">本地</el-tag>
           <el-tag v-else size="small" type="success">云端</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="API地址" align="center" prop="apiBaseUrl" :show-overflow-tooltip="true" />
-      <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="排序" align="center" prop="sortOrder" width="60" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">正常</el-tag>
           <el-tag v-else size="small" type="danger">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="160">
+      <el-table-column label="创建时间" align="center" prop="createTime" width="160" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
@@ -173,6 +173,7 @@ import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/ico
 import { listProvider, getProvider, delProvider, addProvider, updateProvider } from "@/api/ai/provider"
 import { download } from '@/utils/request'
 import { parseTime } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 
 defineOptions({ name: 'AiProvider' })
 
@@ -226,11 +227,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listProvider(queryParams).then(response => {
+  withLoading(loading, listProvider(queryParams)).then(response => {
     providerList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

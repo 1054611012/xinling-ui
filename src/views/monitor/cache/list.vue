@@ -158,6 +158,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { listCacheName, listCacheKey, getCacheValue, clearCacheName, clearCacheKey, clearCacheAll } from "@/api/monitor/cache"
@@ -178,10 +179,8 @@ const nowCacheName = ref("")
 const tableHeight = ref(window.innerHeight - 200)
 
 function getCacheNames() {
- loading.value = true
- listCacheName().then(response => {
+ withLoading(loading, listCacheName()).then(response => {
  cacheNames.value = response.data
- loading.value = false
  })
 }
 

@@ -74,7 +74,12 @@
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { getCache } from "@/api/monitor/cache"
-import * as echarts from "echarts"
+import * as echarts from 'echarts/core'
+import { PieChart as EChartsPieChart, GaugeChart } from 'echarts/charts'
+import { TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+
+echarts.use([EChartsPieChart, GaugeChart, TooltipComponent, CanvasRenderer])
 import { Monitor, Odometer, PieChart } from '@element-plus/icons-vue'
 
 defineOptions({ name: "Cache" })

@@ -36,7 +36,7 @@
       </el-table-column>
       <el-table-column label="姓名" align="center" prop="name" min-width="120" show-overflow-tooltip />
       <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
         <template #default="scope">
           <el-button size="small" type="text" :icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['content:meditation:update']">修改</el-button>
@@ -91,6 +91,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Picture, User } from '@element-plus/icons-vue'
@@ -126,11 +127,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listTeacher(queryParams).then(response => {
+  withLoading(loading, listTeacher(queryParams)).then(response => {
     teacherList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

@@ -10,7 +10,7 @@
           </template>
           <div>
             <div class="text-center">
-              <userAvatar />
+              <userAvatar @avatar-updated="handleAvatarUpdated" />
             </div>
             <ul class="list-group list-group-striped">
               <li class="list-group-item">
@@ -50,7 +50,7 @@
           </template>
           <el-tabs v-model="selectedTab">
             <el-tab-pane label="基本资料" name="userinfo">
-              <userInfo :user="user" />
+              <userInfo v-if="userLoaded" :user="user" @update:user="handleUserUpdate" />
             </el-tab-pane>
             <el-tab-pane label="修改密码" name="resetPwd">
               <resetPwd />
@@ -66,6 +66,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { getUserProfile } from "@/api/system/user"
+import { useUserStore } from '@/store/user'
 import userAvatar from "./userAvatar"
 import userInfo from "./userInfo"
 import resetPwd from "./resetPwd"
@@ -73,18 +74,40 @@ import resetPwd from "./resetPwd"
 defineOptions({ name: "Profile" })
 
 const route = useRoute()
+const userStore = useUserStore()
 
 const user = reactive({})
 const roleGroup = ref({})
 const postGroup = ref({})
 const selectedTab = ref("userinfo")
+const userLoaded = ref(false)
 
 function getUser() {
   getUserProfile().then(response => {
     Object.assign(user, response.data)
     roleGroup.value = response.roleGroup
     postGroup.value = response.postGroup
+    userLoaded.value = true
   })
+}
+
+// 处理基本资料更新（来自 userInfo 组件的 emit）
+function handleUserUpdate(updatedData) {
+  // 将更新的数据同步到本地 user 对象
+  Object.assign(user, updatedData)
+  // 同时更新 userStore 中的相关信息
+  if (updatedData.nickName !== undefined) {
+    userStore.nickName = updatedData.nickName
+  }
+}
+
+// 处理头像更新事件
+function handleAvatarUpdated(avatarUrl) {
+  // userStore.avatar 已经在 userAvatar 组件中更新
+  // 这里确保本地 user 对象保持同步
+  if (avatarUrl) {
+    user.avatar = avatarUrl
+  }
 }
 
 onMounted(() => {

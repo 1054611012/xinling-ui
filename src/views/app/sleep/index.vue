@@ -14,8 +14,8 @@
       <el-table-column label="记录ID" align="center" prop="id" />
       <el-table-column label="用户ID" align="center" prop="userId" />
       <el-table-column label="睡眠时长(分钟)" align="center" prop="duration" />
-      <el-table-column label="入睡时间" align="center" prop="sleepTime" />
-      <el-table-column label="醒来时间" align="center" prop="wakeTime" />
+      <table-time-column label="入睡时间" align="center" prop="sleepTime" />
+      <table-time-column label="醒来时间" align="center" prop="wakeTime" />
       <el-table-column label="睡眠质量" align="center" prop="quality">
         <template #default="scope">
           <el-tag :type="getQualityType(scope.row.quality)">
@@ -23,7 +23,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['app:sleep:query']">详情</el-button>

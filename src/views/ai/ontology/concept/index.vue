@@ -53,22 +53,22 @@
 
     <el-table v-loading="loading" :data="conceptList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="概念ID" align="center" prop="conceptId" width="70" />
+      <el-table-column label="概念ID" align="center" prop="conceptId" width="70" show-overflow-tooltip />
       <el-table-column label="概念名称" align="center" prop="conceptName" :show-overflow-tooltip="true" />
       <el-table-column label="概念编码" align="center" prop="conceptCode" :show-overflow-tooltip="true" />
-      <el-table-column label="父概念" align="center" prop="parentName" width="120">
+      <el-table-column label="父概念" align="center" prop="parentName" width="120" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ scope.row.parentName || '-' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="概念描述" align="center" prop="description" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center" prop="status" width="70">
+      <el-table-column label="状态" align="center" prop="status" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">启用</el-tag>
           <el-tag v-else size="small" type="danger">停用</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="180" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="150">
         <template #default="scope">
           <el-button

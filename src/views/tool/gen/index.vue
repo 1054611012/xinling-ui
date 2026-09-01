@@ -91,8 +91,16 @@
       <el-table-column label="表名称" align="center" prop="tableName" :show-overflow-tooltip="true" width="120" />
       <el-table-column label="表描述" align="center" prop="tableComment" :show-overflow-tooltip="true" width="120" />
       <el-table-column label="实体" align="center" prop="className" :show-overflow-tooltip="true" width="120" />
-      <el-table-column label="创建时间" align="center" prop="createTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" />
-      <el-table-column label="更新时间" align="center" prop="updateTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" />
+      <el-table-column label="创建时间" align="center" prop="createTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" show-overflow-tooltip>
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.createTime) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="更新时间" align="center" prop="updateTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="160" show-overflow-tooltip>
+        <template #default="scope">
+          <span>{{ parseTime(scope.row.updateTime) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button
@@ -165,10 +173,11 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listTable, previewTable, delTable, genCode, synchDb } from "@/api/tool/gen"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import importTable from "./importTable"
 import createTable from "./createTable"
-import hljs from "highlight.js"
+import hljs from "@/utils/highlight"
 import "highlight.js/styles/github.css"
 import { CopyDocument, Delete, Download, Edit, Plus, Refresh, Search, Upload, View } from '@element-plus/icons-vue'
 
@@ -206,11 +215,9 @@ const createRef = ref(null)
 const queryForm = ref(null)
 
 function getList() {
-  loading.value = true
-  listTable(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, listTable(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     tableList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

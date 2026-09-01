@@ -26,37 +26,37 @@
         </div>
 
         <el-table :data="audioList" v-loading="audioLoading">
-          <el-table-column label="ID" align="center" prop="id" width="70" />
-          <el-table-column label="封面" align="center" prop="coverUrl" width="80">
+          <el-table-column label="ID" align="center" prop="id" width="70" show-overflow-tooltip />
+          <el-table-column label="封面" align="center" prop="coverUrl" width="80" show-overflow-tooltip>
             <template #default="scope">
               <el-image v-if="scope.row.coverUrl" :src="scope.row.coverUrl" :preview-src-list="[scope.row.coverUrl]" style="width: 50px; height: 50px; border-radius: 4px;" fit="cover" />
               <span v-else>-</span>
             </template>
           </el-table-column>
           <el-table-column label="标题" align="center" prop="title" min-width="130" show-overflow-tooltip />
-          <el-table-column label="子分类" align="center" prop="subType" width="80">
+          <el-table-column label="子分类" align="center" prop="subType" width="80" show-overflow-tooltip>
             <template #default="scope">
               <span>{{ getSleepSubTypeLabel(scope.row.subType) }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="讲述者" align="center" prop="narrator" width="90" />
-          <el-table-column label="时长" align="center" prop="duration" width="80">
+          <el-table-column label="讲述者" align="center" prop="narrator" width="90" show-overflow-tooltip />
+          <el-table-column label="时长" align="center" prop="duration" width="80" show-overflow-tooltip>
             <template #default="scope">{{ formatDuration(scope.row.duration) }}</template>
           </el-table-column>
-          <el-table-column label="难度" align="center" prop="difficulty" width="70">
+          <el-table-column label="难度" align="center" prop="difficulty" width="70" show-overflow-tooltip>
             <template #default="scope">
               <el-tag v-if="scope.row.difficulty" :type="getDifficultyType(scope.row.difficulty)" size="small">{{ getDifficultyLabel(scope.row.difficulty) }}</el-tag>
               <span v-else>-</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" align="center" prop="status" width="65">
+          <el-table-column label="状态" align="center" prop="status" width="65" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">{{ scope.row.status === 1 ? '上架' : '下架' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
-          <el-table-column label="播放" align="center" prop="playCount" width="70" />
-          <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+          <el-table-column label="排序" align="center" prop="sortOrder" width="60" show-overflow-tooltip />
+          <el-table-column label="播放" align="center" prop="playCount" width="70" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
             <template #default="scope">
               <el-button size="small" type="text" :icon="View" @click="handleAudioDetail(scope.row)" v-hasPermi="['content:sleep:query']">详情</el-button>
@@ -90,21 +90,21 @@
         </el-form>
 
         <el-table :data="recordList" v-loading="recordLoading">
-          <el-table-column label="ID" align="center" prop="id" width="70" />
-          <el-table-column label="用户ID" align="center" prop="userId" width="80" />
-          <el-table-column label="开始时间" align="center" prop="startTime" width="150" />
-          <el-table-column label="结束时间" align="center" prop="endTime" width="150" />
-          <el-table-column label="时长(分钟)" align="center" prop="duration" width="90" />
-          <el-table-column label="睡眠评分" align="center" prop="sleepScore" width="80">
+          <el-table-column label="ID" align="center" prop="id" width="70" show-overflow-tooltip />
+          <el-table-column label="用户ID" align="center" prop="userId" width="80" show-overflow-tooltip />
+          <table-time-column label="开始时间" align="center" prop="startTime" width="150" />
+          <table-time-column label="结束时间" align="center" prop="endTime" width="150" />
+          <el-table-column label="时长(分钟)" align="center" prop="duration" width="90" show-overflow-tooltip />
+          <el-table-column label="睡眠评分" align="center" prop="sleepScore" width="80" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="getScoreType(scope.row.sleepScore)" size="small">{{ scope.row.sleepScore }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="深睡" align="center" prop="deepSleepMinutes" width="70" />
-          <el-table-column label="浅睡" align="center" prop="lightSleepMinutes" width="70" />
-          <el-table-column label="REM" align="center" prop="remSleepMinutes" width="70" />
-          <el-table-column label="中断" align="center" prop="interruptCount" width="60" />
-          <el-table-column label="打鼾" align="center" prop="snoringCount" width="60" />
+          <el-table-column label="深睡" align="center" prop="deepSleepMinutes" width="70" show-overflow-tooltip />
+          <el-table-column label="浅睡" align="center" prop="lightSleepMinutes" width="70" show-overflow-tooltip />
+          <el-table-column label="REM" align="center" prop="remSleepMinutes" width="70" show-overflow-tooltip />
+          <el-table-column label="中断" align="center" prop="interruptCount" width="60" show-overflow-tooltip />
+          <el-table-column label="打鼾" align="center" prop="snoringCount" width="60" show-overflow-tooltip />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80">
             <template #default="scope">
               <el-button size="small" type="text" :icon="View" @click="handleRecordDetail(scope.row)" v-hasPermi="['content:sleep:record:query']">详情</el-button>
@@ -128,15 +128,15 @@
         </el-form>
 
         <el-table :data="diaryList" v-loading="diaryLoading">
-          <el-table-column label="ID" align="center" prop="id" width="70" />
-          <el-table-column label="用户ID" align="center" prop="userId" width="80" />
-          <el-table-column label="日期" align="center" prop="date" width="110" />
-          <el-table-column label="睡前活动" align="center" prop="bedtimeActivity" width="110" />
-          <el-table-column label="咖啡因" align="center" prop="caffeineIntake" width="80" />
-          <el-table-column label="运动(分钟)" align="center" prop="exercise" width="90" />
-          <el-table-column label="情绪" align="center" prop="emotion" width="80" />
+          <el-table-column label="ID" align="center" prop="id" width="70" show-overflow-tooltip />
+          <el-table-column label="用户ID" align="center" prop="userId" width="80" show-overflow-tooltip />
+          <table-time-column label="日期" align="center" prop="date" format="{y}-{m}-{d}" width="110" />
+          <el-table-column label="睡前活动" align="center" prop="bedtimeActivity" width="110" show-overflow-tooltip />
+          <el-table-column label="咖啡因" align="center" prop="caffeineIntake" width="80" show-overflow-tooltip />
+          <el-table-column label="运动(分钟)" align="center" prop="exercise" width="90" show-overflow-tooltip />
+          <el-table-column label="情绪" align="center" prop="emotion" width="80" show-overflow-tooltip />
           <el-table-column label="备注" align="center" prop="note" min-width="150" show-overflow-tooltip />
-          <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+          <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="80">
             <template #default="scope">
               <el-button size="small" type="text" :icon="View" @click="handleDiaryDetail(scope.row)" v-hasPermi="['content:sleep:diary:query']">详情</el-button>

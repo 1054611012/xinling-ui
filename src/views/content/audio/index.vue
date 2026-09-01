@@ -31,36 +31,36 @@
     </div>
 
     <el-table :data="audioList" v-loading="loading">
-      <el-table-column label="ID" align="center" prop="id" width="70" />
+      <el-table-column label="ID" align="center" prop="id" width="70" show-overflow-tooltip />
       <el-table-column label="标题" align="center" prop="title" min-width="130" show-overflow-tooltip />
-      <el-table-column label="文件类型" align="center" prop="fileType" width="80">
+      <el-table-column label="文件类型" align="center" prop="fileType" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="getFileTypeTag(scope.row.fileType)" size="small">{{ getFileTypeLabel(scope.row.fileType) }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="文件扩展名" align="center" prop="fileExt" width="80" />
-      <el-table-column label="时长" align="center" prop="duration" width="80">
+      <el-table-column label="文件扩展名" align="center" prop="fileExt" width="80" show-overflow-tooltip />
+      <el-table-column label="时长" align="center" prop="duration" width="80" show-overflow-tooltip>
         <template #default="scope">{{ formatDuration(scope.row.duration) }}</template>
       </el-table-column>
-      <el-table-column label="来源类型" align="center" prop="sourceType" width="80">
+      <el-table-column label="来源类型" align="center" prop="sourceType" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.sourceType === 'upload' ? 'success' : 'info'" size="small">{{ scope.row.sourceType === 'upload' ? '上传' : '系统' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="旁白/作者" align="center" prop="narrator" width="100" />
+      <el-table-column label="旁白/作者" align="center" prop="narrator" width="100" show-overflow-tooltip />
       <el-table-column label="标签" align="center" prop="tags" width="120" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-for="tag in parseTags(scope.row.tags)" :key="tag" size="small" style="margin-right: 4px;">{{ tag }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="播放次数" align="center" prop="playCount" width="80" />
-      <el-table-column label="状态" align="center" prop="status" width="65">
+      <el-table-column label="播放次数" align="center" prop="playCount" width="80" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="65" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">{{ scope.row.status === 1 ? '上架' : '下架' }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="排序" align="center" prop="sortOrder" width="60" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="150" />
+      <el-table-column label="排序" align="center" prop="sortOrder" width="60" show-overflow-tooltip />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="150" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['content:audio:query']">详情</el-button>
@@ -188,6 +188,7 @@
 <script setup>
 import { listAudioItem, getAudioItem, addAudioItem, updateAudioItem, delAudioItem, onlineAudioItem, offlineAudioItem } from '@/api/content/audio'
 import { resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { Search, Refresh, Plus, View, Edit, Delete, Top, Bottom, Upload, Headset, SuccessFilled } from '@element-plus/icons-vue'
 import { ref, reactive, onMounted } from 'vue'
@@ -239,11 +240,9 @@ onMounted(() => {
 
 // ================== 列表查询 ==================
 function getList() {
-  loading.value = true
-  listAudioItem(queryParams).then(response => {
+  withLoading(loading, listAudioItem(queryParams)).then(response => {
     audioList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

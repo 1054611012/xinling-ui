@@ -25,18 +25,18 @@
         </div>
 
         <el-table :data="ruleList" v-loading="ruleLoading">
-          <el-table-column label="规则ID" align="center" prop="id" />
-          <el-table-column label="规则名称" align="center" prop="name" />
-          <el-table-column label="赠送天数" align="center" prop="vipDays" />
-          <el-table-column label="触发条件" align="center" prop="condition" />
-          <el-table-column label="状态" align="center" prop="status">
+          <el-table-column label="规则ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="规则名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="赠送天数" align="center" prop="vipDays" show-overflow-tooltip />
+          <el-table-column label="触发条件" align="center" prop="condition" show-overflow-tooltip />
+          <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
                 {{ scope.row.status === 1 ? '启用' : '禁用' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class="small-padding fixed-width">
             <template #default="scope">
               <el-button size="small" type="text" :icon="Edit" @click="handleUpdateRule(scope.row)" v-hasPermi="['app:vip:gift:edit']">修改</el-button>
@@ -69,19 +69,19 @@
         </div>
 
         <el-table :data="recordList" v-loading="recordLoading">
-          <el-table-column label="记录ID" align="center" prop="id" />
-          <el-table-column label="用户ID" align="center" prop="userId" />
-          <el-table-column label="用户昵称" align="center" prop="nickname" />
-          <el-table-column label="赠送天数" align="center" prop="vipDays" />
-          <el-table-column label="赠送类型" align="center" prop="grantType">
+          <el-table-column label="记录ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="用户ID" align="center" prop="userId" show-overflow-tooltip />
+          <el-table-column label="用户昵称" align="center" prop="nickname" show-overflow-tooltip />
+          <el-table-column label="赠送天数" align="center" prop="vipDays" show-overflow-tooltip />
+          <el-table-column label="赠送类型" align="center" prop="grantType" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.grantType === 'auto' ? 'info' : 'success'">
                 {{ scope.row.grantType === 'auto' ? '自动' : '手动' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="原因" align="center" prop="reason" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="原因" align="center" prop="reason" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="recordTotal>0" :total="recordTotal" :page="recordQuery.pageNum" :limit="recordQuery.pageSize" @update:page="recordQuery.pageNum = $event" @update:limit="recordQuery.pageSize = $event" @pagination="getRecordList" />

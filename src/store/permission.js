@@ -34,6 +34,7 @@ export const usePermissionStore = defineStore('permission', {
       const flatRoutes = flatMultiLevelRoutes(flatRoutesRaw)
       flatRoutes.push({
         path: '/:pathMatch(.*)*',
+        name: 'NotFound',
         redirect: '/404',
         hidden: true
       })
@@ -44,8 +45,18 @@ export const usePermissionStore = defineStore('permission', {
       this.sidebarRouters = constantRoutes.concat(sidebarRoutes)
 
       flatRoutes.forEach(route => {
-        if (route.name && !router.hasRoute(route.name)) {
+        // isMenuFrame 路由：后端返回 {path:'/', Layout, children:[...]}
+        // 此时父路由 name 为空会被跳过，需把子路由挂到常量路由 RootLayout 下
+        if (route.path === '/' && route.children && route.children.length) {
+          route.children.forEach(child => {
+            if (child.name && !router.hasRoute(child.name)) {
+              router.addRoute('RootLayout', child)
+              this.addRoutes.push(child)
+            }
+          })
+        } else if (route.name && !router.hasRoute(route.name)) {
           router.addRoute(route)
+          this.addRoutes.push(route)
         }
       })
 
@@ -63,6 +74,42 @@ export const usePermissionStore = defineStore('permission', {
           component: () => import('@/views/ai/ontology/relation/index.vue'),
           name: 'OntologyRelation',
           meta: { title: '关系管理' }
+        },
+        {
+          path: 'ontology/property',
+          component: () => import('@/views/ai/ontology/property/index.vue'),
+          name: 'OntologyProperty',
+          meta: { title: '属性管理' }
+        },
+        {
+          path: 'ontology/instance',
+          component: () => import('@/views/ai/ontology/instance/index.vue'),
+          name: 'OntologyInstance',
+          meta: { title: '实例管理' }
+        },
+        {
+          path: 'ontology/instanceValue',
+          component: () => import('@/views/ai/ontology/instanceValue/index.vue'),
+          name: 'OntologyInstanceValue',
+          meta: { title: '实例属性值' }
+        },
+        {
+          path: 'ontology/rule',
+          component: () => import('@/views/ai/ontology/rule/index.vue'),
+          name: 'OntologyRule',
+          meta: { title: '业务规则' }
+        },
+        {
+          path: 'ontology/action',
+          component: () => import('@/views/ai/ontology/action/index.vue'),
+          name: 'OntologyAction',
+          meta: { title: '行为管理' }
+        },
+        {
+          path: 'ontology/fieldMapping',
+          component: () => import('@/views/ai/ontology/fieldMapping/index.vue'),
+          name: 'OntologyFieldMapping',
+          meta: { title: '字段映射' }
         }
       ]
       if (router.hasRoute('ai')) {

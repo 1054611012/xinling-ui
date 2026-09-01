@@ -83,16 +83,16 @@
 
     <el-table v-loading="loading" :data="jobList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="任务编号" width="100" align="center" prop="jobId" />
+      <el-table-column label="任务编号" width="100" align="center" prop="jobId" show-overflow-tooltip />
       <el-table-column label="任务名称" align="center" prop="jobName" :show-overflow-tooltip="true" />
-      <el-table-column label="任务组名" align="center" prop="jobGroup">
+      <el-table-column label="任务组名" align="center" prop="jobGroup" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_job_group" :value="scope.row.jobGroup"/>
         </template>
       </el-table-column>
       <el-table-column label="调用目标字符串" align="center" prop="invokeTarget" :show-overflow-tooltip="true" />
       <el-table-column label="cron执行表达式" align="center" prop="cronExpression" :show-overflow-tooltip="true" />
-      <el-table-column label="状态" align="center">
+      <el-table-column label="状态" align="center" show-overflow-tooltip>
         <template #default="scope">
           <el-switch
             v-model="scope.row.status"
@@ -298,6 +298,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listJob, getJob, delJob, addJob, updateJob, runJob, changeJobStatus } from "@/api/monitor/job"
 import { parseTime, resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import Crontab from '@/components/Crontab'
@@ -361,11 +362,9 @@ function jobGroupFormat(row) {
 }
 
 function getList() {
-  loading.value = true
-  listJob(queryParams).then(response => {
+  withLoading(loading, listJob(queryParams)).then(response => {
     jobList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

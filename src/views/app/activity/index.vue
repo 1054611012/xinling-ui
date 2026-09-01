@@ -36,8 +36,8 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="开始时间" align="center" prop="startTime" />
-      <el-table-column label="结束时间" align="center" prop="endTime" />
+      <table-time-column label="开始时间" align="center" prop="startTime" />
+      <table-time-column label="结束时间" align="center" prop="endTime" />
       <el-table-column label="状态" align="center" prop="status">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'warning'">
@@ -45,7 +45,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="Edit" @click="handleUpdate(scope.row)" v-hasPermi="['app:activity:update']">修改</el-button>

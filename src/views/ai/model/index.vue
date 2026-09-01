@@ -78,27 +78,27 @@
 
     <el-table v-loading="loading" :data="modelList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="模型ID" align="center" prop="modelId" width="70" />
-      <el-table-column label="提供商" align="center" prop="providerName" width="120" />
+      <el-table-column label="模型ID" align="center" prop="modelId" width="70" show-overflow-tooltip />
+      <el-table-column label="提供商" align="center" prop="providerName" width="120" show-overflow-tooltip />
       <el-table-column label="模型名称" align="center" prop="modelName" :show-overflow-tooltip="true" />
       <el-table-column label="模型编码" align="center" prop="modelCode" :show-overflow-tooltip="true" />
-      <el-table-column label="模型类型" align="center" prop="modelType" width="90">
+      <el-table-column label="模型类型" align="center" prop="modelType" width="90" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.modelType === 'chat'" size="small">对话</el-tag>
           <el-tag v-else-if="scope.row.modelType === 'embedding'" size="small" type="success">嵌入</el-tag>
           <el-tag v-else size="small" type="warning">图像</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="上下文窗口" align="center" prop="contextWindow" width="100" />
-      <el-table-column label="最大Token" align="center" prop="maxTokens" width="90" />
-      <el-table-column label="温度" align="center" prop="temperature" width="70" />
-      <el-table-column label="默认" align="center" prop="isDefault" width="70">
+      <el-table-column label="上下文窗口" align="center" prop="contextWindow" width="100" show-overflow-tooltip />
+      <el-table-column label="最大Token" align="center" prop="maxTokens" width="90" show-overflow-tooltip />
+      <el-table-column label="温度" align="center" prop="temperature" width="70" show-overflow-tooltip />
+      <el-table-column label="默认" align="center" prop="isDefault" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.isDefault === '1'" size="small" type="success">是</el-tag>
           <el-tag v-else size="small" type="info">否</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="70">
+      <el-table-column label="状态" align="center" prop="status" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">正常</el-tag>
           <el-tag v-else size="small" type="danger">停用</el-tag>
@@ -253,6 +253,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download, Star, CircleClose, ArrowRight } from '@element-plus/icons-vue'
@@ -324,11 +325,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listModel(queryParams).then(response => {
+  withLoading(loading, listModel(queryParams)).then(response => {
     modelList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

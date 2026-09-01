@@ -69,6 +69,8 @@ const TITLE_ICON_MAP = {
   '存储': 'storage-config',
   '用户管理': 'user',
   '用户': 'user',
+  '会员管理': 'crown',
+  '会员': 'crown',
   '角色管理': 'peoples',
   '角色': 'peoples',
   '菜单管理': 'tree-table',
@@ -174,7 +176,7 @@ const PATH_KEYS_BY_LEN = Object.keys(PATH_ICON_MAP).sort((a, b) => b.length - a.
  * @param {string} icon 后端配置的 meta.icon
  * @param {string} title 菜单标题 meta.title
  * @param {string} [path=''] 菜单路径
- * @returns {string} 图标名（对应 src/assets/icons/svg 下的文件名），无匹配返回空串
+ * @returns {string} 图标名（对应 src/assets/icons/svg 下的文件名），无匹配返回默认嵌套菜单图标 'nested'
  */
 export function resolveMenuIcon(icon, title, path = '') {
   // 0. 强制覆盖：专门设计的专属图标，无视后端 meta.icon
@@ -185,9 +187,12 @@ export function resolveMenuIcon(icon, title, path = '') {
     }
   }
 
-  // 1. 后端显式配置优先
+  // 1. 后端显式配置优先（排除 Element 图标类名，本项目使用 SVG sprite，不支持 el-icon-*）
   if (icon && String(icon).trim()) {
-    return icon
+    const iconStr = String(icon).trim()
+    if (!iconStr.startsWith('el-icon')) {
+      return iconStr
+    }
   }
 
   // 2. 标题精确匹配
@@ -214,5 +219,5 @@ export function resolveMenuIcon(icon, title, path = '') {
     }
   }
 
-  return ''
+  return 'nested'
 }

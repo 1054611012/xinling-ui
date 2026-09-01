@@ -1,4 +1,4 @@
-import hljs from 'highlight.js'
+import hljs from '@/utils/highlight'
 
 /**
  * 生成缓存键（截取内容特征，避免完整内容作为键占用内存）

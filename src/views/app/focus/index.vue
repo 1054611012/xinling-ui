@@ -15,7 +15,7 @@
       <el-table-column label="用户ID" align="center" prop="userId" />
       <el-table-column label="专注时长(分钟)" align="center" prop="duration" />
       <el-table-column label="专注主题" align="center" prop="theme" />
-      <el-table-column label="创建时间" align="center" prop="createTime" />
+      <table-time-column label="创建时间" align="center" prop="createTime" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['app:focus:query']">详情</el-button>

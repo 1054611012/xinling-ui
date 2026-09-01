@@ -92,19 +92,19 @@
 
     <el-table ref="tables" v-loading="loading" :data="listData" @selection-change="handleSelectionChange" :default-sort="defaultSort" @sort-change="handleSortChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="访问编号" align="center" prop="infoId" />
+      <el-table-column label="访问编号" align="center" prop="infoId" show-overflow-tooltip />
       <el-table-column label="用户名称" align="center" prop="userName" :show-overflow-tooltip="true" sortable="custom" :sort-orders="['descending', 'ascending']" />
       <el-table-column label="登录地址" align="center" prop="ipaddr" width="130" :show-overflow-tooltip="true" />
       <el-table-column label="登录地点" align="center" prop="loginLocation" :show-overflow-tooltip="true" />
       <el-table-column label="浏览器" align="center" prop="browser" :show-overflow-tooltip="true" />
       <el-table-column label="操作系统" align="center" prop="os" />
-      <el-table-column label="登录状态" align="center" prop="status">
+      <el-table-column label="登录状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_common_status" :value="scope.row.status"/>
         </template>
       </el-table-column>
       <el-table-column label="操作信息" align="center" prop="msg" :show-overflow-tooltip="true" />
-      <el-table-column label="登录日期" align="center" prop="loginTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="180">
+      <el-table-column label="登录日期" align="center" prop="loginTime" sortable="custom" :sort-orders="['descending', 'ascending']" width="180" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.loginTime) }}</span>
         </template>
@@ -128,6 +128,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { list, delLogininfor, cleanLogininfor, unlockLogininfor } from "@/api/monitor/logininfor"
 import { parseTime, resetForm, addDateRange } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { Delete, Download, Refresh, Search, Unlock } from '@element-plus/icons-vue'
@@ -156,11 +157,9 @@ const queryParams = reactive({
 })
 
 function getList() {
-  loading.value = true
-  list(addDateRange({ ...queryParams }, dateRange.value)).then(response => {
+  withLoading(loading, list(addDateRange({ ...queryParams }, dateRange.value))).then(response => {
     listData.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

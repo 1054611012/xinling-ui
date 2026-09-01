@@ -47,8 +47,8 @@
 
     <!-- 冥想内容列表 -->
     <el-table :data="meditationList" v-loading="loading">
-      <el-table-column label="ID" align="center" prop="id" width="65" />
-      <el-table-column label="封面" align="center" width="70">
+      <el-table-column label="ID" align="center" prop="id" width="65" show-overflow-tooltip />
+      <el-table-column label="封面" align="center" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-image
             v-if="scope.row.coverUrl"
@@ -67,14 +67,14 @@
         </template>
       </el-table-column>
       <el-table-column label="标题" align="center" prop="title" min-width="140" show-overflow-tooltip />
-      <el-table-column label="子分类" align="center" width="90">
+      <el-table-column label="子分类" align="center" width="90" show-overflow-tooltip>
         <template #default="scope">
           <el-tag size="small" :type="getSubTypeTagType(scope.row.subType)" effect="plain">
             {{ getSubTypeLabel(scope.row.subType) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="难度" align="center" width="70">
+      <el-table-column label="难度" align="center" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.difficulty" :type="getDifficultyTagType(scope.row.difficulty)" size="small">
             {{ getDifficultyLabel(scope.row.difficulty) }}
@@ -82,17 +82,17 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="时长" align="center" width="70">
+      <el-table-column label="时长" align="center" width="70" show-overflow-tooltip>
         <template #default="scope">{{ formatDuration(scope.row.totalDuration || scope.row.duration) }}</template>
       </el-table-column>
-      <el-table-column label="音频数" align="center" width="65" prop="audioCount">
+      <el-table-column label="音频数" align="center" width="65" prop="audioCount" show-overflow-tooltip>
         <template #default="scope">
           <span v-if="scope.row.audioItems">{{ scope.row.audioItems.length }}</span>
           <span v-else-if="scope.row.audioItemIds">{{ scope.row.audioItemIds.length }}</span>
           <span v-else>0</span>
         </template>
       </el-table-column>
-      <el-table-column label="标签" align="center" min-width="120">
+      <el-table-column label="标签" align="center" min-width="120" show-overflow-tooltip>
         <template #default="scope">
           <el-tag
             v-for="tag in getDisplayTags(scope.row)"
@@ -105,16 +105,16 @@
           <span v-if="!scope.row.tags && (!scope.row.tagsList || scope.row.tagsList.length === 0)">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="播放" align="center" width="60" prop="playCount" />
-      <el-table-column label="排序" align="center" width="55" prop="sortOrder" />
-      <el-table-column label="状态" align="center" width="60">
+      <el-table-column label="播放" align="center" width="60" prop="playCount" show-overflow-tooltip />
+      <el-table-column label="排序" align="center" width="55" prop="sortOrder" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" width="60" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">
             {{ scope.row.status === 1 ? '上架' : '下架' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" width="140" prop="createTime" />
+      <table-time-column label="创建时间" align="center" width="140" prop="createTime" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template #default="scope">
           <el-button size="small" type="text" :icon="View" @click="handleDetail(scope.row)" v-hasPermi="['content:meditation:query']">详情</el-button>
@@ -338,13 +338,13 @@
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="45" align="center" />
-        <el-table-column label="ID" align="center" prop="id" width="60" />
+        <el-table-column label="ID" align="center" prop="id" width="60" show-overflow-tooltip />
         <el-table-column label="标题" align="center" prop="title" min-width="120" show-overflow-tooltip />
-        <el-table-column label="时长" align="center" width="70">
+        <el-table-column label="时长" align="center" width="70" show-overflow-tooltip>
           <template #default="scope">{{ formatDuration(scope.row.duration) }}</template>
         </el-table-column>
-        <el-table-column label="讲述者" align="center" prop="narrator" width="80" />
-        <el-table-column label="标签" align="center" min-width="100">
+        <el-table-column label="讲述者" align="center" prop="narrator" width="80" show-overflow-tooltip />
+        <el-table-column label="标签" align="center" min-width="100" show-overflow-tooltip>
           <template #default="scope">
             <el-tag
               v-for="tag in getTagList(scope.row.tags)"
@@ -357,7 +357,7 @@
             <span v-if="!scope.row.tags">-</span>
           </template>
         </el-table-column>
-        <el-table-column label="状态" align="center" width="60">
+        <el-table-column label="状态" align="center" width="60" show-overflow-tooltip>
           <template #default="scope">
             <el-tag :type="scope.row.status === 1 ? 'success' : 'info'" size="small">
               {{ scope.row.status === 1 ? '上架' : '下架' }}
@@ -475,6 +475,7 @@ import { listMeditation, getMeditation, addMeditation, updateMeditation, delMedi
 import { listAudioItem } from '@/api/content/audio'
 import { listTeacher } from '@/api/content/teacher'
 import { resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { resolveFileUrl, getUploadHeaders } from '@/utils/file'
 import { Bottom, CollectionTag, Delete, Edit, Headset, Picture, PictureFilled, Plus, Refresh, Search, Sort, Timer, Top, User, VideoPlay, View } from '@element-plus/icons-vue'
 
@@ -534,11 +535,9 @@ const uploadHeaders = getUploadHeaders()
 
 // ==================== 列表 ====================
 function getList() {
-  loading.value = true
-  listMeditation(queryParams).then(response => {
+  withLoading(loading, listMeditation(queryParams)).then(response => {
     meditationList.value = response.rows || []
     total.value = response.total || 0
-    loading.value = false
   }).catch(() => { loading.value = false })
 }
 

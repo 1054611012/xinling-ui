@@ -79,19 +79,19 @@
 
     <el-table v-loading="loading" :data="instanceList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="实例ID" align="center" prop="instanceId" width="80" />
+      <el-table-column label="实例ID" align="center" prop="instanceId" width="80" show-overflow-tooltip />
       <el-table-column label="实例名称" align="center" prop="instanceName" :show-overflow-tooltip="true" width="180" />
       <el-table-column label="实例编码" align="center" prop="instanceCode" :show-overflow-tooltip="true" width="150" />
-      <el-table-column label="所属概念" align="center" prop="conceptName" width="150" />
-      <el-table-column label="排序" align="center" prop="sortOrder" width="80" />
-      <el-table-column label="状态" align="center" prop="status" width="80">
+      <el-table-column label="所属概念" align="center" prop="conceptName" width="150" show-overflow-tooltip />
+      <el-table-column label="排序" align="center" prop="sortOrder" width="80" show-overflow-tooltip />
+      <el-table-column label="状态" align="center" prop="status" width="80" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">启用</el-tag>
           <el-tag v-else size="small" type="danger">禁用</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="描述" align="center" prop="description" :show-overflow-tooltip="true" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="180" />
+      <table-time-column label="创建时间" align="center" prop="createTime" width="180" />
       <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="200">
         <template #default="scope">
           <el-button
@@ -162,6 +162,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
@@ -222,11 +223,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listInstance(queryParams).then(response => {
+  withLoading(loading, listInstance(queryParams)).then(response => {
     instanceList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

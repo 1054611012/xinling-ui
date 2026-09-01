@@ -65,25 +65,25 @@
 
     <el-table v-loading="loading" :data="noticeList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="序号" align="center" prop="noticeId" width="100" />
+      <el-table-column label="序号" align="center" prop="noticeId" width="100" show-overflow-tooltip />
       <el-table-column
         label="公告标题"
         align="center"
         prop="noticeTitle"
         :show-overflow-tooltip="true"
       />
-      <el-table-column label="公告类型" align="center" prop="noticeType" width="100">
+      <el-table-column label="公告类型" align="center" prop="noticeType" width="100" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_notice_type" :value="scope.row.noticeType"/>
         </template>
       </el-table-column>
-      <el-table-column label="状态" align="center" prop="status" width="100">
+      <el-table-column label="状态" align="center" prop="status" width="100" show-overflow-tooltip>
         <template #default="scope">
           <dict-tag :options="dict.type.sys_notice_status" :value="scope.row.status"/>
         </template>
       </el-table-column>
-      <el-table-column label="创建者" align="center" prop="createBy" width="100" />
-      <el-table-column label="创建时间" align="center" prop="createTime" width="100">
+      <el-table-column label="创建者" align="center" prop="createBy" width="100" show-overflow-tooltip />
+      <el-table-column label="创建时间" align="center" prop="createTime" width="100" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
@@ -172,6 +172,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/system/notice"
 import { parseTime, resetForm } from '@/utils/ruoyi'
+import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
 import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
 
@@ -217,11 +218,9 @@ const rules = reactive({
 })
 
 function getList() {
-  loading.value = true
-  listNotice(queryParams).then(response => {
+  withLoading(loading, listNotice(queryParams)).then(response => {
     noticeList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

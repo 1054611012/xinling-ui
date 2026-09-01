@@ -26,19 +26,19 @@
 
         <el-table :data="packageList" v-loading="packageLoading" @selection-change="handlePackageSelectionChange">
           <el-table-column type="selection" width="55" align="center" />
-          <el-table-column label="套餐ID" align="center" prop="id" />
-          <el-table-column label="套餐名称" align="center" prop="name" />
-          <el-table-column label="价格" align="center" prop="price" />
-          <el-table-column label="天数" align="center" prop="days" />
-          <el-table-column label="描述" align="center" prop="description" />
-          <el-table-column label="状态" align="center" prop="status">
+          <el-table-column label="套餐ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="套餐名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="价格" align="center" prop="price" show-overflow-tooltip />
+          <el-table-column label="天数" align="center" prop="days" show-overflow-tooltip />
+          <el-table-column label="描述" align="center" prop="description" show-overflow-tooltip />
+          <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
                 {{ scope.row.status === 1 ? '上架' : '下架' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button size="small" type="text" :icon="Edit" @click="handleUpdatePackage(scope.row)" v-hasPermi="['app:vip:edit']">修改</el-button>
@@ -69,18 +69,18 @@
         </div>
 
         <el-table :data="userList" v-loading="userLoading">
-          <el-table-column label="用户ID" align="center" prop="userId" />
-          <el-table-column label="昵称" align="center" prop="nickname" />
-          <el-table-column label="手机号" align="center" prop="phone" />
-          <el-table-column label="VIP状态" align="center" prop="vipStatus">
+          <el-table-column label="用户ID" align="center" prop="userId" show-overflow-tooltip />
+          <el-table-column label="昵称" align="center" prop="nickname" show-overflow-tooltip />
+          <el-table-column label="手机号" align="center" prop="phone" show-overflow-tooltip />
+          <el-table-column label="VIP状态" align="center" prop="vipStatus" show-overflow-tooltip>
             <template #default="scope">
               <el-tag :type="scope.row.vipStatus === 1 ? 'success' : 'info'">
                 {{ scope.row.vipStatus === 1 ? 'VIP' : '普通用户' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="VIP到期时间" align="center" prop="vipEndTime" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <table-time-column label="VIP到期时间" align="center" prop="vipEndTime" />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="userTotal>0" :total="userTotal" :page="userQuery.pageNum" :limit="userQuery.pageSize" @update:page="userQuery.pageNum = $event" @update:limit="userQuery.pageSize = $event" @pagination="getUserList" />

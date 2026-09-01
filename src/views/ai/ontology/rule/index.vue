@@ -80,16 +80,16 @@
 
     <el-table v-loading="loading" :data="ruleList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="规则ID" align="center" prop="ruleId" width="80" />
+      <el-table-column label="规则ID" align="center" prop="ruleId" width="80" show-overflow-tooltip />
       <el-table-column label="规则名称" align="center" prop="ruleName" :show-overflow-tooltip="true" width="180" />
       <el-table-column label="规则编码" align="center" prop="ruleCode" :show-overflow-tooltip="true" width="150" />
-      <el-table-column label="所属概念" align="center" prop="conceptName" width="150">
+      <el-table-column label="所属概念" align="center" prop="conceptName" width="150" show-overflow-tooltip>
         <template #default="scope">
           <span>{{ scope.row.conceptName || '全局规则' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="优先级" align="center" prop="priority" width="80" />
-      <el-table-column label="是否启用" align="center" prop="enabled" width="100">
+      <el-table-column label="优先级" align="center" prop="priority" width="80" show-overflow-tooltip />
+      <el-table-column label="是否启用" align="center" prop="enabled" width="100" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.enabled === '1'" size="small" type="success">启用</el-tag>
           <el-tag v-else size="small" type="danger">禁用</el-tag>
@@ -173,6 +173,7 @@
 </template>
 
 <script setup>
+import { withLoading } from '@/utils/loading'
 import { defineOptions, ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
@@ -232,11 +233,9 @@ onMounted(() => {
 })
 
 function getList() {
-  loading.value = true
-  listRule(queryParams).then(response => {
+  withLoading(loading, listRule(queryParams)).then(response => {
     ruleList.value = response.rows
     total.value = response.total
-    loading.value = false
   })
 }
 

@@ -31,33 +31,33 @@
 
     <el-table :data="userList" v-loading="loading" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="用户ID" align="center" prop="id" />
-      <el-table-column label="昵称" align="center" prop="nickname" />
-      <el-table-column label="手机号" align="center" prop="phone" />
-      <el-table-column label="邮箱" align="center" prop="email" />
-      <el-table-column label="性别" align="center" prop="gender">
+      <el-table-column label="用户ID" align="center" prop="id" show-overflow-tooltip />
+      <el-table-column label="昵称" align="center" prop="nickname" show-overflow-tooltip />
+      <el-table-column label="手机号" align="center" prop="phone" show-overflow-tooltip />
+      <el-table-column label="邮箱" align="center" prop="email" show-overflow-tooltip />
+      <el-table-column label="性别" align="center" prop="gender" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.gender === 1 ? 'success' : 'info'">
             {{ scope.row.gender === 1 ? '男' : scope.row.gender === 2 ? '女' : '未知' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="VIP状态" align="center" prop="vipStatus">
+      <el-table-column label="VIP状态" align="center" prop="vipStatus" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.vipStatus === 1 ? 'success' : 'info'">
             {{ scope.row.vipStatus === 1 ? 'VIP' : '普通用户' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="VIP到期时间" align="center" prop="vipEndTime" />
-      <el-table-column label="状态" align="center" prop="status">
+      <table-time-column label="VIP到期时间" align="center" prop="vipEndTime" />
+      <el-table-column label="状态" align="center" prop="status" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="scope.row.status === 0 ? 'success' : 'danger'">
             {{ scope.row.status === 0 ? '正常' : '禁用' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" align="center" prop="createTime">
+      <el-table-column label="创建时间" align="center" prop="createTime" show-overflow-tooltip>
         <template #default="scope">
           {{ formatDate(scope.row.createTime) }}
         </template>

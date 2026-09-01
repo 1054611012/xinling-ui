@@ -44,6 +44,7 @@ export const constantRoutes = [
     path: '/',
     component: Layout,
     redirect: '/index',
+    name: 'RootLayout',
     children: [
       {
         path: 'index',
@@ -64,19 +65,6 @@ export const constantRoutes = [
    component: () => import('@/views/system/user/profile/index.vue'),
    name: 'Profile',
    meta: { title: '个人中心', icon: 'user' }
-  }
- ]
- },
- {
- path: '/stock',
- component: Layout,
- redirect: 'noredirect',
- children: [
-  {
-   path: 'analysis',
-   component: () => import('@/views/stock/analysis/index.vue'),
-   name: 'StockAnalysis',
-   meta: { title: 'AI分析', icon: 'chart' }
   }
  ]
  },

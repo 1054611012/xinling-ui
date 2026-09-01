@@ -28,6 +28,12 @@ import { getToken } from "@/utils/auth"
 import { ElMessage } from "element-plus"
 
 const props = defineProps({
+  // Vue 3 v-model 绑定字段（父组件 <editor v-model="xxx" /> 会传入）
+  modelValue: {
+    type: String,
+    default: "",
+  },
+  // 兼容 Vue 2 风格写法（<editor :value="xxx" @input="xxx" />）
   value: {
     type: String,
     default: "",
@@ -54,7 +60,8 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['input', 'on-change', 'on-text-change', 'on-selection-change', 'on-editor-change'])
+// 同时发射 update:modelValue 与 input，兼容 Vue 3 v-model 与旧调用方
+const emit = defineEmits(['update:modelValue', 'input', 'on-change', 'on-text-change', 'on-selection-change', 'on-editor-change'])
 
 const upload = ref(null)
 const editor = ref(null)
@@ -121,6 +128,7 @@ function init() {
     const text = QuillInstance.getText()
     const quill = QuillInstance
     currentValue.value = html
+    emit("update:modelValue", html)
     emit("input", html)
     emit("on-change", { html, text, quill })
     emit("on-text-change", delta, oldDelta, source)
@@ -192,9 +200,11 @@ function insertImage(file) {
   })
 }
 
-watch(() => props.value, (val) => {
+// 监听外部值变化（v-model 的 modelValue 优先，兼容旧的 value）并同步到编辑器
+// —— 修复「新增公告存在缓存」：reset 把表单字段置空后，这里会清空 Quill 内容
+watch(() => props.modelValue ?? props.value, (val) => {
   if (val !== currentValue.value) {
-    currentValue.value = val === null ? "" : val
+    currentValue.value = val === null || val === undefined ? "" : val
     if (QuillInstance) {
       QuillInstance.clipboard.dangerouslyPasteHTML(currentValue.value)
     }

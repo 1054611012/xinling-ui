@@ -2,7 +2,6 @@
   <FloatWindow
     :is-logo-mode="isLogoMode"
     :is-float-mode="isFloatMode"
-    :is-minimized="isMinimized"
     :is-maximized="isMaximized"
     :float-position="floatPosition"
     :float-size="floatSize"
@@ -14,7 +13,7 @@
   >
     <div
       class="ollama-chat-container"
-      :class="{ 'float-content': isFloatMode && !isMinimized, 'light-theme': !isDarkMode, 'dark-theme': isDarkMode }"
+      :class="{ 'float-content': isFloatMode, 'light-theme': !isDarkMode, 'dark-theme': isDarkMode }"
     >
       <div class="ollama-chat-wrapper">
         <!-- 工具栏 -->
@@ -143,7 +142,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import request from '@/utils/request'
 import { listModels, smartChat, listSessions, createSession, deleteSession as apiDeleteSession, updateSession, getSession, clearSessionHistory, getSessionMessages, sendMessage as apiSendMessage, executeSql } from '@/api/ai/aiChat'
-import hljs from 'highlight.js'
+// 代码高亮的实际调用在 @/utils/ai/markdown 中完成，这里只需引入主题样式
 import 'highlight.js/styles/atom-one-dark.css'
 import {
   formatMessage as markdownFormatMessage,
@@ -162,6 +161,7 @@ import {
   clearFormatCache as markdownClearFormatCache
 } from '@/utils/ai/markdown'
 import { handleCodeCopy as utilHandleCodeCopy } from '@/utils/ai/codeCopy'
+import { useFloatWindow } from './composables/useFloatWindow'
 
 import FloatWindow from './components/FloatWindow.vue'
 import ChatToolbar from './components/ChatToolbar.vue'
@@ -203,16 +203,28 @@ const formatMessageCache = new Map()
 const sessionHistoryCache = new Map()
 const cacheSizeLimit = 100
 
-const isFloatMode = ref(false)
-const isMinimized = ref(false)
-const isMaximized = ref(false)
-const isLogoMode = ref(true)
-const floatPosition = reactive({ x: window.innerWidth - 100, y: window.innerHeight - 100 })
-const floatSize = reactive({ width: 800, height: 600 })
-const isDragging = ref(false)
-const isResizing = ref(false)
-const dragStart = reactive({ x: 0, y: 0 })
-const resizeStart = reactive({ x: 0, y: 0, width: 0, height: 0 })
+// 浮窗的展开/收起/最大化/拖拽/缩放等行为统一由 useFloatWindow 管理
+const {
+  isFloatMode,
+  isMaximized,
+  isLogoMode,
+  floatPosition,
+  floatSize,
+  isDragging,
+  isResizing,
+  resetLogoPosition,
+  openFloatMode,
+  closeFloat,
+  expandFromLogo,
+  toggleMinimize,
+  toggleMaximize,
+  handleWindowResize,
+  startDrag,
+  startResize,
+  onMouseMove,
+  onMouseUp
+} = useFloatWindow()
+
 const isDarkMode = ref(false)
 
 const messagesContainer = ref(null)
@@ -252,8 +264,7 @@ watch(isDarkMode, (newVal) => {
 })
 
 onMounted(() => {
-  floatPosition.x = window.innerWidth - 100
-  floatPosition.y = window.innerHeight - 100
+  resetLogoPosition()
 
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('mouseup', onMouseUp)
@@ -273,221 +284,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('mouseup', onMouseUp)
   window.removeEventListener('resize', handleWindowResize)
 })
-function openFloatMode() {
-  isFloatMode.value = true
-  isMinimized.value = false
-  isLogoMode.value = false
-}
-
-function closeFloat() {
-  isLogoMode.value = true
-  isMinimized.value = false
-  isMaximized.value = false
-  floatSize.width = 800
-  floatSize.height = 600
-}
-
-function expandFromLogo(event) {
-  if (isDragging.value) {
-    return
-  }
-
-  isLogoMode.value = false
-  isFloatMode.value = true
-  isMinimized.value = false
-  isMaximized.value = false
-
-  floatPosition.x = (window.innerWidth - floatSize.width) / 2
-  floatPosition.y = (window.innerHeight - floatSize.height) / 2
-}
-
-function toggleMinimize() {
-  if (isMinimized.value) {
-    isMinimized.value = false
-  } else {
-    isLogoMode.value = true
-    isMinimized.value = false
-    isMaximized.value = false
-  }
-}
-
-function toggleMaximize() {
-  if (isFloatMode.value) {
-    if (isMaximized.value) {
-      floatSize.width = 800
-      floatSize.height = 600
-      floatPosition.x = (window.innerWidth - floatSize.width) / 2
-      floatPosition.y = (window.innerHeight - floatSize.height) / 2
-      isMaximized.value = false
-    } else {
-      floatSize.width = window.innerWidth
-      floatSize.height = window.innerHeight
-      floatPosition.x = 0
-      floatPosition.y = 0
-      isMaximized.value = true
-    }
-  }
-}
-
-function handleWindowResize() {
-  if (isMaximized.value && isFloatMode.value) {
-    floatSize.width = window.innerWidth
-    floatSize.height = window.innerHeight
-    floatPosition.x = 0
-    floatPosition.y = 0
-  }
-  if (isFloatMode.value && !isLogoMode.value && !isMaximized.value) {
-    isLogoMode.value = true
-    isMinimized.value = false
-  }
-  if (isLogoMode.value) {
-    floatPosition.x = window.innerWidth - 100
-    floatPosition.y = window.innerHeight - 100
-  }
-}
-
-function startDrag(event) {
-  if (!isFloatMode.value && !isLogoMode.value) return
-  if (isMaximized.value) return
-
-  event.preventDefault()
-
-  isDragging.value = true
-  dragStart.x = event.clientX - floatPosition.x
-  dragStart.y = event.clientY - floatPosition.y
-}
-
-function startResize(event) {
-  if (!isFloatMode.value || isMinimized.value) return
-
-  isResizing.value = true
-  resizeStart.x = event.clientX
-  resizeStart.y = event.clientY
-  resizeStart.width = floatSize.width
-  resizeStart.height = floatSize.height
-  event.preventDefault()
-}
-
-function onMouseMove(event) {
-  if (isDragging.value) {
-    const newX = event.clientX - dragStart.x
-    const newY = event.clientY - dragStart.y
-
-    let maxX, maxY
-    if (isLogoMode.value) {
-      maxX = window.innerWidth - 70
-      maxY = window.innerHeight - 70
-    } else {
-      maxX = window.innerWidth - floatSize.width
-      maxY = window.innerHeight - 60
-    }
-
-    floatPosition.x = Math.max(0, Math.min(newX, maxX))
-    floatPosition.y = Math.max(0, Math.min(newY, maxY))
-  }
-
-  if (isResizing.value) {
-    const deltaX = event.clientX - resizeStart.x
-    const deltaY = event.clientY - resizeStart.y
-
-    const newWidth = Math.max(300, resizeStart.width + deltaX)
-    const newHeight = Math.max(400, resizeStart.height + deltaY)
-
-    floatSize.width = newWidth
-    floatSize.height = newHeight
-  }
-}
-
-function onMouseUp() {
-  if (isDragging.value) {
-    checkAndBounceBack()
-  }
-
-  setTimeout(() => {
-    isDragging.value = false
-    isResizing.value = false
-  }, 100)
-}
-
-function checkAndBounceBack() {
-  const windowWidth = window.innerWidth
-  const windowHeight = window.innerHeight
-
-  let needsBounce = false
-  let targetX = floatPosition.x
-  let targetY = floatPosition.y
-
-  if (isLogoMode.value) {
-    const logoSize = 70
-    const minVisible = 30
-
-    if (targetX + minVisible > windowWidth) {
-      targetX = windowWidth - logoSize
-      needsBounce = true
-    }
-    if (targetX + logoSize < minVisible) {
-      targetX = minVisible - logoSize
-      needsBounce = true
-    }
-    if (targetY + minVisible > windowHeight) {
-      targetY = windowHeight - logoSize
-      needsBounce = true
-    }
-    if (targetY + logoSize < minVisible) {
-      targetY = minVisible - logoSize
-      needsBounce = true
-    }
-  } else {
-    const minVisible = 100
-    const titleBarHeight = 50
-
-    if (targetX + minVisible > windowWidth) {
-      targetX = windowWidth - minVisible
-      needsBounce = true
-    }
-    if (targetX + floatSize.width < minVisible) {
-      targetX = minVisible - floatSize.width
-      needsBounce = true
-    }
-    if (targetY + titleBarHeight > windowHeight) {
-      targetY = windowHeight - titleBarHeight
-      needsBounce = true
-    }
-    if (targetY < 0) {
-      targetY = 0
-      needsBounce = true
-    }
-  }
-
-  if (needsBounce) {
-    animateBounce(targetX, targetY)
-  }
-}
-
-function animateBounce(targetX, targetY) {
-  const startX = floatPosition.x
-  const startY = floatPosition.y
-  const duration = 300
-  const startTime = Date.now()
-
-  const animate = () => {
-    const currentTime = Date.now()
-    const elapsed = currentTime - startTime
-    const progress = Math.min(elapsed / duration, 1)
-
-    const easeProgress = 1 - Math.pow(1 - progress, 3)
-
-    floatPosition.x = startX + (targetX - startX) * easeProgress
-    floatPosition.y = startY + (targetY - startY) * easeProgress
-
-    if (progress < 1) {
-      requestAnimationFrame(animate)
-    }
-  }
-
-  animate()
-}
-
 function handleModelSelectVisible(visible) {
   if (visible && modelList.value.length === 0) {
     loadModels()

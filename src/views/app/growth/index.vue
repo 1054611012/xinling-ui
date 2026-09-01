@@ -19,11 +19,11 @@
         </div>
 
         <el-table :data="achievementList" v-loading="achievementLoading">
-          <el-table-column label="成就ID" align="center" prop="id" />
-          <el-table-column label="成就名称" align="center" prop="name" />
-          <el-table-column label="描述" align="center" prop="description" />
-          <el-table-column label="所需积分" align="center" prop="requiredPoints" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="成就ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="成就名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="描述" align="center" prop="description" show-overflow-tooltip />
+          <el-table-column label="所需积分" align="center" prop="requiredPoints" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="achievementTotal>0" :total="achievementTotal" :page="achievementQuery.pageNum" :limit="achievementQuery.pageSize" @update:page="achievementQuery.pageNum = $event" @update:limit="achievementQuery.pageSize = $event" @pagination="getAchievementList" />
@@ -47,11 +47,11 @@
         </div>
 
         <el-table :data="taskList" v-loading="taskLoading">
-          <el-table-column label="任务ID" align="center" prop="id" />
-          <el-table-column label="任务名称" align="center" prop="name" />
-          <el-table-column label="描述" align="center" prop="description" />
-          <el-table-column label="奖励积分" align="center" prop="rewardPoints" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="任务ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="任务名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="描述" align="center" prop="description" show-overflow-tooltip />
+          <el-table-column label="奖励积分" align="center" prop="rewardPoints" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
         </el-table>
 
         <pagination v-show="taskTotal>0" :total="taskTotal" :page="taskQuery.pageNum" :limit="taskQuery.pageSize" @update:page="taskQuery.pageNum = $event" @update:limit="taskQuery.pageSize = $event" @pagination="getTaskList" />
@@ -75,11 +75,11 @@
         </div>
 
         <el-table :data="mallList" v-loading="mallLoading">
-          <el-table-column label="商品ID" align="center" prop="id" />
-          <el-table-column label="商品名称" align="center" prop="name" />
-          <el-table-column label="所需积分" align="center" prop="costPoints" />
-          <el-table-column label="库存" align="center" prop="stock" />
-          <el-table-column label="创建时间" align="center" prop="createTime" />
+          <el-table-column label="商品ID" align="center" prop="id" show-overflow-tooltip />
+          <el-table-column label="商品名称" align="center" prop="name" show-overflow-tooltip />
+          <el-table-column label="所需积分" align="center" prop="costPoints" show-overflow-tooltip />
+          <el-table-column label="库存" align="center" prop="stock" show-overflow-tooltip />
+          <table-time-column label="创建时间" align="center" prop="createTime" />
           <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
             <template #default="scope">
               <el-button size="small" type="text" :icon="Edit" @click="handleUpdateMall(scope.row)" v-hasPermi="['app:growth:mall:update']">修改</el-button>
