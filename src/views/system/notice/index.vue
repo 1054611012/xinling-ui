@@ -6,6 +6,7 @@
           v-model="queryParams.noticeTitle"
           placeholder="请输入公告标题"
           clearable
+          style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
@@ -14,11 +15,12 @@
           v-model="queryParams.createBy"
           placeholder="请输入操作人员"
           clearable
+          style="width: 200px"
           @keyup.enter="handleQuery"
         />
       </el-form-item>
       <el-form-item label="类型" prop="noticeType">
-        <el-select v-model="queryParams.noticeType" placeholder="公告类型" clearable>
+        <el-select v-model="queryParams.noticeType" placeholder="公告类型" clearable style="width: 160px">
           <el-option
             v-for="dict in dict.type.sys_notice_type"
             :key="dict.value"
@@ -88,8 +90,15 @@
           <span>{{ parseTime(scope.row.createTime, '{y}-{m}-{d}') }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
         <template #default="scope">
+          <el-button
+            size="small"
+            type="text"
+            :icon="View"
+            @click="handlePreview(scope.row)"
+            v-hasPermi="['system:notice:query']"
+          >预览</el-button>
           <el-button
             size="small"
             type="text"
@@ -164,17 +173,37 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 公告预览对话框 -->
+    <el-dialog title="公告预览" :model-value="previewOpen" @update:model-value="previewOpen = $event" width="680px" append-to-body>
+      <div class="preview-wrap" v-loading="previewLoading">
+        <h2 class="preview-title">{{ previewData.noticeTitle }}</h2>
+        <div class="preview-meta">
+          <el-tag size="small">{{ previewTypeLabel }}</el-tag>
+          <dict-tag :options="dict.type.sys_notice_status" :value="previewData.status" />
+          <span class="preview-meta-item">创建者：{{ previewData.createBy || '-' }}</span>
+          <span class="preview-meta-item">创建时间：{{ parseTime(previewData.createTime, '{y}-{m}-{d}') || '-' }}</span>
+        </div>
+        <el-divider />
+        <div class="preview-content" v-html="previewData.noticeContent || '<span style=\'color:#999\'>暂无内容</span>'"></div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="previewOpen = false">关 闭</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { listNotice, getNotice, delNotice, addNotice, updateNotice } from "@/api/system/notice"
 import { parseTime, resetForm } from '@/utils/ruoyi'
 import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
-import { Delete, Edit, Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { Delete, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 
 defineOptions({ name: "Notice" })
 
@@ -191,12 +220,29 @@ const title = ref("")
 const open = ref(false)
 const queryForm = ref(null)
 const formRef = ref(null)
+const previewOpen = ref(false)
+const previewLoading = ref(false)
+const previewData = reactive({
+  noticeTitle: undefined,
+  noticeType: undefined,
+  status: undefined,
+  createBy: undefined,
+  createTime: undefined,
+  noticeContent: undefined
+})
+
+const previewTypeLabel = computed(() => {
+  const options = dict.type?.sys_notice_type || []
+  const hit = options.find(d => d.value === previewData.noticeType)
+  return hit ? hit.label : '-'
+})
 
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   noticeTitle: undefined,
   createBy: undefined,
+  noticeType: undefined,
   status: undefined
 })
 
@@ -272,6 +318,16 @@ function handleUpdate(row) {
   })
 }
 
+function handlePreview(row) {
+  previewLoading.value = true
+  previewOpen.value = true
+  getNotice(row.noticeId).then(response => {
+    Object.assign(previewData, response.data)
+  }).finally(() => {
+    previewLoading.value = false
+  })
+}
+
 function submitForm() {
   formRef.value.validate(valid => {
     if (valid) {
@@ -310,3 +366,32 @@ onMounted(() => {
   getList()
 })
 </script>
+
+<style scoped>
+.preview-wrap {
+  min-height: 120px;
+}
+.preview-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  text-align: center;
+}
+.preview-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #909399;
+}
+.preview-content {
+  line-height: 1.8;
+  color: #303133;
+  word-break: break-word;
+}
+.preview-content :deep(img) {
+  max-width: 100%;
+}
+</style>

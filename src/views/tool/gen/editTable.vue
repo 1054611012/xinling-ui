@@ -144,28 +144,36 @@ const basicInfo = ref(null)
 const genInfo = ref(null)
 
 function submitForm() {
-  const basicForm = basicInfo.value.$refs.basicInfoForm
-  const genForm = genInfo.value.$refs.genInfoForm
+  // 子组件通过 defineExpose 暴露 el-form 实例；el-form 不对外暴露 model，
+  // 因此表单数据统一取父组件的 info 对象（与两个子表单绑定的是同一个对象）
+  const basicForm = basicInfo.value?.formRef
+  const genForm = genInfo.value?.formRef
+  if (!basicForm || !genForm) {
+    ElMessage.error("表单尚未加载完成，请稍后重试")
+    return
+  }
   Promise.all([basicForm, genForm].map(getFormPromise)).then(res => {
     const validateResult = res.every(item => !!item)
-    if (validateResult) {
-      const genTable = Object.assign({}, basicForm.model, genForm.model)
-      genTable.columns = columns.value
-      genTable.params = {
-        treeCode: genTable.treeCode,
-        treeName: genTable.treeName,
-        treeParentCode: genTable.treeParentCode,
-        parentMenuId: genTable.parentMenuId
-      }
-      updateGenTable(genTable).then(res => {
-        ElMessage.success(res.msg)
-        if (res.code === 200) {
-          close()
-        }
-      })
-    } else {
+    if (!validateResult) {
       ElMessage.error("表单校验未通过，请重新检查提交内容")
+      return
     }
+    const genTable = Object.assign({}, info.value)
+    genTable.columns = columns.value
+    genTable.params = {
+      treeCode: genTable.treeCode,
+      treeName: genTable.treeName,
+      treeParentCode: genTable.treeParentCode,
+      parentMenuId: genTable.parentMenuId
+    }
+    updateGenTable(genTable).then(res => {
+      ElMessage.success(res.msg)
+      if (res.code === 200) {
+        close()
+      }
+    })
+  }).catch(() => {
+    ElMessage.error("表单校验失败，请检查必填项")
   })
 }
 

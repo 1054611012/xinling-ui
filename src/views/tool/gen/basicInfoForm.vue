@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { reactive, defineProps } from 'vue'
+import { reactive, ref, defineProps } from 'vue'
 
 defineOptions({ name: 'GenBasicInfoForm' })
 
@@ -41,6 +41,12 @@ const props = defineProps({
     default: null
   }
 })
+
+// 与模板 ref="basicInfoForm" 同名，自动绑定 el-form 实例
+const basicInfoForm = ref(null)
+
+// 暴露给父组件用于表单校验
+defineExpose({ formRef: basicInfoForm })
 
 const rules = reactive({
   tableName: [

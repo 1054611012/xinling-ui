@@ -108,11 +108,16 @@
           <el-input v-model="form.conceptCode" placeholder="请输入概念编码" />
         </el-form-item>
         <el-form-item label="父概念" prop="parentId">
-          <TreeSelect
+          <el-tree-select
             v-model="form.parentId"
-            :options="parentTreeOptions"
+            :data="parentTreeOptions"
+            :props="{ label: 'label', children: 'children' }"
+            value-key="value"
             placeholder="请选择父概念"
+            check-strictly
             clearable
+            filterable
+            :render-after-expand="false"
             style="width: 100%"
           />
         </el-form-item>
@@ -138,8 +143,6 @@
 import { ref, reactive, onMounted, nextTick, computed } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Search, Refresh, Plus, Edit, Delete } from '@element-plus/icons-vue'
-import TreeSelect from 'vue3-treeselect'
-import 'vue3-treeselect/dist/vue3-treeselect.css'
 import { listConcept, getConcept, delConcept, addConcept, updateConcept, listEnabledConcept } from "@/api/ai/ontology"
 
 // 状态常量

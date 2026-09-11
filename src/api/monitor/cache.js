@@ -55,3 +55,11 @@ export function clearCacheAll() {
     method: 'delete'
   })
 }
+
+// 设置缓存键过期时间（TTL，单位秒）
+export function updateCacheTtl(cacheName, cacheKey, ttl) {
+  return request({
+    url: '/monitor/cache/setTtl/' + cacheName + '/' + encodeURIComponent(cacheKey) + '/' + ttl,
+    method: 'put'
+  })
+}

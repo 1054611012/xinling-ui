@@ -69,6 +69,20 @@ export const constantRoutes = [
  ]
  },
   {
+    // 代码生成「修改生成配置」页：后端菜单未配置该路由，前端静态注册以保证可访问
+    path: '/tool/gen-edit',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index/:tableId',
+        component: () => import('@/views/tool/gen/editTable.vue'),
+        name: 'GenEdit',
+        meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
+      }
+    ]
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'TempCatchAll',
     redirect: '/',

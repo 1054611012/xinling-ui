@@ -11,7 +11,7 @@
     @mousedown="startDrag"
     @click="expandFromLogo"
   >
-    <RobotAvatar :is-dark="isDarkMode" size="60px" />
+    <RobotAvatar :is-dark="isDarkMode" size="100px" />
   </div>
 
   <!-- 悬浮窗容器 -->
@@ -108,8 +108,8 @@ const startResize = (event) => {
 /* AI Logo悬浮按钮样式 */
 .ai-logo-float {
   position: fixed;
-  width: 68px;
-  height: 68px;
+  width: 100px;
+  height: 100px;
   z-index: 1002;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -123,7 +123,7 @@ const startResize = (event) => {
 }
 
 .ai-logo-float:hover {
-  transform: scale(1.08);
+  transform: scale(1.05);
 }
 
 .ai-logo-float:active {

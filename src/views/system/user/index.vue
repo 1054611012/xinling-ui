@@ -103,7 +103,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="归属部门" prop="deptId">
-              <treeselect v-model="form.deptId" :options="enabledDeptOptions" :show-count="true" placeholder="请选择归属部门" />
+              <el-tree-select v-model="form.deptId" :data="enabledDeptOptions" :props="{ label: 'label', children: 'children' }" value-key="id" placeholder="请选择归属部门" check-strictly clearable filterable :render-after-expand="false" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -213,8 +213,6 @@ import { withLoading } from '@/utils/loading'
 import { download } from '@/utils/request'
 import { useDict } from '@/utils/dict/useDict'
 import { useAppStore } from '@/store/app'
-import Treeselect from "vue3-treeselect"
-import "vue3-treeselect/dist/vue3-treeselect.css"
 import { Splitpanes, Pane } from "splitpanes"
 import "splitpanes/dist/splitpanes.css"
 import { CircleCheck, DArrowRight, Delete, Download, Edit, Key, Plus, Refresh, Search, Upload, UploadFilled } from '@element-plus/icons-vue'

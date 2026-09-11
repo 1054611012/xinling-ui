@@ -2,10 +2,10 @@ import { ref, reactive } from 'vue'
 
 /** 浮窗默认尺寸 */
 const DEFAULT_SIZE = { width: 800, height: 600 }
-/** 悬浮球直径（与 FloatWindow 中 .ai-logo-float 的 68px 保持一致） */
-const LOGO_SIZE = 70
+/** 悬浮球尺寸（与 FloatWindow 中 .ai-logo-float / RobotAvatar 的 100px 保持一致） */
+const LOGO_SIZE = 100
 /** 悬浮球距视口右下角的留白 */
-const LOGO_MARGIN = 100
+const LOGO_MARGIN = 120
 /** 拖动中浮窗至少保留可见的像素（标题栏高度） */
 const TITLE_BAR_HEIGHT = 50
 /** 拖动中浮窗至少保留可见的像素（左右方向） */

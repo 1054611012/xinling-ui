@@ -108,12 +108,17 @@
         <el-row>
           <el-col :span="24">
             <el-form-item label="上级菜单" prop="parentId">
-              <treeselect
+              <el-tree-select
                 v-model="form.parentId"
-                :options="menuOptions"
-                :normalizer="normalizer"
-                :show-count="true"
+                :data="menuOptions"
+                :props="{ label: 'menuName', children: 'children' }"
+                value-key="menuId"
                 placeholder="选择上级菜单"
+                check-strictly
+                clearable
+                filterable
+                :render-after-expand="false"
+                style="width: 100%"
               />
             </el-form-item>
           </el-col>
@@ -324,8 +329,6 @@ import { listMenu, getMenu, delMenu, addMenu, updateMenu } from "@/api/system/me
 import { parseTime, resetForm, handleTree } from '@/utils/ruoyi'
 import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
-import Treeselect from "vue3-treeselect"
-import "vue3-treeselect/dist/vue3-treeselect.css"
 import IconSelect from "@/components/IconSelect"
 import { Delete, Edit, Plus, QuestionFilled, Refresh, Search, Sort } from '@element-plus/icons-vue'
 
@@ -383,17 +386,6 @@ function getList() {
   withLoading(loading, listMenu(queryParams)).then(response => {
     menuList.value = handleTree(response.data, "menuId")
   })
-}
-
-function normalizer(node) {
-  if (node.children && !node.children.length) {
-    delete node.children
-  }
-  return {
-    id: node.menuId,
-    label: node.menuName,
-    children: node.children
-  }
 }
 
 function getTreeselect() {

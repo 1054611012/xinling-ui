@@ -99,13 +99,17 @@
    </el-tooltip>
    </span>
    </template>
-   <treeselect
-   :append-to-body="true"
+   <el-tree-select
    v-model="info.parentMenuId"
-   :options="menus"
-   :normalizer="normalizer"
-   :show-count="true"
+   :data="menus"
+   :props="{ label: 'menuName', children: 'children' }"
+   value-key="menuId"
    placeholder="请选择系统菜单"
+   check-strictly
+   clearable
+   filterable
+   :render-after-expand="false"
+   style="width: 100%"
    />
   </el-form-item>
   </el-col>
@@ -251,8 +255,6 @@
 
 <script setup>
 import { ref, reactive, watch, defineProps } from 'vue'
-import Treeselect from "vue3-treeselect"
-import "vue3-treeselect/dist/vue3-treeselect.css"
 import { QuestionFilled } from '@element-plus/icons-vue'
 
 defineOptions({ name: 'GenGenInfoForm' })
@@ -266,6 +268,9 @@ const props = defineProps({
 const genInfoFormRef = ref(null)
 const subColumns = ref([])
 
+// 暴露给父组件用于表单校验
+defineExpose({ formRef: genInfoFormRef })
+
 const rules = reactive({
  tplCategory: [{ required: true, message: "请选择生成模板", trigger: "blur" }],
  packageName: [{ required: true, message: "请输入生成包路径", trigger: "blur" }],
@@ -273,17 +278,6 @@ const rules = reactive({
  businessName: [{ required: true, message: "请输入生成业务名", trigger: "blur" }],
  functionName: [{ required: true, message: "请输入生成功能名", trigger: "blur" }]
 })
-
-function normalizer(node) {
- if (node.children && !node.children.length) {
- delete node.children
- }
- return {
- id: node.menuId,
- label: node.menuName,
- children: node.children
- }
-}
 
 function subSelectChange(value) {
  props.info.subTableFkName = ''

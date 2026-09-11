@@ -104,7 +104,7 @@
         <el-row>
           <el-col :span="24" v-if="form.parentId !== 0">
             <el-form-item label="上级部门" prop="parentId">
-              <treeselect v-model="form.parentId" :options="deptOptions" :normalizer="normalizer" placeholder="选择上级部门" />
+              <el-tree-select v-model="form.parentId" :data="deptOptions" :props="{ label: 'deptName', children: 'children' }" value-key="deptId" placeholder="选择上级部门" check-strictly clearable filterable :render-after-expand="false" style="width: 100%" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -168,8 +168,6 @@ import { listDept, getDept, delDept, addDept, updateDept, listDeptExcludeChild }
 import { parseTime, resetForm, handleTree } from '@/utils/ruoyi'
 import { withLoading } from '@/utils/loading'
 import { useDict } from '@/utils/dict/useDict'
-import Treeselect from "vue3-treeselect"
-import "vue3-treeselect/dist/vue3-treeselect.css"
 import { Delete, Edit, Plus, Refresh, Search, Sort } from '@element-plus/icons-vue'
 
 defineOptions({ name: "Dept" })
@@ -233,17 +231,6 @@ function getList() {
   withLoading(loading, listDept(queryParams)).then(response => {
     deptList.value = handleTree(response.data, "deptId")
   })
-}
-
-function normalizer(node) {
-  if (node.children && !node.children.length) {
-    delete node.children
-  }
-  return {
-    id: node.deptId,
-    label: node.deptName,
-    children: node.children
-  }
 }
 
 function cancel() {

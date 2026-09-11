@@ -1,15 +1,30 @@
 <template>
   <div
     class="robot-avatar"
-    :class="{ 'is-dark': isDark, 'is-hovered': isHovered }"
+    :class="{ 'is-dark': isDark, 'is-hovered': isHovered, 'is-video': showVideo }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
     <!-- 外层光晕 -->
     <div class="avatar-glow"></div>
-    
-    <!-- 机器人SVG -->
+
+    <!-- 待机悬浮动画视频：圆形遮罩，浅蓝底色与蓝色主题融为一体 -->
+    <video
+      v-if="showVideo"
+      class="robot-video"
+      :src="videoSrc"
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="auto"
+      aria-label="AI 助手"
+      @error="videoFailed = true"
+    ></video>
+
+    <!-- 兜底：视频不可用 / 用户偏好减少动画时，回退到 SVG 机器人 -->
     <svg
+      v-else
       class="robot-svg"
       viewBox="0 0 200 200"
       xmlns="http://www.w3.org/2000/svg"
@@ -163,10 +178,27 @@ const props = defineProps({
   size: {
     type: String,
     default: '64px'
+  },
+  /** 是否使用待机动画视频替代 SVG 机器人（视频异常时自动回退） */
+  useVideo: {
+    type: Boolean,
+    default: true
   }
 })
 
 const isHovered = ref(false)
+const videoFailed = ref(false)
+
+// 视频资源放在 public/ 下，跟随部署 base 路径引用，避免打包进 JS 包体
+const videoSrc = `${import.meta.env.BASE_URL}ai-robot-float.mp4`
+
+// 尊重系统「减少动态效果」设置，直接走 SVG 静态兜底
+const prefersReducedMotion =
+  typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    : false
+
+const showVideo = computed(() => props.useVideo && !videoFailed.value && !prefersReducedMotion)
 
 // 亮色模式配色
 const bodyColor1 = computed(() => props.isDark ? '#312e81' : '#818cf8')
@@ -190,6 +222,36 @@ const antennaGlowColor = computed(() => props.isDark ? '#a78bfa' : '#c4b5fd')
   justify-content: center;
   cursor: pointer;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== 视频模式：圆角卡片，完整呈现机器人 ===== */
+.robot-avatar.is-video {
+  border-radius: 22%;
+  overflow: hidden;
+  background: #eaf4ff;
+  box-shadow: 0 8px 24px rgba(56, 132, 255, 0.25);
+}
+
+/* 视频已预裁切（完整机器人 + 无水印），原比例铺满即可 */
+.robot-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* 卡片模式下禁用内部二次缩放，避免与外层悬浮按钮的 hover 缩放叠加 */
+.robot-avatar.is-video.is-hovered {
+  transform: none;
+}
+
+.is-video.is-hovered {
+  box-shadow: 0 10px 28px rgba(56, 132, 255, 0.45);
+}
+
+.is-video.is-dark {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(120, 180, 255, 0.35);
 }
 
 .robot-svg {
