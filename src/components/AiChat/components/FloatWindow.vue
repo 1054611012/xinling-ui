@@ -137,7 +137,8 @@ const startResize = (event) => {
 .ai-logo-float.no-transition :deep(.eye-shine),
 .ai-logo-float.no-transition :deep(.pupil),
 .ai-logo-float.no-transition :deep(.energy-core),
-.ai-logo-float.no-transition :deep(.cheek-blush) {
+.ai-logo-float.no-transition :deep(.cheek-blush),
+.ai-logo-float.no-transition :deep(.robot-anim) {
   animation: none !important;
 }
 

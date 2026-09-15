@@ -83,6 +83,20 @@ export const constantRoutes = [
     ]
   },
   {
+    // 部署中心：前端静态注册，后续可迁移至后端菜单
+    path: '/monitor/deploy',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/monitor/deploy/index.vue'),
+        name: 'Deploy',
+        meta: { title: '部署中心', icon: 'upload' }
+      }
+    ]
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'TempCatchAll',
     redirect: '/',

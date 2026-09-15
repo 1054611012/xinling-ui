@@ -1,28 +1,24 @@
 <template>
   <div
     class="robot-avatar"
-    :class="{ 'is-dark': isDark, 'is-hovered': isHovered, 'is-video': showVideo }"
+    :class="{ 'is-dark': isDark, 'is-hovered': isHovered, 'is-anim': showAnim }"
     @mouseenter="isHovered = true"
     @mouseleave="isHovered = false"
   >
     <!-- 外层光晕 -->
     <div class="avatar-glow"></div>
 
-    <!-- 待机悬浮动画视频：圆形遮罩，浅蓝底色与蓝色主题融为一体 -->
-    <video
-      v-if="showVideo"
-      class="robot-video"
-      :src="videoSrc"
-      autoplay
-      loop
-      muted
-      playsinline
-      preload="auto"
-      aria-label="AI 助手"
-      @error="videoFailed = true"
-    ></video>
+    <!-- 透明底待机动画（WebP 逐帧抠图合成）：无卡片底、直接融入页面 -->
+    <img
+      v-if="showAnim"
+      class="robot-anim"
+      :src="animSrc"
+      alt="AI 助手"
+      draggable="false"
+      @error="assetFailed = true"
+    />
 
-    <!-- 兜底：视频不可用 / 用户偏好减少动画时，回退到 SVG 机器人 -->
+    <!-- 兜底：图片不可用 / 用户偏好减少动画时，回退到 SVG 机器人 -->
     <svg
       v-else
       class="robot-svg"
@@ -179,18 +175,18 @@ const props = defineProps({
     type: String,
     default: '64px'
   },
-  /** 是否使用待机动画视频替代 SVG 机器人（视频异常时自动回退） */
-  useVideo: {
+  /** 是否使用透明底立绘 + CSS 动效替代 SVG 机器人（图片异常时自动回退） */
+  useAnim: {
     type: Boolean,
     default: true
   }
 })
 
 const isHovered = ref(false)
-const videoFailed = ref(false)
+const assetFailed = ref(false)
 
-// 视频资源放在 public/ 下，跟随部署 base 路径引用，避免打包进 JS 包体
-const videoSrc = `${import.meta.env.BASE_URL}ai-robot-float.mp4`
+// 待机动画资源放在 public/ 下，跟随部署 base 路径引用，避免打包进 JS 包体
+const animSrc = `${import.meta.env.BASE_URL}ai-robot-float.webp`
 
 // 尊重系统「减少动态效果」设置，直接走 SVG 静态兜底
 const prefersReducedMotion =
@@ -198,7 +194,7 @@ const prefersReducedMotion =
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false
 
-const showVideo = computed(() => props.useVideo && !videoFailed.value && !prefersReducedMotion)
+const showAnim = computed(() => props.useAnim && !assetFailed.value && !prefersReducedMotion)
 
 // 亮色模式配色
 const bodyColor1 = computed(() => props.isDark ? '#312e81' : '#818cf8')
@@ -224,34 +220,33 @@ const antennaGlowColor = computed(() => props.isDark ? '#a78bfa' : '#c4b5fd')
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ===== 视频模式：圆角卡片，完整呈现机器人 ===== */
-.robot-avatar.is-video {
-  border-radius: 22%;
-  overflow: hidden;
-  background: #eaf4ff;
-  box-shadow: 0 8px 24px rgba(56, 132, 255, 0.25);
-}
-
-/* 视频已预裁切（完整机器人 + 无水印），原比例铺满即可 */
-.robot-video {
+/* ===== 立绘动效模式：透明底，无卡片，融入页面 ===== */
+/* WebP 自带待机动画，但在 100px 悬浮球尺寸下内部浮动仅约 4px、眨眼/翅膀细节不可见，
+   观感接近静止；因此这里再叠一层 CSS 浮动位移作为「主运动」，WebP 内部动画作为细节。
+   两层周期不同（3.5s vs 5s）不会打架。 */
+.robot-anim {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  animation: float 3.5s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  filter: drop-shadow(0 6px 16px rgba(56, 132, 255, 0.3));
+  transition: filter 0.3s ease;
+  will-change: transform;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* 鼠标事件一律落到外层容器，避免图片抢占拖拽手势导致悬浮球拖不动 */
   pointer-events: none;
 }
 
-/* 卡片模式下禁用内部二次缩放，避免与外层悬浮按钮的 hover 缩放叠加 */
-.robot-avatar.is-video.is-hovered {
+.is-hovered .robot-anim {
+  filter: drop-shadow(0 10px 24px rgba(56, 132, 255, 0.5));
+  animation-duration: 1.8s;
+}
+
+/* 立绘模式禁用内部二次缩放，避免与外层悬浮按钮的 hover 缩放叠加 */
+.robot-avatar.is-anim.is-hovered {
   transform: none;
-}
-
-.is-video.is-hovered {
-  box-shadow: 0 10px 28px rgba(56, 132, 255, 0.45);
-}
-
-.is-video.is-dark {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(120, 180, 255, 0.35);
 }
 
 .robot-svg {
@@ -451,6 +446,7 @@ const antennaGlowColor = computed(() => props.isDark ? '#a78bfa' : '#c4b5fd')
 /* 减少动画偏好 */
 @media (prefers-reduced-motion: reduce) {
   .robot-svg,
+  .robot-anim,
   .antenna-glow-circle,
   .antenna-tip,
   .eye-shine,

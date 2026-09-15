@@ -23,23 +23,28 @@ export function useFloatWindow() {
   const isMaximized = ref(false)
   const isLogoMode = ref(true)
   const floatPosition = reactive({ x: 0, y: 0 })
+  /** 记录悬浮球「被点击展开前」的位置，关闭浮窗后回到这里，避免悬浮球乱跑 */
+  const rememberedLogoPos = reactive({ x: 0, y: 0 })
   const floatSize = reactive({ ...DEFAULT_SIZE })
   const isDragging = ref(false)
   const isResizing = ref(false)
   const dragStart = reactive({ x: 0, y: 0 })
   const resizeStart = reactive({ x: 0, y: 0, width: 0, height: 0 })
 
-  /** 把悬浮球复位到视口右下角 */
+  /** 把悬浮球复位到视口右下角（仅在初始化 / 视口 resize 时调用） */
   const resetLogoPosition = () => {
     floatPosition.x = window.innerWidth - LOGO_MARGIN
     floatPosition.y = window.innerHeight - LOGO_MARGIN
+    rememberedLogoPos.x = floatPosition.x
+    rememberedLogoPos.y = floatPosition.y
   }
 
-  /** 收起为悬浮球（最小化） */
+  /** 收起为悬浮球（最小化）：回到展开前记录的位置，而不是强制归位到右下角 */
   const collapseToLogo = () => {
     isLogoMode.value = true
     isMaximized.value = false
-    resetLogoPosition()
+    floatPosition.x = rememberedLogoPos.x
+    floatPosition.y = rememberedLogoPos.y
   }
 
   const openFloatMode = () => {
@@ -53,11 +58,17 @@ export function useFloatWindow() {
     isMaximized.value = false
     floatSize.width = DEFAULT_SIZE.width
     floatSize.height = DEFAULT_SIZE.height
+    // 回到展开前记录的位置，悬浮球停在原地
+    floatPosition.x = rememberedLogoPos.x
+    floatPosition.y = rememberedLogoPos.y
   }
 
   /** 点击悬浮球展开为居中的浮窗 */
   const expandFromLogo = () => {
     if (isDragging.value) return
+    // 先记住悬浮球当前位置（可能已被用户拖到任意角落）
+    rememberedLogoPos.x = floatPosition.x
+    rememberedLogoPos.y = floatPosition.y
     isLogoMode.value = false
     isFloatMode.value = true
     isMaximized.value = false
