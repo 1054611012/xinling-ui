@@ -189,7 +189,6 @@ ICON_MAP = {
 SKIP_DIRS = [
     'src/views/app/',
     'src/views/file/',
-    'src/views/education/',
     'src/views/ai/',
     'src/views/content/white-noise/',
     'src/views/content/sleep/',

@@ -22,7 +22,6 @@ dashboard/LineChart.vue|dashboard|折线图
 dashboard/PanelGroup.vue|dashboard|面板组
 dashboard/PieChart.vue|dashboard|饼图
 dashboard/RaddarChart.vue|dashboard|雷达图
-education/instruments/index.vue|edu|心理测评工具
 file/config/index.vue|file|文件配置
 file/record/index.vue|file|文件记录
 file/stat/index.vue|file|文件统计
@@ -34,11 +33,6 @@ monitor/online/index.vue|monitor|在线用户
 monitor/operlog/index.vue|monitor|操作日志
 monitor/server/index.vue|monitor|服务器监控
 monitor/threadpool/index.vue|monitor|线程池
-psyc/feedback/index.vue|psyc|心理反馈
-psyc/post/index.vue|psyc|心理文章
-psyc/questions/index.vue|psyc|心理题目
-psyc/test/index.vue|psyc|心理测试
-psyc/test/questions.vue|psyc|测试题目编辑
 system/config/index.vue|system|系统配置
 system/dept/index.vue|system|部门管理
 system/dict/data.vue|system|字典数据
