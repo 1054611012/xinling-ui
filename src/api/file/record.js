@@ -63,6 +63,14 @@ export function delFileRecord(fileIds) {
   })
 }
 
+// 修正文件在存储端的响应类型（MIME），解决图片被浏览器强制下载的问题
+export function repairFileContentType(fileId) {
+  return request({
+    url: '/file/record/repairContentType/' + fileId,
+    method: 'post'
+  })
+}
+
 // 按业务查询文件列表
 export function listFileRecordByBusiness(businessType, businessId, query) {
   return request({
@@ -87,5 +95,18 @@ export function exportFileRecord(query) {
     method: 'post',
     data: query,
     responseType: 'blob'
+  })
+}
+
+// 同步云文件到本地（完整迁移：下载文件 + 把记录改写为本地存储）
+// fileIds 可空：不传则按 limit 分批取尚未同步的云文件，前端循环调用直至 processed=0
+export function syncLocal(fileIds, limit) {
+  const params = {}
+  if (fileIds && fileIds.length) params.fileIds = fileIds.join(',')
+  if (limit) params.limit = limit
+  return request({
+    url: '/file/record/syncLocal',
+    method: 'post',
+    params
   })
 }

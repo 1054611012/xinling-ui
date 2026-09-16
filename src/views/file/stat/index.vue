@@ -177,6 +177,24 @@ const storageTrendChartRef = ref(null)
 // resize handler reference
 let handleResize = null
 
+/** 存储类型 -> 中文（与后端 FileStorageConfig.storageType 规范值保持一致，兼容旧值） */
+const STORAGE_TYPE_LABELS = {
+  local: '本地存储',
+  'aliyun-oss': '阿里云OSS',
+  oss: '阿里云OSS',
+  'tencent-cos': '腾讯云COS',
+  cos: '腾讯云COS',
+  qiniu: '七牛云',
+  minio: 'MinIO',
+  s3: 'S3',
+  unknown: '未知'
+}
+
+function getStorageTypeLabel(type) {
+  if (!type) return '未知'
+  return STORAGE_TYPE_LABELS[type] || type
+}
+
 // ==================== 数据加载 ====================
 
 /** 解析响应数据（兼容嵌套 data 和平铺格式） */
@@ -211,10 +229,15 @@ function loadStorageType() {
   getStorageTypeDistribution().then(response => {
     const data = resolveData(response) || {}
     const list = Array.isArray(data.distribution) ? data.distribution : []
-    storageTypeEmpty.value = list.length === 0
-    if (storageTypeChart && list.length) {
+    // 存储类型 key 本地化（qiniu -> 七牛云），避免图表直接显示英文标识
+    const localized = list.map(item => ({
+      ...item,
+      name: getStorageTypeLabel(item.name || item.storageType)
+    }))
+    storageTypeEmpty.value = localized.length === 0
+    if (storageTypeChart && localized.length) {
       storageTypeChart.setOption({
-        series: [{ data: buildPieData(list) }]
+        series: [{ data: buildPieData(localized) }]
       })
     }
   }).catch(() => {})

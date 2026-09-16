@@ -71,7 +71,6 @@
 
     <el-table v-loading="loading" :data="configList" @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="配置ID" align="center" prop="id" width="70" show-overflow-tooltip />
       <el-table-column label="配置名称" align="center" prop="name" :show-overflow-tooltip="true" />
       <el-table-column label="存储类型" align="center" prop="storageType" width="120" show-overflow-tooltip>
         <template #default="scope">
@@ -88,7 +87,6 @@
       </el-table-column>
       <el-table-column label="服务端点" align="center" prop="endpoint" :show-overflow-tooltip="true" />
       <el-table-column label="存储桶" align="center" prop="bucketName" :show-overflow-tooltip="true" />
-      <el-table-column label="最大文件(字节)" align="center" prop="maxFileSize" width="130" show-overflow-tooltip />
       <el-table-column label="状态" align="center" prop="status" width="70" show-overflow-tooltip>
         <template #default="scope">
           <el-tag v-if="scope.row.status === '0'" size="small" type="success">正常</el-tag>
@@ -100,7 +98,7 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="160">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="240">
         <template #default="scope">
           <el-button
             size="small"
@@ -109,6 +107,14 @@
             @click="handleUpdate(scope.row)"
             v-hasPermi="['file:config:edit']"
           >修改</el-button>
+          <el-button
+            size="small"
+            type="text"
+            :icon="Connection"
+            :loading="testingId === scope.row.id"
+            @click="handleTest(scope.row)"
+            v-hasPermi="['file:config:query']"
+          >测试</el-button>
           <el-button
             size="small"
             type="text"
@@ -131,8 +137,8 @@
     />
 
     <!-- 添加或修改存储配置对话框 -->
-    <el-dialog :title="title" :model-value="open" @update:model-value="open = $event" width="700px" append-to-body>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="130px">
+    <el-dialog :title="title" :model-value="open" @update:model-value="open = $event" width="860px" top="5vh" append-to-body>
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="150px">
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="配置名称" prop="name">
@@ -165,8 +171,11 @@
           <el-divider content-position="left">云存储配置</el-divider>
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="服务端点" prop="endpoint">
-                <el-input v-model="form.endpoint" placeholder="如：oss-cn-hangzhou.aliyuncs.com" />
+              <el-form-item :label="endpointLabel" prop="endpoint">
+                <el-input v-model="form.endpoint" :placeholder="endpointPlaceholder" />
+                <span v-if="form.storageType === 'qiniu'" style="color: #909399; font-size: 12px; line-height: 1.4;">
+                  请填写绑定到存储桶的「访问域名」；七牛上传域名（如 upload-z2.qiniup.com）只能上传、不能访问，上传区域由 SDK 自动识别
+                </span>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -175,20 +184,31 @@
               </el-form-item>
             </el-col>
           </el-row>
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="AccessKey ID" prop="accessKeyId">
-                <el-input v-model="form.accessKeyId" placeholder="请输入AccessKey ID" />
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="AccessKey Secret" prop="accessKeySecret">
-                <el-input v-model="form.accessKeySecret" type="password" show-password placeholder="请输入AccessKey Secret" />
-              </el-form-item>
-            </el-col>
-          </el-row>
+          <el-form-item label="AccessKey ID" prop="accessKeyId">
+            <el-input v-model="form.accessKeyId" placeholder="请输入AccessKey ID" />
+          </el-form-item>
+          <el-form-item label="AccessKey Secret" prop="accessKeySecret">
+            <el-input v-model="form.accessKeySecret" type="password" show-password placeholder="请输入AccessKey Secret" />
+          </el-form-item>
           <el-form-item label="自定义域名" prop="customDomain">
-            <el-input v-model="form.customDomain" placeholder="CDN加速域名（可选），如：cdn.example.com" />
+            <el-input v-model="form.customDomain" :placeholder="customDomainPlaceholder" />
+          </el-form-item>
+          <el-alert
+            v-if="qiniuTestDomainTip"
+            type="warning"
+            :closable="false"
+            show-icon
+            :title="qiniuTestDomainTip"
+            style="margin-bottom: 18px;"
+          />
+          <el-form-item label="私有空间" prop="isPrivate">
+            <el-radio-group v-model="form.isPrivate">
+              <el-radio label="0">否（公开）</el-radio>
+              <el-radio label="1">是（私有）</el-radio>
+            </el-radio-group>
+            <span style="margin-left: 10px; color: #909399; font-size: 12px; line-height: 1.6;">
+              私有空间的对象无法通过直链访问，系统会自动生成带签名的临时授权链接（有效期 7 天）
+            </span>
           </el-form-item>
         </template>
 
@@ -196,6 +216,13 @@
         <el-divider content-position="left">通用配置</el-divider>
         <el-form-item label="基础路径" prop="basePath">
           <el-input v-model="form.basePath" placeholder="如：uploads/" />
+        </el-form-item>
+        <el-form-item label="本地同步目录" prop="localSyncPath">
+          <el-input v-model="form.localSyncPath" placeholder="如：/Volumes/Suxia/IdeaProjects/XinLing/upload" />
+          <span style="color: #909399; font-size: 12px; line-height: 1.6;">
+            该目录既是本地存储读取文件的物理根目录，也是云存储「同步到本地」的目标目录。
+            留空则回退全局上传路径（xinling.profile + /upload）。须与 /uploads 静态映射目录一致，否则同步后无法通过 /uploads 访问。
+          </span>
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -222,6 +249,7 @@
       </el-form>
       <template #footer>
         <el-button type="primary" @click="submitForm">确 定</el-button>
+        <el-button :icon="Connection" :loading="testingId === form.id" :disabled="form.id == undefined" @click="handleTest(form)" v-hasPermi="['file:config:query']">测试连接</el-button>
         <el-button @click="cancel">取 消</el-button>
       </template>
     </el-dialog>
@@ -229,13 +257,13 @@
 </template>
 
 <script setup>
-import { listFileConfig, getFileConfig, delFileConfig, addFileConfig, updateFileConfig } from "@/api/file/config"
+import { listFileConfig, getFileConfig, delFileConfig, addFileConfig, updateFileConfig, testFileConfig } from "@/api/file/config"
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Plus, Edit, Delete, Download } from '@element-plus/icons-vue'
+import { Search, Refresh, Plus, Edit, Delete, Download, Connection } from '@element-plus/icons-vue'
 import { download } from '@/utils/request'
 import { parseTime } from '@/utils/ruoyi'
 import { withLoading } from '@/utils/loading'
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref, computed } from 'vue'
 
 defineOptions({ name: 'FileConfig' })
 
@@ -257,6 +285,8 @@ const configList = ref([])
 const title = ref('')
 // 是否显示弹出层
 const open = ref(false)
+// 正在测试的配置ID
+const testingId = ref(null)
 
 // 存储类型选项
 const storageTypeOptions = ref([
@@ -266,6 +296,68 @@ const storageTypeOptions = ref([
   { label: '七牛云', value: 'qiniu' },
   { label: 'MinIO', value: 'minio' }
 ])
+
+/** 七牛上传域名（只能上传、不能用于文件访问） */
+const QINIU_UPLOAD_HOST_RE = /^(up|upload)(-[a-z0-9]+)?\.(qiniup\.com|qbox\.me|qiniucs\.com)$/i
+
+/** 七牛云测试域名（仅支持 HTTP，且 30 天后失效） */
+const QINIU_TEST_DOMAIN_RE = /\.(clouddn|qiniudn)\.com$/i
+
+/** 从地址中提取主机名 */
+function extractHost(value) {
+  if (!value) return ''
+  return value.trim().replace(/^https?:\/\//i, '').replace(/\/.*$/, '').replace(/:.*$/, '').toLowerCase()
+}
+
+/** 服务端点标签（七牛场景下语义为访问域名） */
+const endpointLabel = computed(() => (form.storageType === 'qiniu' ? '访问域名' : '服务端点'))
+
+/** 服务端点占位提示 */
+const endpointPlaceholder = computed(() => {
+  switch (form.storageType) {
+    case 'aliyun-oss':
+      return '如：oss-cn-hangzhou.aliyuncs.com'
+    case 'tencent-cos':
+      return '如：cos.ap-guangzhou.myqcloud.com'
+    case 'minio':
+      return '如：http://192.168.1.10:9000'
+    case 'qiniu':
+      return '如：http://xxx.bkt.clouddn.com（测试域名须用 http）或已绑定域名'
+    default:
+      return '如：oss-cn-hangzhou.aliyuncs.com'
+  }
+})
+
+/** 自定义域名占位提示 */
+const customDomainPlaceholder = computed(() => (form.storageType === 'qiniu'
+  ? 'CDN/加速域名（可选，优先使用），如：http://cdn.example.com'
+  : 'CDN加速域名（可选），如：cdn.example.com'))
+
+/**
+ * 七牛测试域名提示
+ * 测试域名有两个绕不过去的限制：不支持 HTTPS、强制以附件方式下载，
+ * 前端若拿到 https 地址会直接加载失败，这里提前给出提醒。
+ */
+const qiniuTestDomainTip = computed(() => {
+  if (form.storageType !== 'qiniu') return ''
+  const custom = extractHost(form.customDomain)
+  const endpoint = extractHost(form.endpoint)
+  const testHost = QINIU_TEST_DOMAIN_RE.test(custom) ? form.customDomain
+    : (QINIU_TEST_DOMAIN_RE.test(endpoint) ? form.endpoint : '')
+  if (!testHost) return ''
+  return '当前使用的是七牛「测试域名」：它不支持 HTTPS（用 https 访问会因证书不匹配导致图片加载失败），'
+    + '并会强制以附件形式下载，且创建 30 天后失效。系统已自动改用 HTTP，'
+    + '但建议在七牛控制台绑定自有域名后填入此处，替换测试域名。'
+})
+
+/** 服务端点校验：七牛场景禁止填写上传域名 */
+function validateEndpoint(rule, value, callback) {
+  if (form.storageType === 'qiniu' && value && QINIU_UPLOAD_HOST_RE.test(extractHost(value))) {
+    callback(new Error('该地址是七牛上传域名，无法用于文件访问，请填写绑定的访问域名'))
+    return
+  }
+  callback()
+}
 
 // 查询参数
 const queryParams = reactive({
@@ -282,12 +374,14 @@ const formInit = {
   name: undefined,
   storageType: 'local',
   isMaster: '0',
+  isPrivate: '0',
   endpoint: undefined,
   bucketName: undefined,
   accessKeyId: undefined,
   accessKeySecret: undefined,
   customDomain: undefined,
   basePath: 'uploads/',
+  localSyncPath: undefined,
   maxFileSize: 104857600,
   allowedExtensions: 'jpg,jpeg,png,gif,bmp,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,zip,rar',
   status: '0',
@@ -305,7 +399,8 @@ const rules = reactive({
     { required: true, message: '存储类型不能为空', trigger: 'change' }
   ],
   endpoint: [
-    { required: true, message: '服务端点不能为空', trigger: 'blur' }
+    { required: true, message: '服务端点不能为空', trigger: 'blur' },
+    { validator: validateEndpoint, trigger: 'blur' }
   ],
   bucketName: [
     { required: true, message: '存储桶名称不能为空', trigger: 'blur' }
@@ -342,8 +437,8 @@ function getStorageTypeLabel(type) {
 
 /** 获取存储类型Tag颜色 */
 function getStorageTypeTag(type) {
-  const map = { 'local': '', 'aliyun-oss': 'success', 'tencent-cos': 'warning', 'qiniu': 'info', 'minio': 'danger' }
-  return map[type] || ''
+  const map = { 'local': 'info', 'aliyun-oss': 'success', 'tencent-cos': 'warning', 'qiniu': 'primary', 'minio': 'danger' }
+  return map[type] || 'info'
 }
 
 /** 格式化文件大小 */
@@ -363,6 +458,7 @@ function handleStorageTypeChange(type) {
     form.accessKeyId = undefined
     form.accessKeySecret = undefined
     form.customDomain = undefined
+    form.isPrivate = '0'
   }
 }
 
@@ -456,5 +552,32 @@ function handleExport() {
   download('file/config/export', {
     ...queryParams
   }, `file_config_${new Date().getTime()}.xlsx`)
+}
+
+/** 测试按钮操作：使用指定配置上传一张默认头像，验证存储可用性 */
+function handleTest(row) {
+  const id = row && row.id
+  if (id == undefined) {
+    ElMessage.warning('请先保存配置后再进行测试')
+    return
+  }
+  testingId.value = id
+  testFileConfig(id)
+    .then(res => {
+      const data = (res && res.data !== undefined) ? res.data : res
+      const msg = (data && data.message) || (typeof data === 'string' ? data : '') || '连接测试成功'
+      const url = (data && data.url) || ''
+      const text = msg + (url ? '，测试文件：' + url : '')
+      // 上传成功但回读未通过时给出告警而非成功提示
+      if (data && data.reachable === false) {
+        ElMessage.warning(text)
+      } else {
+        ElMessage.success(text)
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      testingId.value = null
+    })
 }
 </script>

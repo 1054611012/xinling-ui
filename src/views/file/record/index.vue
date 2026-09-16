@@ -20,11 +20,13 @@
         />
       </el-form-item>
       <el-form-item label="存储类型" prop="storageType">
-        <el-select v-model="queryParams.storageType" placeholder="请选择" clearable style="width: 110px">
-          <el-option label="本地存储" value="local" />
-          <el-option label="MinIO" value="minio" />
-          <el-option label="阿里云OSS" value="oss" />
-          <el-option label="S3" value="s3" />
+        <el-select v-model="queryParams.storageType" placeholder="请选择" clearable style="width: 130px">
+          <el-option
+            v-for="item in storageTypeOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="业务类型" prop="businessType">
@@ -121,6 +123,25 @@
           @click="handleExport"
           v-hasPermi="['file:record:export']"
         >导出</el-button>
+      <el-button
+          type="info"
+          plain
+          :icon="MagicStick"
+          size="small"
+          :loading="repairing"
+          @click="handleBatchRepairType"
+          v-hasPermi="['file:record:edit']"
+        >修正文件类型</el-button>
+      <el-button
+          type="success"
+          plain
+          :icon="FolderChecked"
+          size="small"
+          :loading="syncing"
+          @click="handleSyncToLocal"
+          v-hasPermi="['file:record:edit']"
+        >同步到本地</el-button>
+      <span v-if="syncing" class="sync-progress">同步中，已处理 {{ syncingDone }} 个…</span>
       <right-toolbar :show-search="showSearch" @update:show-search="showSearch = $event" @queryTable="getList" />
     </div>
 
@@ -164,11 +185,17 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="存储类型" align="center" prop="storageType" width="90" show-overflow-tooltip>
+      <el-table-column label="存储类型" align="center" prop="storageType" width="110" show-overflow-tooltip>
         <template #default="scope">
           <el-tag :type="getStorageTypeTag(scope.row.storageType)" size="small">
             {{ getStorageTypeLabel(scope.row.storageType) }}
           </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="本地副本" align="center" prop="localPath" width="90" show-overflow-tooltip>
+        <template #default="scope">
+          <el-tag v-if="scope.row.localPath" type="success" size="small" effect="dark">已存在</el-tag>
+          <el-tag v-else type="info" size="small" effect="plain">无</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="业务类型" align="center" prop="businessType" width="90" :show-overflow-tooltip="true" />
@@ -193,7 +220,7 @@
           <span>{{ parseTime(scope.row.createTime) }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="220">
+      <el-table-column label="操作" align="center" class-name="small-padding fixed-width" width="290">
         <template #default="scope">
           <el-button
             size="small"
@@ -208,6 +235,22 @@
             :icon="View"
             @click="handlePreview(scope.row)"
           >预览</el-button>
+          <el-button
+            v-if="scope.row.storageType && scope.row.storageType !== 'local'"
+            size="small"
+            type="text"
+            :icon="MagicStick"
+            @click.stop="handleRepairType(scope.row)"
+            v-hasPermi="['file:record:edit']"
+          >修正</el-button>
+          <el-button
+            v-if="scope.row.storageType && scope.row.storageType !== 'local'"
+            size="small"
+            type="text"
+            :icon="FolderChecked"
+            @click.stop="handleSyncOne(scope.row)"
+            v-hasPermi="['file:record:edit']"
+          >同步</el-button>
           <el-button
             size="small"
             type="text"
@@ -444,13 +487,13 @@
 </template>
 
 <script setup>
-import { listFileRecord, getFileRecord, delFileRecord, updateFileRecord } from "@/api/file/record"
+import { listFileRecord, getFileRecord, delFileRecord, updateFileRecord, repairFileContentType, syncLocal } from "@/api/file/record"
 import { getToken } from "@/utils/auth"
 import { download } from '@/utils/request'
 import { parseTime, addDateRange } from '@/utils/ruoyi'
 import { withLoading } from '@/utils/loading'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, Upload, UploadFilled, Plus, Edit, Delete, Download, View, VideoCamera, Headset, DocumentCopy, Document } from '@element-plus/icons-vue'
+import { Search, Refresh, Upload, UploadFilled, Plus, Edit, Delete, Download, View, VideoCamera, Headset, DocumentCopy, Document, MagicStick, FolderChecked } from '@element-plus/icons-vue'
 import { onMounted, reactive, ref, computed } from 'vue'
 
 defineOptions({ name: 'FileRecord' })
@@ -471,6 +514,11 @@ const total = ref(0)
 const recordList = ref([])
 // 日期范围
 const dateRange = ref([])
+// 批量修正响应类型进行中
+const repairing = ref(false)
+// 同步到本地：进行中标记与已处理数量
+const syncing = ref(false)
+const syncingDone = ref(0)
 
 // ----- 上传对话框 -----
 const uploadOpen = ref(false)
@@ -515,6 +563,15 @@ const editRules = reactive({
 
 // 基础URL
 const baseUrl = import.meta.env.VITE_APP_BASE_API
+
+// 存储类型选项（与后端 FileStorageConfig.storageType 规范值保持一致）
+const storageTypeOptions = [
+  { label: '本地存储', value: 'local' },
+  { label: '阿里云OSS', value: 'aliyun-oss' },
+  { label: '腾讯云COS', value: 'tencent-cos' },
+  { label: '七牛云', value: 'qiniu' },
+  { label: 'MinIO', value: 'minio' }
+]
 
 // 查询参数
 const queryParams = reactive({
@@ -619,16 +676,40 @@ function formatDuration(seconds) {
 
 // ==================== 标签/映射 ====================
 
+/** 存储类型 -> 中文（兼容历史数据中的 oss/cos/s3 旧值） */
+const STORAGE_TYPE_LABELS = {
+  local: '本地存储',
+  'aliyun-oss': '阿里云OSS',
+  oss: '阿里云OSS',
+  'tencent-cos': '腾讯云COS',
+  cos: '腾讯云COS',
+  qiniu: '七牛云',
+  minio: 'MinIO',
+  s3: 'S3'
+}
+
+/** 存储类型 -> 标签颜色 */
+const STORAGE_TYPE_TAGS = {
+  local: 'info',
+  'aliyun-oss': 'success',
+  oss: 'success',
+  'tencent-cos': 'warning',
+  cos: 'warning',
+  qiniu: 'primary',
+  minio: 'danger',
+  s3: 'info'
+}
+
 /** 存储类型 -> 中文 */
 function getStorageTypeLabel(type) {
-  const map = { local: '本地', minio: 'MinIO', oss: '阿里云OSS', s3: 'S3' }
-  return map[type] || type || '未知'
+  if (!type) return '未知'
+  return STORAGE_TYPE_LABELS[type] || type
 }
 
 /** 存储类型 -> 标签颜色 */
 function getStorageTypeTag(type) {
-  const map = { local: '', minio: 'danger', oss: 'success', s3: 'warning' }
-  return map[type] || ''
+  if (!type) return 'info'
+  return STORAGE_TYPE_TAGS[type] || 'info'
 }
 
 /** 来源 -> 中文 */
@@ -732,6 +813,176 @@ function handleDownload(row) {
     ElMessage.error('下载失败，网络异常')
   }
   xhr.send()
+}
+
+// ==================== 响应类型（MIME）修正 ====================
+//
+// 对象存储中文件的响应类型决定浏览器是「直接展示」还是「强制下载」。
+// 上传时若未显式指定类型，对象会被存成 application/octet-stream，
+// 图片访问时便被强制下载。此处按扩展名回写正确类型。
+
+/** 修正单个文件在存储端的响应类型 */
+function handleRepairType(row) {
+  repairFileContentType(row.fileId)
+    .then(res => {
+      const data = res.data || res
+      if (data && data.success) {
+        ElMessage.success(data.message || '修正成功')
+        getList()
+      } else {
+        ElMessage.warning((data && data.message) || '未能修正该文件的响应类型')
+      }
+    })
+    .catch(() => {})
+}
+
+/** 批量修正当前列表中云存储文件的响应类型 */
+function handleBatchRepairType() {
+  const targets = (recordList.value || []).filter(
+    row => row.storageType && row.storageType !== 'local' && row.status !== '1'
+  )
+  if (!targets.length) {
+    ElMessage.warning('当前列表没有可修正的云存储文件')
+    return
+  }
+  ElMessageBox.confirm(
+    `将按文件扩展名为当前列表的 ${targets.length} 个云存储对象回写响应类型（MIME），` +
+    '修正后图片等资源可直接在浏览器中展示，而不再被强制下载。是否继续？',
+    '修正文件类型',
+    { confirmButtonText: '开始修正', cancelButtonText: '取消', type: 'warning' }
+  ).then(() => runBatchRepair(targets)).catch(() => {})
+}
+
+/** 串行执行批量修正，避免瞬时并发过多 */
+async function runBatchRepair(targets) {
+  repairing.value = true
+  let success = 0
+  let failed = 0
+  for (const row of targets) {
+    try {
+      const res = await repairFileContentType(row.fileId)
+      const data = res.data || res
+      if (data && data.success) {
+        success++
+      } else {
+        failed++
+      }
+    } catch (e) {
+      failed++
+    }
+  }
+  repairing.value = false
+  if (success > 0) {
+    ElMessage.success(`修正完成：成功 ${success} 个${failed ? `，失败 ${failed} 个` : ''}`)
+    getList()
+  } else {
+    ElMessage.warning(`修正完成：成功 0 个，失败 ${failed} 个`)
+  }
+}
+
+// ==================== 云文件同步到本地 ====================
+//
+// 云存储到期/不再续费前，把云端资产完整迁移到本地：文件下载到本地目录，
+// 并把记录改写为本地存储（storage_type=local）。为避免单次请求超时，分批循环调用。
+
+/** 单批处理文件数 */
+const SYNC_BATCH = 20
+
+/** 单个文件同步到本地 */
+function handleSyncOne(row) {
+  ElMessageBox.confirm(
+    `将把文件「${row.fileName}」下载到本地，并把记录改写为本地存储。是否继续？`,
+    '同步到本地',
+    { confirmButtonText: '开始同步', cancelButtonText: '取消', type: 'warning' }
+  ).then(() => runSync([row.fileId])).catch(() => {})
+}
+
+/** 批量同步：已勾选则同步选中的云文件，否则同步全部尚未同步的云文件 */
+function handleSyncToLocal() {
+  const selected = (recordList.value || []).filter(
+    row => ids.value.includes(row.fileId) && row.storageType && row.storageType !== 'local'
+  )
+  const isSelection = selected.length > 0
+  const pendingInList = (recordList.value || []).filter(
+    row => row.storageType && row.storageType !== 'local' && row.status !== '1'
+  )
+  const scopeText = isSelection
+    ? `选中的 ${selected.length} 个云文件`
+    : (pendingInList.length ? '当前列表及后续全部尚未同步的云文件' : '全部尚未同步的云文件')
+
+  ElMessageBox.confirm(
+    `将把${scopeText}从云端下载到本地目录，并把记录完整改写为本地存储。` +
+    '同步会消耗云读取流量，文件较多时耗时较长。是否继续？',
+    '同步到本地',
+    { confirmButtonText: '开始同步', cancelButtonText: '取消', type: 'warning' }
+  ).then(() => {
+    runSync(isSelection ? selected.map(r => r.fileId) : null)
+  }).catch(() => {})
+}
+
+/** 从响应中取出数据体 */
+function pickSyncData(res) {
+  const d = (res && res.data !== undefined) ? res.data : res
+  return (d && typeof d === 'object') ? d : {}
+}
+
+/** 分批执行同步并提示结果 */
+async function runSync(fileIds) {
+  syncing.value = true
+  syncingDone.value = 0
+  let success = 0, failed = 0, skipped = 0
+  let targetPath = ''
+  const errors = []
+  const collect = (d) => {
+    success += d.success || 0
+    failed += d.failed || 0
+    skipped += d.skipped || 0
+    if (d.targetPath) targetPath = d.targetPath
+    if (Array.isArray(d.errors)) errors.push(...d.errors)
+  }
+  try {
+    if (fileIds && fileIds.length) {
+      // 指定文件：切片循环
+      for (let i = 0; i < fileIds.length; i += SYNC_BATCH) {
+        const slice = fileIds.slice(i, i + SYNC_BATCH)
+        collect(pickSyncData(await syncLocal(slice)))
+        syncingDone.value += slice.length
+      }
+    } else {
+      // 全量：循环直到取不到待同步文件；某批无一成功即停止，避免失败文件被反复重试
+      for (let guard = 0; guard < 100000; guard++) {
+        const d = pickSyncData(await syncLocal(null, SYNC_BATCH))
+        const processed = d.processed || 0
+        if (processed === 0) break
+        collect(d)
+        syncingDone.value += processed
+        if ((d.success || 0) === 0) break
+      }
+    }
+    if (targetPath) {
+      ElMessage.info(`同步目录：${targetPath}`)
+    }
+    if (failed) {
+      ElMessageBox.alert(
+        `成功 ${success} 个，失败 ${failed} 个${skipped ? `，跳过 ${skipped} 个` : ''}。<br/>` +
+        (errors.length ? `<br/>失败原因（前 ${errors.length} 条）：<br/>${errors.map(e => String(e).replace(/</g, '&lt;')).join('<br/>')}` : ''),
+        '同步结果',
+        { dangerouslyUseHTMLString: true, confirmButtonText: '知道了' }
+      ).catch(() => {})
+    } else {
+      ElMessage.success(
+        `同步完成：成功 ${success} 个` +
+        (failed ? `，失败 ${failed} 个` : '') +
+        (skipped ? `，跳过 ${skipped} 个` : '')
+      )
+    }
+    getList()
+  } catch (e) {
+    // 异常已由响应拦截器统一提示
+  } finally {
+    syncing.value = false
+    syncingDone.value = 0
+  }
 }
 
 // ==================== 预览/详情 ====================
@@ -881,5 +1132,12 @@ function handleExport() {
   margin: 4px 0;
   font-size: 12px;
   color: #909399;
+}
+
+/* 同步进度提示 */
+.sync-progress {
+  margin-left: 10px;
+  font-size: 12px;
+  color: #67C23A;
 }
 </style>

@@ -183,6 +183,9 @@ function ensureCropper() {
 
 function onImageError() {
   imgLoaded.value = false
+  // 常见原因：云存储返回的地址协议不对（如七牛测试域名不支持 HTTPS），
+  // 或域名未配置/已失效，打印出来便于排查
+  console.error('头像图片加载失败，地址：', cropImg.value)
   ElMessage.error('图片加载失败，请重新选择')
 }
 
@@ -302,7 +305,10 @@ async function submitCrop() {
     const imgUrl = response.imgUrl || response.url
     if (!imgUrl) throw new Error('服务器未返回头像地址')
 
-    const fullUrl = import.meta.env.VITE_APP_BASE_API + imgUrl
+    // 云存储返回的是完整地址（如 https://xxx.com/uploads/xxx.png），只有本地存储才是相对路径。
+    // 统一走 resolveAvatarUrl 判断，避免把 /prod-api 前缀拼到完整地址上
+    // （会拼成 /prod-apihttps://xxx 这种非法地址，导致图片加载失败）
+    const fullUrl = resolveAvatarUrl(imgUrl)
     cropImg.value = fullUrl
     userStore.avatar = fullUrl
     ElMessage.success('头像修改成功')

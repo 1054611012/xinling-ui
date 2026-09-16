@@ -42,3 +42,13 @@ export function delFileConfig(id) {
     method: 'delete'
   })
 }
+
+// 测试存储配置（上传默认头像验证可用性）
+// 注意：测试会真实上传/回读/删除文件，云存储首次连通耗时较长，故单独放宽超时时间
+export function testFileConfig(id) {
+  return request({
+    url: '/file/config/test/' + id,
+    method: 'post',
+    timeout: 60000
+  })
+}
